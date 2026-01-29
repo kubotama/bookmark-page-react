@@ -67,7 +67,7 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
           </div>
 
           {/* 右側: 4つのボタンを4段で配置 */}
-          <div className="grid grid-rows-4 gap-0.5 min-w-[80px]">
+          <div className="grid grid-rows-4 gap-0.5 min-w-20">
             <Button variant="primary" onClick={handleUpdate}>
               {UI_MESSAGES.BUTTON_UPDATE}
             </Button>
