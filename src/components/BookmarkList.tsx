@@ -1,5 +1,6 @@
 import { UI_MESSAGES } from '@shared/constants'
 import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
+import { BookmarkItem } from './BookmarkItem'
 
 export type BookmarkProps = {
   bookmarks: Bookmark[]
@@ -50,46 +51,24 @@ export const BookmarkList = ({
     )
   }
 
-  const trClassName = `transition-colors cursor-pointer hover:bg-blue-200 bg-blue-100 text-sm text-left text-gray-900 select-none`
-
   return (
     <div className="w-full max-w-2xl mx-auto overflow-hidden bg-white shadow border-t border-l border-r border-blue-700">
       <table className="min-w-full border-collapse">
         <thead className="bg-gray-50"></thead>
         <tbody className="bg-white">
-          {bookmarks.map((bookmark, index) => {
-            const tdClassName = `px-2 py-1 whitespace-nowrap border-b border-blue-700 ${
-              selectedId === bookmark.id ? 'font-bold' : ''
-            }`
-
-            return (
-              <tr
-                key={bookmark.id}
-                className={trClassName}
-                tabIndex={
-                  (selectedId === null && index === 0) ||
-                  selectedId === bookmark.id
-                    ? 0
-                    : -1
-                }
-                aria-selected={selectedId === bookmark.id}
-                onClick={() => onRowClick(bookmark.id)}
-                onDoubleClick={() => onDoubleClick(bookmark.id, bookmark.url)}
-                onKeyDown={(e) => {
-                  // EnterキーでURLを開く (ダブルクリック相当)
-                  if (e.key === 'Enter') {
-                    onDoubleClick(bookmark.id, bookmark.url)
-                  } else if (e.key === ' ') {
-                    // スペースキーで選択/解除 (クリック相当)
-                    e.preventDefault() // ページのスクロールを防止
-                    onRowClick(bookmark.id)
-                  }
-                }}
-              >
-                <td className={tdClassName}>{bookmark.title}</td>
-              </tr>
-            )
-          })}
+          {bookmarks.map((bookmark, index) => (
+            <BookmarkItem
+              key={bookmark.id}
+              bookmark={bookmark}
+              isSelected={selectedId === bookmark.id}
+              isFocusable={
+                selectedId === bookmark.id ||
+                (selectedId === null && index === 0)
+              }
+              onRowClick={onRowClick}
+              onDoubleClick={onDoubleClick}
+            />
+          ))}
         </tbody>
       </table>
     </div>

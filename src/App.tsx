@@ -1,9 +1,11 @@
+import { useCallback } from 'react'
 import './App.css'
 import { BookmarkList } from './components/BookmarkList'
 import { BookmarkDetail } from './components/BookmarkDetail'
 import { useBookmarks } from './hooks/useBookmarks'
 import { useBookmarkList } from './hooks/useBookmarkList'
 import { useBookmarkActions } from './hooks/useBookmarkActions'
+import type { BookmarkId } from '@shared/schemas/bookmark'
 
 function App() {
   const { data, isLoading, error } = useBookmarks()
@@ -13,6 +15,39 @@ function App() {
 
   const bookmarks = data?.bookmarks ?? []
   const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
+
+  const handleDoubleClick = useCallback(
+    (id: BookmarkId, url: string) => {
+      setSelectedId(id)
+      openBookmark(url)
+    },
+    [setSelectedId, openBookmark],
+  )
+
+  const handleUpdate = useCallback(
+    (title: string, url: string) => {
+      if (selectedBookmark) {
+        updateBookmark(selectedBookmark.id, { title, url })
+      }
+    },
+    [selectedBookmark, updateBookmark],
+  )
+
+  const handleDelete = useCallback(() => {
+    if (selectedBookmark) {
+      deleteBookmark(selectedBookmark.id)
+    }
+  }, [selectedBookmark, deleteBookmark])
+
+  const handleOpen = useCallback(() => {
+    if (selectedBookmark) {
+      openBookmark(selectedBookmark.url)
+    }
+  }, [selectedBookmark, openBookmark])
+
+  const handleClose = useCallback(() => {
+    setSelectedId(null)
+  }, [setSelectedId])
 
   return (
     <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden">
@@ -25,10 +60,7 @@ function App() {
               error={error}
               selectedId={selectedId}
               onRowClick={handleRowClick}
-              onDoubleClick={(id, url) => {
-                setSelectedId(id)
-                openBookmark(url)
-              }}
+              onDoubleClick={handleDoubleClick}
             />
           </div>
         </div>
@@ -39,12 +71,10 @@ function App() {
           <div className="w-full max-w-2xl">
             <BookmarkDetail
               bookmark={selectedBookmark}
-              onUpdate={(title, url) =>
-                updateBookmark(selectedBookmark.id, { title, url })
-              }
-              onDelete={() => deleteBookmark(selectedBookmark.id)}
-              onOpen={() => openBookmark(selectedBookmark.url)}
-              onClose={() => setSelectedId(null)}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onOpen={handleOpen}
+              onClose={handleClose}
             />
           </div>
         </footer>
