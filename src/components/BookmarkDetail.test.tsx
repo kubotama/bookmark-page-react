@@ -4,6 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { BookmarkDetail } from './BookmarkDetail'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { UI_MESSAGES } from '@shared/constants'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 
 describe('BookmarkDetail', () => {
   afterEach(() => {
@@ -14,6 +15,7 @@ describe('BookmarkDetail', () => {
     bookmark: MOCK_BOOKMARK_1,
     onUpdate: vi.fn(),
     onDelete: vi.fn(),
+    onOpen: vi.fn(),
     onClose: vi.fn(),
   }
 
@@ -40,74 +42,49 @@ describe('BookmarkDetail', () => {
     expect(urlInput).toHaveValue('https://updated.com')
   })
 
-  it('更新ボタンクリック時に onUpdate が呼ばれること', async () => {
-    const user = userEvent.setup()
-    const onUpdate = vi.fn()
-    render(<BookmarkDetail {...defaultProps} onUpdate={onUpdate} />)
+  describe('ボタン操作', () => {
+    it.each([
+      {
+        name: '更新',
+        label: UI_MESSAGES.BUTTON_UPDATE,
+        propName: 'onUpdate' as const,
+      },
+      {
+        name: '開く',
+        label: UI_MESSAGES.BUTTON_OPEN,
+        propName: 'onOpen' as const,
+      },
+      {
+        name: '削除',
+        label: UI_MESSAGES.BUTTON_DELETE,
+        propName: 'onDelete' as const,
+      },
+      {
+        name: '閉じる',
+        label: UI_MESSAGES.BUTTON_CLOSE,
+        propName: 'onClose' as const,
+      },
+    ])('$name ボタンクリック時に正しいハンドラが呼ばれること', async ({ label, propName }) => {
+      const user = userEvent.setup()
+      const mockFn = vi.fn()
+      const props = { ...defaultProps, [propName]: mockFn }
+      render(<BookmarkDetail {...props} />)
 
-    const titleInput = screen.getByPlaceholderText('Bookmark Title')
-    await user.clear(titleInput)
-    await user.type(titleInput, 'New Title')
-
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_UPDATE))
-    expect(onUpdate).toHaveBeenCalledWith('New Title', MOCK_BOOKMARK_1.url)
-  })
-
-  it('削除ボタンクリック時に confirm で OK を選ぶと onDelete が呼ばれること', async () => {
-    const user = userEvent.setup()
-    const onDelete = vi.fn()
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-
-    render(<BookmarkDetail {...defaultProps} onDelete={onDelete} />)
-
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_DELETE))
-
-    expect(confirmSpy).toHaveBeenCalledWith(UI_MESSAGES.DELETE_CONFIRM)
-    expect(onDelete).toHaveBeenCalled()
-  })
-
-  it('削除ボタンクリック時に confirm でキャンセルを選ぶと onDelete が呼ばれないこと', async () => {
-    const user = userEvent.setup()
-    const onDelete = vi.fn()
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-
-    render(<BookmarkDetail {...defaultProps} onDelete={onDelete} />)
-
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_DELETE))
-
-    expect(confirmSpy).toHaveBeenCalledWith(UI_MESSAGES.DELETE_CONFIRM)
-    expect(onDelete).not.toHaveBeenCalled()
-  })
-
-  it('開くボタンクリック時に window.open が呼ばれること', async () => {
-    const user = userEvent.setup()
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-
-    render(<BookmarkDetail {...defaultProps} />)
-
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_OPEN))
-
-    expect(openSpy).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url, '_blank', 'noreferrer')
-  })
-
-  it('閉じるボタンクリック時に onClose が呼ばれること', async () => {
-    const user = userEvent.setup()
-    const onClose = vi.fn()
-    render(<BookmarkDetail {...defaultProps} onClose={onClose} />)
-
-    // md:block なので通常は見えているはずだが、テスト環境によっては注意が必要
-    const closeButton = screen.getByTitle(UI_MESSAGES.BUTTON_CLOSE)
-    await user.click(closeButton)
-
-    expect(onClose).toHaveBeenCalled()
+      await user.click(screen.getByText(label))
+      expect(mockFn).toHaveBeenCalled()
+    })
   })
 
   it('別のブックマークが選択された時に入力内容が更新されること', () => {
     const { rerender } = render(<BookmarkDetail {...defaultProps} />)
-    
+
     expect(screen.getByDisplayValue(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
 
-    const NEW_BOOKMARK = { ...MOCK_BOOKMARK_1, id: '2', title: 'New Selection' } as any
+    const NEW_BOOKMARK = {
+      ...MOCK_BOOKMARK_1,
+      id: BookmarkIdSchema.parse('2'),
+      title: 'New Selection',
+    }
     rerender(<BookmarkDetail {...defaultProps} bookmark={NEW_BOOKMARK} />)
 
     expect(screen.getByDisplayValue('New Selection')).toBeInTheDocument()

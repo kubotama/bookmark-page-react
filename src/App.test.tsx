@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, HTTP_STATUS, UI_MESSAGES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import type { UpdateBookmarkRequest } from '@shared/schemas/bookmark'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -82,12 +83,9 @@ describe('App Integration', () => {
       http.get(API_PATHS.BOOKMARKS, () => {
         return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
       }),
-
       http.patch(`${API_PATHS.BOOKMARKS}/:id`, async ({ request }) => {
         patchCalled = true
-
-        const body = await request.json()
-
+        const body = (await request.json()) as UpdateBookmarkRequest
         return HttpResponse.json({ ...MOCK_BOOKMARK_1, ...body })
       }),
     )
