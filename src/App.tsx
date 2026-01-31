@@ -50,9 +50,9 @@ function App() {
   }, [setSelectedId])
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-white overflow-hidden">
       <main className="flex-1 flex justify-center overflow-hidden">
-        <div className="w-full max-w-2xl flex flex-col h-full bg-white shadow-xl">
+        <div className="w-full max-w-2xl flex flex-col h-full shadow-xl">
           <div className="flex-1 overflow-y-auto pt-4 pb-4 px-4">
             <BookmarkList
               bookmarks={bookmarks}
@@ -67,7 +67,7 @@ function App() {
       </main>
 
       {selectedBookmark && (
-        <footer className="w-full flex justify-center bg-white border-t border-gray-200 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.1)] z-10">
+        <footer className="w-full flex justify-center border-t border-gray-200 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.1)] z-10">
           <div className="w-full max-w-2xl">
             <BookmarkDetail
               bookmark={selectedBookmark}
