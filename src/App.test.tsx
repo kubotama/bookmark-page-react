@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, HTTP_STATUS, UI_MESSAGES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
@@ -27,15 +27,30 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 describe('App Integration', () => {
-  it('ブックマーク一覧が正常に取得・表示されること', async () => {
+  beforeEach(() => {
+    vi.stubGlobal('open', vi.fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  /**
+   * テスト用のセットアップヘルパー
+   */
+  const setup = (bookmarks = [MOCK_BOOKMARK_1]) => {
+    const user = userEvent.setup()
     server.use(
       http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
+        return HttpResponse.json({ bookmarks })
       }),
     )
-
     render(<App />, { wrapper })
+    return { user }
+  }
 
+  it('ブックマーク一覧が正常に取得・表示されること', async () => {
+    setup()
     // データの取得待ちと表示確認
     expect(await screen.findByText(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
   })
@@ -48,24 +63,15 @@ describe('App Integration', () => {
         })
       }),
     )
-
     render(<App />, { wrapper })
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 
   it('行を選択した際に詳細パネルが表示されること', async () => {
-    const user = userEvent.setup()
-    server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
-      }),
-    )
-
-    render(<App />, { wrapper })
+    const { user } = setup()
 
     const row = await screen.findByText(MOCK_BOOKMARK_1.title)
-
     await user.click(row)
 
     // 詳細パネルの要素が表示されているか確認
@@ -75,31 +81,22 @@ describe('App Integration', () => {
   })
 
   it('詳細パネルからブックマークを更新できること', async () => {
-    const user = userEvent.setup()
-
     let patchCalled = false
-
     server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
-      }),
       http.patch(`${API_PATHS.BOOKMARKS}/:id`, async ({ request }) => {
         patchCalled = true
         const body = (await request.json()) as UpdateBookmarkRequest
         return HttpResponse.json({ ...MOCK_BOOKMARK_1, ...body })
       }),
     )
-
-    render(<App />, { wrapper })
+    const { user } = setup()
 
     // 選択
     const row = await screen.findByText(MOCK_BOOKMARK_1.title)
-
     await user.click(row)
 
     // 編集
     const titleInput = screen.getByDisplayValue(MOCK_BOOKMARK_1.title)
-
     await user.clear(titleInput)
     await user.type(titleInput, 'Updated by Panel')
 
@@ -109,36 +106,24 @@ describe('App Integration', () => {
   })
 
   it('詳細パネルからブックマークを削除できること', async () => {
-    const user = userEvent.setup()
-
     let deleteCalled = false
-
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-
     server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
-      }),
-
       http.delete(`${API_PATHS.BOOKMARKS}/:id`, () => {
         deleteCalled = true
-
         return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
       }),
     )
-
-    render(<App />, { wrapper })
+    const { user } = setup()
 
     // 選択
     const row = await screen.findByText(MOCK_BOOKMARK_1.title)
-
     await user.click(row)
 
     // 削除実行
     await user.click(screen.getByText(UI_MESSAGES.BUTTON_DELETE))
 
     expect(deleteCalled).toBe(true)
-
     // パネルが閉じていることを確認
     expect(
       screen.queryByDisplayValue(MOCK_BOOKMARK_1.title),
@@ -146,14 +131,7 @@ describe('App Integration', () => {
   })
 
   it('Escape キーを押した際に詳細パネルが閉じること', async () => {
-    const user = userEvent.setup()
-    server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
-      }),
-    )
-
-    render(<App />, { wrapper })
+    const { user } = setup()
 
     // 選択してパネルを表示
     const row = await screen.findByText(MOCK_BOOKMARK_1.title)
@@ -167,5 +145,35 @@ describe('App Integration', () => {
     expect(
       screen.queryByDisplayValue(MOCK_BOOKMARK_1.title),
     ).not.toBeInTheDocument()
+  })
+
+  it('行をダブルクリックした際に URL が新しいタブで開かれること', async () => {
+    const { user } = setup()
+
+    const row = await screen.findByText(MOCK_BOOKMARK_1.title)
+    await user.dblClick(row)
+
+    expect(window.open).toHaveBeenCalledWith(
+      MOCK_BOOKMARK_1.url,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  })
+
+  it('詳細パネルの「開く」ボタンを押した際に URL が新しいタブで開かれること', async () => {
+    const { user } = setup()
+
+    // 選択してパネルを表示
+    const row = await screen.findByText(MOCK_BOOKMARK_1.title)
+    await user.click(row)
+
+    // 「開く」ボタンをクリック
+    await user.click(screen.getByText(UI_MESSAGES.BUTTON_OPEN))
+
+    expect(window.open).toHaveBeenCalledWith(
+      MOCK_BOOKMARK_1.url,
+      '_blank',
+      'noopener,noreferrer',
+    )
   })
 })
