@@ -19,6 +19,25 @@ export const UI_MESSAGES = {
   BUTTON_CLOSE: '閉じる',
 } as const
 
+export const ARIA_ROLES = {
+  BUTTON: 'button',
+  LIST: 'list',
+  STATUS: 'status',
+  ALERT: 'alert',
+  ROWGROUP: 'rowgroup',
+  TABLE: 'table',
+} as const
+
+export const ARIA_ATTRIBUTES = {
+  SELECTED: 'aria-selected',
+  LABEL: 'aria-label',
+} as const
+
+export const HTML_ATTRIBUTES = {
+  TAB_INDEX: 'tabIndex',
+  ROLE: 'role',
+} as const
+
 export const API_PATHS = {
   BOOKMARKS: '/api/bookmarks',
 } as const

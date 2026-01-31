@@ -5,6 +5,7 @@ import { BookmarkDetail } from './components/BookmarkDetail'
 import { useBookmarks } from './hooks/useBookmarks'
 import { useBookmarkList } from './hooks/useBookmarkList'
 import { useBookmarkActions } from './hooks/useBookmarkActions'
+import { useBookmarkReorder } from './hooks/useBookmarkReorder'
 import type { BookmarkId } from '@shared/schemas/bookmark'
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
   const { selectedId, handleRowClick, setSelectedId } = useBookmarkList()
   const { updateBookmark, deleteBookmark, openBookmark, closeDetail } =
     useBookmarkActions(setSelectedId)
+  const { handleReorder } = useBookmarkReorder()
 
   const bookmarks = data?.bookmarks ?? []
   const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
@@ -62,6 +64,7 @@ function App() {
               onRowClick={handleRowClick}
               onDoubleClick={handleDoubleClick}
               onClose={handleClose}
+              onReorder={handleReorder}
             />
           </div>
         </div>
