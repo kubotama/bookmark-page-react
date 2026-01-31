@@ -10,7 +10,7 @@ import type { BookmarkId } from '@shared/schemas/bookmark'
 function App() {
   const { data, isLoading, error } = useBookmarks()
   const { selectedId, handleRowClick, setSelectedId } = useBookmarkList()
-  const { updateBookmark, deleteBookmark, openBookmark } =
+  const { updateBookmark, deleteBookmark, openBookmark, closeDetail } =
     useBookmarkActions(setSelectedId)
 
   const bookmarks = data?.bookmarks ?? []
@@ -46,8 +46,8 @@ function App() {
   }, [selectedBookmark, openBookmark])
 
   const handleClose = useCallback(() => {
-    setSelectedId(null)
-  }, [setSelectedId])
+    closeDetail()
+  }, [closeDetail])
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden">
@@ -61,6 +61,7 @@ function App() {
               selectedId={selectedId}
               onRowClick={handleRowClick}
               onDoubleClick={handleDoubleClick}
+              onClose={handleClose}
             />
           </div>
         </div>

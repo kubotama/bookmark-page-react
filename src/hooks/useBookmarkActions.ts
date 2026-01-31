@@ -45,9 +45,17 @@ export const useBookmarkActions = (
     }
   }, [])
 
+  /**
+   * 詳細パネルを閉じる（選択を解除する）
+   */
+  const closeDetail = useCallback(() => {
+    setSelectedId(null)
+  }, [setSelectedId])
+
   return {
     updateBookmark,
     deleteBookmark,
     openBookmark,
+    closeDetail,
   }
 }

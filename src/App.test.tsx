@@ -144,4 +144,28 @@ describe('App Integration', () => {
       screen.queryByDisplayValue(MOCK_BOOKMARK_1.title),
     ).not.toBeInTheDocument()
   })
+
+  it('Escape キーを押した際に詳細パネルが閉じること', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get(API_PATHS.BOOKMARKS, () => {
+        return HttpResponse.json({ bookmarks: [MOCK_BOOKMARK_1] })
+      }),
+    )
+
+    render(<App />, { wrapper })
+
+    // 選択してパネルを表示
+    const row = await screen.findByText(MOCK_BOOKMARK_1.title)
+    await user.click(row)
+    expect(screen.getByDisplayValue(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
+
+    // Escape キーで閉じる
+    await user.keyboard('{Escape}')
+
+    // パネルが消えたことを確認
+    expect(
+      screen.queryByDisplayValue(MOCK_BOOKMARK_1.title),
+    ).not.toBeInTheDocument()
+  })
 })

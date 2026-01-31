@@ -21,6 +21,7 @@ describe('BookmarkList', () => {
     selectedId: null,
     onRowClick: vi.fn(),
     onDoubleClick: vi.fn(),
+    onClose: vi.fn(),
   }
 
   type TestCase = {

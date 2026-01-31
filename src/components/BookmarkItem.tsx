@@ -7,10 +7,18 @@ interface BookmarkItemProps {
   isFocusable: boolean
   onRowClick: (id: BookmarkId) => void
   onDoubleClick: (id: BookmarkId, url: string) => void
+  onClose: () => void
 }
 
 export const BookmarkItem: React.FC<BookmarkItemProps> = memo(
-  ({ bookmark, isSelected, isFocusable, onRowClick, onDoubleClick }) => {
+  ({
+    bookmark,
+    isSelected,
+    isFocusable,
+    onRowClick,
+    onDoubleClick,
+    onClose,
+  }) => {
     const trClassName = `transition-colors cursor-pointer hover:bg-blue-200 bg-blue-100 text-sm text-left text-gray-900 select-none`
     const tdClassName = `px-2 py-1 whitespace-nowrap border-b border-blue-700 ${
       isSelected ? 'font-bold' : ''
@@ -29,6 +37,8 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = memo(
           } else if (e.key === ' ') {
             e.preventDefault()
             onRowClick(bookmark.id)
+          } else if (e.key === 'Escape') {
+            onClose()
           }
         }}
       >
