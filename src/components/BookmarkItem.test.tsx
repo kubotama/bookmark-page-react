@@ -11,6 +11,7 @@ describe('BookmarkItem', () => {
     isFocusable: false,
     onRowClick: vi.fn(),
     onDoubleClick: vi.fn(),
+    onClose: vi.fn(),
   }
 
   it('ブックマークのタイトルが表示されること', () => {
@@ -100,6 +101,21 @@ describe('BookmarkItem', () => {
 
       await user.type(screen.getByRole('row'), ' ')
       expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
+    })
+
+    it('Escape キーで onClose が呼ばれること', async () => {
+      const user = userEvent.setup()
+      const onClose = vi.fn()
+      render(
+        <table>
+          <tbody>
+            <BookmarkItem {...defaultProps} onClose={onClose} />
+          </tbody>
+        </table>,
+      )
+
+      await user.type(screen.getByRole('row'), '{escape}')
+      expect(onClose).toHaveBeenCalled()
     })
   })
 

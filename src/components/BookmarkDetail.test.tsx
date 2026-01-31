@@ -75,6 +75,19 @@ describe('BookmarkDetail', () => {
     })
   })
 
+  it('Escape キーで onClose が呼ばれること', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<BookmarkDetail {...defaultProps} onClose={onClose} />)
+
+    // 入力欄にフォーカスを当ててから Escape キーを押す
+    const titleInput = screen.getByPlaceholderText('Bookmark Title')
+    await user.click(titleInput)
+    await user.keyboard('{Escape}')
+    
+    expect(onClose).toHaveBeenCalled()
+  })
+
   it('別のブックマークが選択された時に入力内容が更新されること', () => {
     const { rerender } = render(<BookmarkDetail {...defaultProps} />)
 

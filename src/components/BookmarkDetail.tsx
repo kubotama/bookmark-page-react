@@ -36,7 +36,11 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
   }
 
   return (
-    <div className="bg-white p-2 w-full">
+    <div className="bg-white p-2 w-full" onKeyDown={(e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    }}>
       <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
         {/* 左側: テキストボックスを2段で配置 */}
         <div className="grid grid-rows-2 gap-4">

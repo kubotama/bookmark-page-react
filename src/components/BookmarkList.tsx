@@ -9,6 +9,7 @@ export type BookmarkProps = {
   selectedId: BookmarkId | null
   onRowClick: (id: BookmarkId) => void
   onDoubleClick: (id: BookmarkId, url: string) => void
+  onClose: () => void
 }
 
 export const BookmarkList = ({
@@ -18,6 +19,7 @@ export const BookmarkList = ({
   selectedId,
   onRowClick,
   onDoubleClick,
+  onClose,
 }: BookmarkProps) => {
   if (isLoading) {
     return (
@@ -67,6 +69,7 @@ export const BookmarkList = ({
               }
               onRowClick={onRowClick}
               onDoubleClick={onDoubleClick}
+              onClose={onClose}
             />
           ))}
         </tbody>
