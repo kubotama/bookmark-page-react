@@ -10,7 +10,7 @@
 ## 技術スタック (Tech Stack)
 
 - **Frontend:** Vite, React, TypeScript, Tailwind CSS, TanStack Query, @dnd-kit
-- **Backend:** Hono (@hono/node-server), better-sqlite3
+- **Backend:** Hono (@hono/node-server), better-sqlite3, Drizzle ORM
 - **Shared:** TypeScript (Zod schemas, domain types like BookmarkId, constants)
 - **Database:** SQLite
 
@@ -36,9 +36,9 @@
 
 ### データベース (Database)
 
-アプリケーション起動時にプロジェクトルートに `bookmarks.sqlite` が自動的に作成され、必要なテーブル（bookmarks, keywords, bookmark_keywords）も初期化されます。手動でデータベースファイルを作成する必要はありません。
+アプリケーション起動時にプロジェクトルートに `bookmarks.sqlite` が自動的に作成され、`server/db/migrations` にあるマイグレーションファイルに基づいてテーブル構造が初期化・更新されます。手動でデータベースファイルを作成したり、SQL を直接実行する必要はありません。
 
-初期化処理は `server/db.ts` の `initializeDatabase()` 関数に定義されており、サーバー起動時に明示的に呼び出されます。
+初期化とマイグレーションの実行は `server/db.ts` の `initializeDatabase()` 関数に定義されており、サーバー起動時に自動的に呼び出されます。
 
 ### インストール (Installation)
 

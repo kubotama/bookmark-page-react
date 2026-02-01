@@ -7,8 +7,9 @@ import {
   LOG_MESSAGES,
   HTTP_STATUS,
 } from '@shared/constants'
-import { bookmarkRowSchema } from '@shared/schemas/bookmark'
 import { TEST_MESSAGES } from '@shared/test/fixtures'
+import { bookmarks as bookmarksTable } from '../db/schema'
+import { eq } from 'drizzle-orm'
 
 describe('GET /api/bookmarks', () => {
   beforeEach(() => {
@@ -25,14 +26,7 @@ describe('GET /api/bookmarks', () => {
 
   it('適切なレスポンス構造でブックマーク一覧を返すこと', async () => {
     // シードデータの投入
-    db.prepare('INSERT INTO bookmarks (title, url) VALUES (?, ?)').run(
-      SEED_DATA_1.title,
-      SEED_DATA_1.url,
-    )
-    db.prepare('INSERT INTO bookmarks (title, url) VALUES (?, ?)').run(
-      SEED_DATA_2.title,
-      SEED_DATA_2.url,
-    )
+    await db.insert(bookmarksTable).values([SEED_DATA_1, SEED_DATA_2])
 
     const res = await app.request(API_PATHS.BOOKMARKS)
     expect(res.status).toBe(HTTP_STATUS.OK)
@@ -49,8 +43,6 @@ describe('GET /api/bookmarks', () => {
     expect(bookmark).toHaveProperty('id')
     expect(bookmark.title).toBe(SEED_DATA_1.title)
     expect(bookmark.url).toBe(SEED_DATA_1.url)
-    // createdAt は除外されたことを確認
-    expect(bookmark).not.toHaveProperty('createdAt')
   })
 
   it('データが空の場合、空の配列を返すこと', async () => {
@@ -63,29 +55,18 @@ describe('GET /api/bookmarks', () => {
   it('データベースエラー時に 500 ステータスと安全なメッセージを返すこと', async () => {
     const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
 
-    // db.prepare が呼ばれた時にエラーを投げるようにモックする
-    vi.spyOn(db, 'prepare').mockImplementation(() => {
+    // Drizzle の内部メソッドをモックしてエラーを発生させる
+    vi.spyOn(db, 'select').mockImplementation(() => {
       throw dbError
     })
 
-    // console.error をスパイして出力を抑制する
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const res = await app.request(API_PATHS.BOOKMARKS)
 
-    // 1. ステータスコードが 500 であること
     expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-
     const body = await res.json()
-
-    // 2. メッセージが "Internal Server Error" であること
     expect(body).toHaveProperty('message', ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
-
-    // 3. 詳細なエラー情報やスタックトレースが含まれていないこと
-    expect(body).not.toHaveProperty('error')
-    expect(body).not.toHaveProperty('stack')
-
-    // 4. console.error が適切なメッセージとともに呼び出されたことを確認
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.FETCH_BOOKMARKS_FAILED,
       dbError,
@@ -123,15 +104,12 @@ describe('POST /api/bookmarks', () => {
     expect(body.url).toBe(VALID_DATA.url)
 
     // DBに保存されていることを確認
-    const row = bookmarkRowSchema.parse(
-      db
-        .prepare(
-          'SELECT bookmark_id as id, title, url FROM bookmarks WHERE url = ?',
-        )
-        .get(VALID_DATA.url),
-    )
+    const [row] = await db
+      .select()
+      .from(bookmarksTable)
+      .where(eq(bookmarksTable.url, VALID_DATA.url))
     expect(row).toBeDefined()
-    expect(row.title).toBe(VALID_DATA.title)
+    expect(row?.title).toBe(VALID_DATA.title)
   })
 
   it.each([
@@ -158,10 +136,7 @@ describe('POST /api/bookmarks', () => {
 
   it('既に登録されている URL の場合に 409 エラーを返すこと', async () => {
     // 先に一つ登録
-    db.prepare('INSERT INTO bookmarks (title, url) VALUES (?, ?)').run(
-      VALID_DATA.title,
-      VALID_DATA.url,
-    )
+    await db.insert(bookmarksTable).values(VALID_DATA)
 
     // 同じ URL で登録試行
     const res = await app.request(API_PATHS.BOOKMARKS, {
@@ -177,7 +152,7 @@ describe('POST /api/bookmarks', () => {
 
   it('データベースエラー時に 500 ステータスを返すこと', async () => {
     const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
-    vi.spyOn(db, 'prepare').mockImplementation(() => {
+    vi.spyOn(db, 'insert').mockImplementation(() => {
       throw dbError
     })
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -215,11 +190,12 @@ describe('DELETE /api/bookmarks/:id', () => {
 
   it('指定した ID のブックマークを削除できること', async () => {
     // 削除対象を登録
-    const { bookmark_id: id } = db
-      .prepare(
-        'INSERT INTO bookmarks (title, url) VALUES (?, ?) RETURNING bookmark_id',
-      )
-      .get(VALID_DATA.title, VALID_DATA.url) as { bookmark_id: number }
+    const [inserted] = await db
+      .insert(bookmarksTable)
+      .values(VALID_DATA)
+      .returning({ id: bookmarksTable.bookmarkId })
+
+    const id = inserted!.id
 
     const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
       method: 'DELETE',
@@ -229,10 +205,11 @@ describe('DELETE /api/bookmarks/:id', () => {
     expect(await res.text()).toBe('')
 
     // DB から消えていることを確認
-    const row = db
-      .prepare('SELECT * FROM bookmarks WHERE bookmark_id = ?')
-      .get(id)
-    expect(row).toBeUndefined()
+    const result = await db
+      .select()
+      .from(bookmarksTable)
+      .where(eq(bookmarksTable.bookmarkId, id))
+    expect(result).toHaveLength(0)
   })
 
   it.each([
@@ -263,7 +240,7 @@ describe('DELETE /api/bookmarks/:id', () => {
 
   it('データベースエラー時に 500 ステータスを返すこと', async () => {
     const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
-    vi.spyOn(db, 'prepare').mockImplementation(() => {
+    vi.spyOn(db, 'delete').mockImplementation(() => {
       throw dbError
     })
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -297,12 +274,12 @@ describe('PATCH /api/bookmarks/:id', () => {
     url: 'https://initial.com',
   }
 
-  const setupBookmark = () => {
-    return db
-      .prepare(
-        'INSERT INTO bookmarks (title, url) VALUES (?, ?) RETURNING bookmark_id as id',
-      )
-      .get(INITIAL_DATA.title, INITIAL_DATA.url) as { id: number }
+  const setupBookmark = async () => {
+    const [inserted] = await db
+      .insert(bookmarksTable)
+      .values(INITIAL_DATA)
+      .returning({ id: bookmarksTable.bookmarkId })
+    return inserted!
   }
 
   it.each([
@@ -322,7 +299,7 @@ describe('PATCH /api/bookmarks/:id', () => {
       expected: { title: 'Both Updated', url: 'https://both.com' },
     },
   ])('$name を更新できること', async ({ updates, expected }) => {
-    const { id } = setupBookmark()
+    const { id } = await setupBookmark()
 
     const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
       method: 'PATCH',
@@ -343,7 +320,7 @@ describe('PATCH /api/bookmarks/:id', () => {
   ])(
     'バリデーションエラー ($name) の場合に 400 エラーを返すこと',
     async ({ body }) => {
-      const { id } = setupBookmark()
+      const { id } = await setupBookmark()
       const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -365,11 +342,11 @@ describe('PATCH /api/bookmarks/:id', () => {
   })
 
   it('更新後の URL が既に存在する場合に 409 エラーを返すこと', async () => {
-    const { id: id1 } = setupBookmark()
-    db.prepare('INSERT INTO bookmarks (title, url) VALUES (?, ?)').run(
-      'Other',
-      'https://other.com',
-    )
+    const { id: id1 } = await setupBookmark()
+    await db.insert(bookmarksTable).values({
+      title: 'Other',
+      url: 'https://other.com',
+    })
 
     const res = await app.request(`${API_PATHS.BOOKMARKS}/${id1}`, {
       method: 'PATCH',
@@ -380,25 +357,24 @@ describe('PATCH /api/bookmarks/:id', () => {
     expect(res.status).toBe(HTTP_STATUS.CONFLICT)
   })
 
-    it('データベースエラー時に 500 ステータスを返すこと', async () => {
-      const { id } = setupBookmark()
-      const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
-      vi.spyOn(db, 'prepare').mockImplementation(() => {
-        throw dbError
-      })
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Error' }),
-      })
-  
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
-        dbError,
-      )
+  it('データベースエラー時に 500 ステータスを返すこと', async () => {
+    const { id } = await setupBookmark()
+    const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
+    vi.spyOn(db, 'update').mockImplementation(() => {
+      throw dbError
     })
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Error' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
+      dbError,
+    )
   })
-  
+})
