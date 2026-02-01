@@ -1,7 +1,10 @@
 import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import path from 'path'
 import { z } from 'zod'
 import { LOG_MESSAGES } from '@shared/constants'
+import * as schema from './db/schema'
 
 const isTestEnvironment = () => process.env.NODE_ENV === 'test'
 
@@ -13,46 +16,23 @@ const getDbPath = () => {
     : path.resolve(process.cwd(), 'bookmarks.sqlite')
 }
 
-export const db = new Database(getDbPath())
-
-// スキーマ定義
-export const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS bookmarks (
-    bookmark_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS keywords (
-    keyword_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    keyword_name TEXT NOT NULL UNIQUE
-  );
-  CREATE TABLE IF NOT EXISTS bookmark_keywords (
-    bookmark_keyword_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bookmark_id INTEGER NOT NULL,
-    keyword_id INTEGER NOT NULL,
-    FOREIGN KEY (bookmark_id) REFERENCES bookmarks(bookmark_id) ON DELETE CASCADE,
-    FOREIGN KEY (keyword_id) REFERENCES keywords(keyword_id) ON DELETE CASCADE,
-    UNIQUE (bookmark_id, keyword_id)
-  );
-  CREATE INDEX IF NOT EXISTS idx_bookmark_keywords_keyword_id ON bookmark_keywords(keyword_id);
-`
+export const sqlite = new Database(getDbPath())
+export const db = drizzle(sqlite, { schema })
 
 // データベースの初期化と設定
 export const initializeDatabase = () => {
   const isTest = isTestEnvironment()
   try {
     // 1. 接続ごとの設定（外部キー有効化）
-    db.pragma('foreign_keys = ON')
+    sqlite.pragma('foreign_keys = ON')
 
     // 2. DBファイル全体の設定（WALモード: パフォーマンス向上）
     if (!isTest) {
-      db.pragma('journal_mode = WAL')
+      sqlite.pragma('journal_mode = WAL')
     }
 
-    // 3. テーブル・インデックスの作成
-    db.transaction(() => {
-      db.exec(SCHEMA)
-    })()
+    // 3. マイグレーションの実行
+    migrate(db, { migrationsFolder: path.resolve('server/db/migrations') })
   } catch (error) {
     console.error(LOG_MESSAGES.DB_INIT_FAILED, error)
     throw error
@@ -70,28 +50,28 @@ export const resetDatabase = () => {
   const tables = z
     .array(tableSchema)
     .parse(
-      db
+      sqlite
         .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__drizzle_migrations'",
         )
         .all(),
     )
 
   // 外部キー制約を一時的に無効化（トランザクションの外で実行する必要がある）
-  db.pragma('foreign_keys = OFF')
+  sqlite.pragma('foreign_keys = OFF')
 
   try {
-    db.transaction(() => {
+    sqlite.transaction(() => {
       for (const { name } of tables) {
         // テーブル名はダブルクォーテーションでクオートして保護
-        db.prepare(`DELETE FROM "${name}"`).run()
+        sqlite.prepare(`DELETE FROM "${name}"`).run()
         // IDリセット（sqlite_sequence テーブルが存在する場合のみ有効）
-        db.prepare('DELETE FROM sqlite_sequence WHERE name = ?').run(name)
+        sqlite.prepare('DELETE FROM sqlite_sequence WHERE name = ?').run(name)
       }
     })()
   } finally {
     // 確実に外部キー制約を元に戻す
-    db.pragma('foreign_keys = ON')
+    sqlite.pragma('foreign_keys = ON')
   }
 }
 
@@ -99,8 +79,8 @@ export const resetDatabase = () => {
 // アプリケーション終了時にデータベース接続を閉じる。
 // これらの終了処理は通常のテスト実行プロセス中には実行されないため、カバレッジ計測から除外する。
 const shutdown = () => {
-  if (db.open) {
-    db.close()
+  if (sqlite.open) {
+    sqlite.close()
   }
   process.exit(0)
 }
@@ -108,8 +88,8 @@ const shutdown = () => {
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
 process.on('exit', () => {
-  if (db.open) {
-    db.close()
+  if (sqlite.open) {
+    sqlite.close()
   }
 })
 /* v8 ignore stop */
