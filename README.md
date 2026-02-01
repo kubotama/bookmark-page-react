@@ -7,7 +7,7 @@
 
 ## 技術スタック (Tech Stack)
 
-- **Frontend:** Vite, React, TypeScript, Tailwind CSS, TanStack Query
+- **Frontend:** Vite, React, TypeScript, Tailwind CSS, TanStack Query, @dnd-kit
 - **Backend:** Hono (@hono/node-server), better-sqlite3
 - **Shared:** TypeScript (Zod schemas, domain types like BookmarkId, constants)
 - **Database:** SQLite
@@ -21,8 +21,9 @@
 
 ## 機能 (Features)
 
-- **ブックマーク一覧表示**: データベースから取得したブックマークをテーブル形式で一覧表示 (タイトルのみ表示)。
-- **詳細表示・編集パネル**: 行を選択することで画面下部に詳細パネルが表示され、タイトルの編集、URL の修正、削除、およびリンクの展開が可能です (v0.6.0)。
+- **ブックマーク一覧表示**: データベースから取得したブックマークを一覧表示。
+- **ドラッグ＆ドロップによる並び替え**: 各行の左端にあるハンドルをドラッグすることで、直感的にブックマークの順序を入れ替えることが可能です (v0.7.0)。
+- **詳細表示・編集パネル**: 行を選択することで画面下部に詳細パネルが表示され、タイトルの編集、URL の修正、削除、およびリンクの展開が可能です。
 - **リンクの管理**: API 経由でのブックマーク追加、更新、削除に対応しています。
 
 ## 環境構築 (Getting Started)
