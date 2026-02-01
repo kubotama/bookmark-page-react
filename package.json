@@ -1,13 +1,16 @@
 {
   "name": "bookmark-page",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.1",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "client:dev": "vite",
     "server:dev": "tsx watch server/index.ts",
     "build": "tsc && vite build",
+    "type-check": "npm run type-check:client && npm run type-check:server",
+    "type-check:client": "tsc -p tsconfig.app.json --noEmit",
+    "type-check:server": "tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
