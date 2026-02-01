@@ -1,5 +1,7 @@
 # Bookmark Page
 
+![CI](https://github.com/kubotama/bookmark-page/actions/workflows/ci.yml/badge.svg)
+
 ## 概要 (Overview)
 
 `kubotama/linkpage` (Next.js) の機能を Vite (React) + Hono に移植・刷新するプロジェクトです。

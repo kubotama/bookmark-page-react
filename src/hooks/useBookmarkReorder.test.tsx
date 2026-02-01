@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { useBookmarkReorder } from './useBookmarkReorder'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { bookmarkKeys } from '../lib/queryKeys'
 import type { BookmarksResponse } from '@shared/schemas/bookmark'
@@ -53,7 +54,10 @@ describe('useBookmarkReorder', () => {
 
     act(() => {
       // 不正な ID
-      result.current.handleReorder('non-existent' as any, MOCK_BOOKMARK_2.id)
+      result.current.handleReorder(
+        BookmarkIdSchema.parse('non-existent'),
+        MOCK_BOOKMARK_2.id,
+      )
     })
 
     const data = queryClient.getQueryData<BookmarksResponse>(
