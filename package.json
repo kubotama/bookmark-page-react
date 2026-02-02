@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.8.0",
   "type": "module",
+  "overrides": {
+    "esbuild": "0.27.2"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "client:dev": "vite",
