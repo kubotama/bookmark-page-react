@@ -6,10 +6,13 @@ import type { BookmarkId, UpdateBookmarkRequest } from '@shared/schemas/bookmark
 
 const fetchBookmarks = async () => {
   const res = await client.api.bookmarks.$get()
-  if (!res.ok) {
-    throw new Error(UI_MESSAGES.FETCH_FAILED)
+  const result = await res.json()
+  
+  if ('success' in result && result.success) {
+    return result.data
   }
-  return await res.json()
+  
+  throw new Error(UI_MESSAGES.FETCH_FAILED)
 }
 
 export const useBookmarks = () => {
@@ -34,10 +37,13 @@ export const useUpdateBookmark = () => {
         param: { id },
         json: updates,
       })
-      if (!res.ok) {
-        throw new Error(UI_MESSAGES.UPDATE_FAILED)
+      const result = await res.json()
+      
+      if ('success' in result && result.success) {
+        return result.data
       }
-      return await res.json()
+      
+      throw new Error(UI_MESSAGES.UPDATE_FAILED)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
@@ -53,11 +59,17 @@ export const useDeleteBookmark = () => {
       const res = await client.api.bookmarks[':id'].$delete({
         param: { id },
       })
-      if (!res.ok) {
-        throw new Error(UI_MESSAGES.DELETE_FAILED)
+      
+      if (res.status === 204) {
+        return
       }
-      // 204 No Content の場合は res.json() を呼ばない
-      return
+      
+      const result = await res.json()
+      if ('success' in result && !result.success) {
+        throw new Error(result.error.message || UI_MESSAGES.DELETE_FAILED)
+      }
+      
+      throw new Error(UI_MESSAGES.DELETE_FAILED)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })

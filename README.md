@@ -104,6 +104,11 @@ npm run test:coverage
 
 ## API 仕様 (API Specifications)
 
+全ての API レスポンスは、以下の共通形式で返却されます。
+
+- **成功時**: `{ "success": true, "data": T }`
+- **失敗時**: `{ "success": false, "error": { "message": string, "code": string } }`
+
 ### GET /api/bookmarks
 
 ブックマークの一覧を取得します。
@@ -112,13 +117,16 @@ npm run test:coverage
 
 ```json
 {
-  "bookmarks": [
-    {
-      "id": "1",
-      "title": "Example",
-      "url": "https://example.com"
-    }
-  ]
+  "success": true,
+  "data": {
+    "bookmarks": [
+      {
+        "id": "1",
+        "title": "Example",
+        "url": "https://example.com"
+      }
+    ]
+  }
 }
 ```
 
@@ -139,9 +147,12 @@ npm run test:coverage
 
 ```json
 {
-  "id": "2",
-  "title": "GitHub",
-  "url": "https://github.com"
+  "success": true,
+  "data": {
+    "id": "2",
+    "title": "GitHub",
+    "url": "https://github.com"
+  }
 }
 ```
 
@@ -157,12 +168,12 @@ npm run test:coverage
 
 - **204 No Content**: 削除成功
 - **400 Bad Request**: ID の形式が不正な場合
-- **404 Not Found**: 指定された ID が存在しない
+- **404 Not Found**: 指定された ID が存在しない、あるいは共通エラー形式
 - **500 Internal Server Error**: サーバーエラー
 
 ### PATCH /api/bookmarks/:id
 
-指定された ID のブックマーク情報を更新します。タイトルまたは URL の少なくとも一方は必須です。
+指定された ID のブックマーク情報を更新します。
 
 **パスパラメータ:**
 
@@ -179,7 +190,7 @@ npm run test:coverage
 
 **レスポンス:**
 
-- **200 OK**: 更新成功。更新後のオブジェクトを返却
+- **200 OK**: 更新成功。更新後のオブジェクトを \`data\` に含めて返却
 - **400 Bad Request**: リクエスト形式または ID が不正な場合
 - **404 Not Found**: 指定された ID が存在しない
 - **409 Conflict**: 更新後の URL が既に登録されている場合

@@ -2,6 +2,7 @@ export const ERROR_MESSAGES = {
   INTERNAL_SERVER_ERROR: 'Internal Server Error',
   DUPLICATE_URL: 'この URL は既に登録されています',
   BOOKMARK_NOT_FOUND: '指定されたブックマークが見つかりませんでした',
+  NOT_FOUND: 'Resource not found',
 } as const
 
 export const UI_MESSAGES = {
