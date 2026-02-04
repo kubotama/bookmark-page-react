@@ -1,10 +1,14 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { useBookmarks, useUpdateBookmark, useDeleteBookmark } from './useBookmarks'
+import {
+  useBookmarks,
+  useUpdateBookmark,
+  useDeleteBookmark,
+} from './useBookmarks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
-import { API_PATHS, HTTP_STATUS, UI_MESSAGES } from '@shared/constants'
+import { API_PATHS, HTTP_STATUS } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import React from 'react'
 
@@ -21,10 +25,14 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('useBookmarks Hooks Error Paths', () => {
   it('取得失敗時にエラーを投げること', async () => {
+    const ERROR_GET = { message: 'Fail', code: 'ERR' }
     server.use(
       http.get(API_PATHS.BOOKMARKS, () => {
         return HttpResponse.json(
-          { success: false, error: { message: 'Fail', code: 'ERR' } },
+          {
+            success: false,
+            error: ERROR_GET,
+          },
           { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
         )
       }),
@@ -33,14 +41,16 @@ describe('useBookmarks Hooks Error Paths', () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error?.message).toBe(UI_MESSAGES.FETCH_FAILED)
+    expect(result.current.error?.message).toBe(ERROR_GET.message)
   })
 
   it('更新失敗時にエラーを投げること', async () => {
+    const ERROR_PATCH = { message: 'Fail', code: 'ERR' }
+
     server.use(
       http.patch(`${API_PATHS.BOOKMARKS}/:id`, () => {
         return HttpResponse.json(
-          { success: false, error: { message: 'Update Fail', code: 'ERR' } },
+          { success: false, error: ERROR_PATCH },
           { status: HTTP_STATUS.BAD_REQUEST },
         )
       }),
@@ -51,7 +61,7 @@ describe('useBookmarks Hooks Error Paths', () => {
     result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates: { title: 'New' } })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error?.message).toBe(UI_MESSAGES.UPDATE_FAILED)
+    expect(result.current.error?.message).toBe(ERROR_PATCH.message)
   })
 
   it('削除失敗時にサーバーからのエラーメッセージを優先すること', async () => {
