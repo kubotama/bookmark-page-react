@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   bookmarkSchema,
   createBookmarkSchema,
+  reorderBookmarksSchema,
   updateBookmarkSchema,
 } from './bookmark'
 import { MOCK_BOOKMARK_1, INVALID_URLS } from '../test/fixtures'
@@ -90,6 +91,35 @@ describe('updateBookmarkSchema', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(expected)
+    }
+  })
+})
+
+describe('reorderBookmarksSchema', () => {
+  it('正常な ID リストを受け入れること', () => {
+    const valid = { ids: ['1', '2', '3'] }
+    expect(reorderBookmarksSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('重複した ID が含まれる場合にエラーを返すこと', () => {
+    const invalid = { ids: ['1', '2', '1'] }
+    const result = reorderBookmarksSchema.safeParse(invalid)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        VALIDATION_MESSAGES.REORDER_DUPLICATE_IDS,
+      )
+    }
+  })
+
+  it('上限を超える ID リストを拒否すること', () => {
+    const manyIds = Array.from({ length: 1001 }, (_, i) => String(i + 1))
+    const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        VALIDATION_MESSAGES.REORDER_MAX_ITEMS,
+      )
     }
   })
 })

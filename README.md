@@ -190,8 +190,26 @@ npm run test:coverage
 
 **レスポンス:**
 
-- **200 OK**: 更新成功。更新後のオブジェクトを \`data\` に含めて返却
+- **200 OK**: 更新成功。更新後のオブジェクトを `data` に含めて返却
 - **400 Bad Request**: リクエスト形式または ID が不正な場合
 - **404 Not Found**: 指定された ID が存在しない
 - **409 Conflict**: 更新後の URL が既に登録されている場合
+- **500 Internal Server Error**: サーバーエラー
+
+### PUT /api/bookmarks/reorder
+
+ブックマークの表示順序を一括で更新します。
+
+**リクエストボディ:**
+
+```json
+{
+  "ids": ["1", "3", "2"]
+}
+```
+
+**レスポンス:**
+
+- **200 OK**: 更新成功
+- **400 Bad Request**: ID リストの形式が不正な場合
 - **500 Internal Server Error**: サーバーエラー

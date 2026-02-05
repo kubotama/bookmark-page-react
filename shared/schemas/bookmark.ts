@@ -2,7 +2,10 @@ import { z } from 'zod'
 import { isHttpUrl } from '../utils/url'
 import { VALIDATION_MESSAGES } from '../constants'
 
-export const BookmarkIdSchema = z.string().brand<'BookmarkId'>()
+export const BookmarkIdSchema = z
+  .string()
+  .regex(/^[1-9]\d*$/)
+  .brand<'BookmarkId'>()
 export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 
 export const bookmarkSchema = z.object({
@@ -14,6 +17,7 @@ export const bookmarkSchema = z.object({
     .refine(isHttpUrl, {
       message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     }),
+  sortOrder: z.number(),
 })
 
 export type Bookmark = z.infer<typeof bookmarkSchema>
@@ -46,6 +50,17 @@ export const updateBookmarkSchema = z
   })
 
 export type UpdateBookmarkRequest = z.infer<typeof updateBookmarkSchema>
+
+export const reorderBookmarksSchema = z.object({
+  ids: z
+    .array(BookmarkIdSchema)
+    .max(1000, VALIDATION_MESSAGES.REORDER_MAX_ITEMS)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: VALIDATION_MESSAGES.REORDER_DUPLICATE_IDS,
+    }),
+})
+
+export type ReorderBookmarksRequest = z.infer<typeof reorderBookmarksSchema>
 
 export const bookmarksResponseSchema = z.object({
   bookmarks: z.array(bookmarkSchema),

@@ -55,7 +55,7 @@ describe('useBookmarkReorder', () => {
     act(() => {
       // 不正な ID
       result.current.handleReorder(
-        BookmarkIdSchema.parse('non-existent'),
+        BookmarkIdSchema.parse('999'),
         MOCK_BOOKMARK_2.id,
       )
     })

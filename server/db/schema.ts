@@ -4,6 +4,7 @@ export const bookmarks = sqliteTable('bookmarks', {
   bookmarkId: integer('bookmark_id').primaryKey({ autoIncrement: true }),
   url: text('url').notNull().unique(),
   title: text('title').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
 });
 
 export const keywords = sqliteTable('keywords', {

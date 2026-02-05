@@ -67,5 +67,8 @@ export const VALIDATION_MESSAGES = {
   TITLE_MIN_LENGTH: 'タイトルは1文字以上である必要があります',
   URL_INVALID_PROTOCOL: 'URL は http:// または https:// で始まる必要があります',
   URL_INVALID_FORMAT: '有効な URL 形式である必要があります',
-  UPDATE_MIN_FIELDS: 'タイトルまたは URL の少なくとも一方は指定する必要があります',
+  UPDATE_MIN_FIELDS:
+    'タイトルまたは URL の少なくとも一方は指定する必要があります',
+  REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
+  REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
 } as const

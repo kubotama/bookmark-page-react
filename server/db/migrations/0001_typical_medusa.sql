@@ -1,0 +1,1 @@
+ALTER TABLE `bookmarks` ADD `sort_order` integer DEFAULT 0 NOT NULL;
