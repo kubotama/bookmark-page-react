@@ -1,15 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import app from '../app'
-import { db, initializeDatabase, resetDatabase } from '../db'
+import { eq } from 'drizzle-orm'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
-  ERROR_MESSAGES,
   API_PATHS,
-  LOG_MESSAGES,
+  ERROR_MESSAGES,
   HTTP_STATUS,
+  LOG_MESSAGES,
 } from '@shared/constants'
 import { TEST_MESSAGES } from '@shared/test/fixtures'
+
+import app from '../app'
+import { db, initializeDatabase, resetDatabase } from '../db'
 import { bookmarks as bookmarksTable } from '../db/schema'
-import { eq } from 'drizzle-orm'
+import { API_ERROR_CODES } from '../utils/error'
 
 describe('GET /api/bookmarks', () => {
   beforeEach(() => {
@@ -33,13 +36,14 @@ describe('GET /api/bookmarks', () => {
 
     const body = await res.json()
 
-    // レスポンスが bookmarks キーを持つオブジェクトであることを確認
-    expect(body).toHaveProperty('bookmarks')
-    expect(Array.isArray(body.bookmarks)).toBe(true)
-    expect(body.bookmarks).toHaveLength(2)
+    // 共通レスポンス構造の検証
+    expect(body.success).toBe(true)
+    expect(body.data).toHaveProperty('bookmarks')
+    expect(Array.isArray(body.data.bookmarks)).toBe(true)
+    expect(body.data.bookmarks).toHaveLength(2)
 
     // 各ブックマークが期待されるプロパティを持っていることを確認
-    const bookmark = body.bookmarks[0]
+    const bookmark = body.data.bookmarks[0]
     expect(bookmark).toHaveProperty('id')
     expect(bookmark.title).toBe(SEED_DATA_1.title)
     expect(bookmark.url).toBe(SEED_DATA_1.url)
@@ -49,13 +53,13 @@ describe('GET /api/bookmarks', () => {
     const res = await app.request(API_PATHS.BOOKMARKS)
     expect(res.status).toBe(HTTP_STATUS.OK)
     const body = await res.json()
-    expect(body.bookmarks).toEqual([])
+    expect(body.success).toBe(true)
+    expect(body.data.bookmarks).toEqual([])
   })
 
-  it('データベースエラー時に 500 ステータスと安全なメッセージを返すこと', async () => {
+  it('データベースエラー時に共通エラー形式を返すこと', async () => {
     const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
 
-    // Drizzle の内部メソッドをモックしてエラーを発生させる
     vi.spyOn(db, 'select').mockImplementation(() => {
       throw dbError
     })
@@ -66,7 +70,9 @@ describe('GET /api/bookmarks', () => {
 
     expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
     const body = await res.json()
-    expect(body).toHaveProperty('message', ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+    expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.FETCH_BOOKMARKS_FAILED,
       dbError,
@@ -99,9 +105,10 @@ describe('POST /api/bookmarks', () => {
     expect(res.status).toBe(HTTP_STATUS.CREATED)
     const body = await res.json()
 
-    expect(body).toHaveProperty('id')
-    expect(body.title).toBe(VALID_DATA.title)
-    expect(body.url).toBe(VALID_DATA.url)
+    expect(body.success).toBe(true)
+    expect(body.data).toHaveProperty('id')
+    expect(body.data.title).toBe(VALID_DATA.title)
+    expect(body.data.url).toBe(VALID_DATA.url)
 
     // DBに保存されていることを確認
     const [row] = await db
@@ -134,11 +141,9 @@ describe('POST /api/bookmarks', () => {
     },
   )
 
-  it('既に登録されている URL の場合に 409 エラーを返すこと', async () => {
-    // 先に一つ登録
+  it('既に登録されている URL の場合に共通エラー形式を返すこと', async () => {
     await db.insert(bookmarksTable).values(VALID_DATA)
 
-    // 同じ URL で登録試行
     const res = await app.request(API_PATHS.BOOKMARKS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -147,7 +152,9 @@ describe('POST /api/bookmarks', () => {
 
     expect(res.status).toBe(HTTP_STATUS.CONFLICT)
     const body = await res.json()
-    expect(body.message).toBe(ERROR_MESSAGES.DUPLICATE_URL)
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_URL)
+    expect(body.error.code).toBe(API_ERROR_CODES.CONFLICT)
   })
 
   it('データベースエラー時に 500 ステータスを返すこと', async () => {
@@ -165,7 +172,7 @@ describe('POST /api/bookmarks', () => {
 
     expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
     const body = await res.json()
-    expect(body.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+    expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
       dbError,
@@ -217,28 +224,27 @@ describe('DELETE /api/bookmarks/:id', () => {
     { id: '0', name: 'ゼロ' },
     { id: '-1', name: '負の数' },
     { id: '1.5', name: '小数' },
-  ])(
-    '不正な ID 形式 ($name) の場合に 400 エラーを返すこと',
-    async ({ id }) => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
-        method: 'DELETE',
-      })
+  ])('不正な ID 形式 ($name) の場合に 400 エラーを返すこと', async ({ id }) => {
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
+      method: 'DELETE',
+    })
 
-      expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-    },
-  )
+    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+  })
 
-  it('存在しない ID を指定した場合に 404 エラーを返すこと', async () => {
+  it('存在しない ID を指定した場合に共通エラー形式を返すこと', async () => {
     const res = await app.request(`${API_PATHS.BOOKMARKS}/999`, {
       method: 'DELETE',
     })
 
     expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
     const body = await res.json()
-    expect(body.message).toBe(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+    expect(body.error.code).toBe(API_ERROR_CODES.NOT_FOUND)
   })
 
-  it('データベースエラー時に 500 ステータスを返すこと', async () => {
+  it('データベースエラー時に共通エラー形式を返すこと', async () => {
     const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
     vi.spyOn(db, 'delete').mockImplementation(() => {
       throw dbError
@@ -251,11 +257,14 @@ describe('DELETE /api/bookmarks/:id', () => {
 
     expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
     const body = await res.json()
-    expect(body.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+    expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
       dbError,
     )
+    consoleSpy.mockRestore()
   })
 })
 
@@ -309,8 +318,9 @@ describe('PATCH /api/bookmarks/:id', () => {
 
     expect(res.status).toBe(HTTP_STATUS.OK)
     const body = await res.json()
-    expect(body.title).toBe(expected.title)
-    expect(body.url).toBe(expected.url)
+    expect(body.success).toBe(true)
+    expect(body.data.title).toBe(expected.title)
+    expect(body.data.url).toBe(expected.url)
   })
 
   it.each([
@@ -357,7 +367,7 @@ describe('PATCH /api/bookmarks/:id', () => {
     expect(res.status).toBe(HTTP_STATUS.CONFLICT)
   })
 
-  it('データベースエラー時に 500 ステータスを返すこと', async () => {
+  it('データベースエラー時に共通エラー形式を返すこと', async () => {
     const { id } = await setupBookmark()
     const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
     vi.spyOn(db, 'update').mockImplementation(() => {
@@ -372,9 +382,14 @@ describe('PATCH /api/bookmarks/:id', () => {
     })
 
     expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    const body = await res.json()
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+    expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
       dbError,
     )
+    consoleSpy.mockRestore()
   })
 })

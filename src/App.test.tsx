@@ -42,7 +42,10 @@ describe('App Integration', () => {
     const user = userEvent.setup()
     server.use(
       http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ bookmarks })
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks },
+        })
       }),
     )
     render(<App />, { wrapper })
@@ -58,9 +61,16 @@ describe('App Integration', () => {
   it('APIエラー時にエラーメッセージが表示されること', async () => {
     server.use(
       http.get(API_PATHS.BOOKMARKS, () => {
-        return new HttpResponse(null, {
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        })
+        return HttpResponse.json(
+          {
+            success: false,
+            error: {
+              message: 'Server Error',
+              code: 'INTERNAL_SERVER_ERROR',
+            },
+          },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+        )
       }),
     )
     render(<App />, { wrapper })
@@ -86,7 +96,10 @@ describe('App Integration', () => {
       http.patch(`${API_PATHS.BOOKMARKS}/:id`, async ({ request }) => {
         patchCalled = true
         const body = (await request.json()) as UpdateBookmarkRequest
-        return HttpResponse.json({ ...MOCK_BOOKMARK_1, ...body })
+        return HttpResponse.json({
+          success: true,
+          data: { ...MOCK_BOOKMARK_1, ...body },
+        })
       }),
     )
     const { user } = setup()
