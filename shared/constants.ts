@@ -13,6 +13,7 @@ export const UI_MESSAGES = {
   FETCH_FAILED: 'ブックマークの取得に失敗しました',
   UPDATE_FAILED: 'ブックマークの更新に失敗しました',
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
+  REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
   BUTTON_UPDATE: '更新',
   BUTTON_OPEN: '開く',

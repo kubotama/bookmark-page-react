@@ -6,7 +6,7 @@ import { useBookmarks } from './hooks/useBookmarks'
 import { useBookmarkList } from './hooks/useBookmarkList'
 import { useBookmarkActions } from './hooks/useBookmarkActions'
 import { useBookmarkReorder } from './hooks/useBookmarkReorder'
-import type { BookmarkId } from '@shared/schemas/bookmark'
+import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
 
 function App() {
   const { data, isLoading, error } = useBookmarks()
@@ -16,7 +16,7 @@ function App() {
   const { handleReorder } = useBookmarkReorder()
 
   const bookmarks = data?.bookmarks ?? []
-  const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
+  const selectedBookmark = bookmarks.find((b: Bookmark) => b.id === selectedId)
 
   const handleDoubleClick = useCallback(
     (id: BookmarkId, url: string) => {
