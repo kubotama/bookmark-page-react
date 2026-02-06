@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
+import { eq, asc, sql, inArray } from 'drizzle-orm'
 
 import { zValidator } from '@hono/zod-validator'
 import { ERROR_MESSAGES, LOG_MESSAGES, HTTP_STATUS } from '@shared/constants'
@@ -9,6 +9,7 @@ import {
   bookmarksResponseSchema,
   createBookmarkSchema,
   updateBookmarkSchema,
+  reorderBookmarksSchema,
 } from '@shared/schemas/bookmark'
 
 import { db } from '../db'
@@ -23,13 +24,16 @@ const bookmarksRoute = new Hono()
           id: bookmarksTable.bookmarkId,
           title: bookmarksTable.title,
           url: bookmarksTable.url,
+          sortOrder: bookmarksTable.sortOrder,
         })
         .from(bookmarksTable)
+        .orderBy(asc(bookmarksTable.sortOrder))
 
       const bookmarks = rows.map((row) => ({
         id: BookmarkIdSchema.parse(String(row.id)),
         title: row.title,
         url: row.url,
+        sortOrder: row.sortOrder,
       }))
 
       const result = bookmarksResponseSchema.parse({ bookmarks })
@@ -53,6 +57,7 @@ const bookmarksRoute = new Hono()
           id: bookmarksTable.bookmarkId,
           title: bookmarksTable.title,
           url: bookmarksTable.url,
+          sortOrder: bookmarksTable.sortOrder,
         })
 
       if (!row) throw new Error('Failed to insert bookmark')
@@ -64,6 +69,7 @@ const bookmarksRoute = new Hono()
             id: BookmarkIdSchema.parse(String(row.id)),
             title: row.title,
             url: row.url,
+            sortOrder: row.sortOrder,
           },
         },
         HTTP_STATUS.CREATED,
@@ -137,6 +143,7 @@ const bookmarksRoute = new Hono()
             id: bookmarksTable.bookmarkId,
             title: bookmarksTable.title,
             url: bookmarksTable.url,
+            sortOrder: bookmarksTable.sortOrder,
           })
 
         if (!row) {
@@ -158,6 +165,7 @@ const bookmarksRoute = new Hono()
             id: BookmarkIdSchema.parse(String(row.id)),
             title: row.title,
             url: row.url,
+            sortOrder: row.sortOrder,
           },
         })
       } catch (error) {
@@ -179,5 +187,38 @@ const bookmarksRoute = new Hono()
       }
     },
   )
+  .put('/reorder', zValidator('json', reorderBookmarksSchema), async (c) => {
+    const { ids } = c.req.valid('json')
+
+    if (ids.length === 0) {
+      return c.json({ success: true, data: null })
+    }
+
+    try {
+      const numericIds = ids.map((id) => parseInt(id, 10))
+
+      // CASE WHEN 構文を組み立てて一括更新
+      // 各 ID に対して、配列内のインデックスを新しい sort_order として割り当てる
+      const cases = numericIds.map(
+        (id, index) =>
+          sql`WHEN ${bookmarksTable.bookmarkId} = ${id} THEN ${index}`,
+      )
+
+      await db
+        .update(bookmarksTable)
+        .set({
+          sortOrder: sql`CASE ${sql.join(cases, sql` `)} END`,
+        })
+        .where(inArray(bookmarksTable.bookmarkId, numericIds))
+
+      return c.json({
+        success: true,
+        data: null,
+      })
+    } catch (error) {
+      console.error('Failed to reorder bookmarks:', error)
+      throw error
+    }
+  })
 
 export default bookmarksRoute

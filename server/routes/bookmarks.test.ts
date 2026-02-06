@@ -8,6 +8,7 @@ import {
   LOG_MESSAGES,
 } from '@shared/constants'
 import { TEST_MESSAGES } from '@shared/test/fixtures'
+import type { Bookmark } from '@shared/schemas/bookmark'
 
 import app from '../app'
 import { db, initializeDatabase, resetDatabase } from '../db'
@@ -47,6 +48,7 @@ describe('GET /api/bookmarks', () => {
     expect(bookmark).toHaveProperty('id')
     expect(bookmark.title).toBe(SEED_DATA_1.title)
     expect(bookmark.url).toBe(SEED_DATA_1.url)
+    expect(bookmark).toHaveProperty('sortOrder')
   })
 
   it('データが空の場合、空の配列を返すこと', async () => {
@@ -109,6 +111,7 @@ describe('POST /api/bookmarks', () => {
     expect(body.data).toHaveProperty('id')
     expect(body.data.title).toBe(VALID_DATA.title)
     expect(body.data.url).toBe(VALID_DATA.url)
+    expect(body.data).toHaveProperty('sortOrder')
 
     // DBに保存されていることを確認
     const [row] = await db
@@ -388,6 +391,101 @@ describe('PATCH /api/bookmarks/:id', () => {
     expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
+      dbError,
+    )
+    consoleSpy.mockRestore()
+  })
+})
+
+describe('PUT /api/bookmarks/reorder', () => {
+  beforeEach(() => {
+    initializeDatabase()
+    resetDatabase()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('ブックマークの順序を正常に更新できること', async () => {
+    // 3つのブックマークを登録
+    const data = [
+      { title: 'B1', url: 'https://b1.com' },
+      { title: 'B2', url: 'https://b2.com' },
+      { title: 'B3', url: 'https://b3.com' },
+    ]
+    const inserted = await db
+      .insert(bookmarksTable)
+      .values(data)
+      .returning({ id: bookmarksTable.bookmarkId })
+    const ids = inserted.map((row) => String(row.id))
+
+    // 順序を逆転させて送信
+    const reversedIds = [...ids].reverse()
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: reversedIds }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.OK)
+    const body = await res.json()
+    expect(body.success).toBe(true)
+
+    // GET /api/bookmarks で順序が反映されているか確認
+    const getRes = await app.request(API_PATHS.BOOKMARKS)
+    const getBody = await getRes.json()
+    const resultIds = getBody.data.bookmarks.map((b: Bookmark) => b.id)
+    expect(resultIds).toEqual(reversedIds)
+  })
+
+  it('不正な ID 形式が含まれる場合に 400 エラーを返すこと', async () => {
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ['invalid', '0'] }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+  })
+
+  it('ID リストが上限 (1000件) を超える場合に 400 エラーを返すこと', async () => {
+    const manyIds = Array.from({ length: 1001 }, (_, i) => String(i + 1))
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: manyIds }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+  })
+
+  it('ID リストに重複が含まれる場合に 400 エラーを返すこと', async () => {
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ['1', '2', '1'] }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+  })
+
+  it('データベースエラー時に 500 ステータスを返すこと', async () => {
+    const dbError = new Error(TEST_MESSAGES.DATABASE_ERROR)
+    vi.spyOn(db, 'update').mockImplementation(() => {
+      throw dbError
+    })
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ['1'] }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to reorder bookmarks:',
       dbError,
     )
     consoleSpy.mockRestore()
