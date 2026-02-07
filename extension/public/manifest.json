@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bookmark Page Extension",
-  "version": "1.0.0",
+  "version": "0.10.0",
   "description": "Save bookmarks to your Bookmark Page",
   "permissions": ["tabs", "storage", "activeTab"],
   "action": {
