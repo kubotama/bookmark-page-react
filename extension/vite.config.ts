@@ -1,0 +1,33 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, '../shared'),
+    },
+  },
+  root: path.resolve(__dirname),
+  build: {
+    outDir: path.resolve(__dirname, '../dist-extension'),
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        popup: path.resolve(__dirname, 'index.html'),
+        options: path.resolve(__dirname, 'options.html'),
+        background: path.resolve(__dirname, 'src/background.ts'),
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'background' ? '[name].js' : 'assets/[name]-[hash].js'
+        },
+      },
+    },
+  },
+})

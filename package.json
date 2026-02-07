@@ -1,7 +1,7 @@
 {
   "name": "bookmark-page",
   "private": true,
-  "version": "0.9.1",
+  "version": "0.10.0",
   "type": "module",
   "overrides": {
     "esbuild": "0.27.2"
@@ -11,7 +11,7 @@
     "client:dev": "vite",
     "server:dev": "tsx watch server/index.ts",
     "build": "tsc && vite build",
-    "type-check": "npm run type-check:client && npm run type-check:server",
+    "type-check": "npm run type-check:client && npm run type-check:server && npm run type-check:extension",
     "type-check:client": "tsc -p tsconfig.app.json --noEmit",
     "type-check:server": "tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -19,7 +19,10 @@
     "format:check": "prettier --check .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "extension:dev": "vite --config extension/vite.config.ts",
+    "extension:build": "tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
+    "type-check:extension": "tsc -p extension/tsconfig.json --noEmit"
   },
   "engines": {
     "node": ">=20"
@@ -46,6 +49,7 @@
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/chrome": "^0.1.36",
     "@types/node": "^25.2.0",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

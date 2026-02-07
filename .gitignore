@@ -33,3 +33,4 @@ coverage/
 
 .gemini/
 gha-creds-*.json
+dist-extension/
