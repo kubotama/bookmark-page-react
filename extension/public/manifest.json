@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Page Extension",
+  "version": "1.0.0",
+  "description": "Save bookmarks to your Bookmark Page",
+  "permissions": ["tabs", "storage", "activeTab"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icon-default.png",
+    "48": "icon-default.png",
+    "128": "icon-default.png"
+  }
+}

@@ -1,0 +1,1 @@
+import{c as o,j as t,R as s}from"./style-sXLLJJ5A.js";const r=()=>t.jsxs("div",{className:"p-4 w-64",children:[t.jsx("h1",{className:"text-lg font-bold",children:"Bookmark Page"}),t.jsx("p",{children:"Popup Content"})]}),e=document.getElementById("root");e&&o.createRoot(e).render(t.jsx(s.StrictMode,{children:t.jsx(r,{})}));
