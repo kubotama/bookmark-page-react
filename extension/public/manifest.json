@@ -1,11 +1,16 @@
 {
   "manifest_version": 3,
   "name": "ブックマークを保存する拡張機能",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "開いているページをブックマークします",
   "permissions": ["tabs", "storage", "activeTab"],
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icon-default-16.png",
+      "48": "icon-default-48.png",
+      "128": "icon-default-128.png"
+    }
   },
   "options_page": "options.html",
   "background": {
@@ -13,8 +18,8 @@
     "type": "module"
   },
   "icons": {
-    "16": "icon-default.png",
-    "48": "icon-default.png",
-    "128": "icon-default.png"
+    "16": "icon-default-16.png",
+    "48": "icon-default-48.png",
+    "128": "icon-default-128.png"
   }
 }
