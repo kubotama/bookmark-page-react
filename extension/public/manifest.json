@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Bookmark Page Extension",
+  "name": "ブックマークを保存する拡張機能",
   "version": "0.10.0",
-  "description": "Save bookmarks to your Bookmark Page",
+  "description": "開いているページをブックマークします",
   "permissions": ["tabs", "storage", "activeTab"],
   "action": {
     "default_popup": "index.html"
