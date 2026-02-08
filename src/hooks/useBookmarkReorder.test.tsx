@@ -8,7 +8,7 @@ import { bookmarkKeys } from '../lib/queryKeys'
 import type { BookmarksResponse } from '@shared/schemas/bookmark'
 import { http, HttpResponse, delay } from 'msw'
 import { server } from '../test/setup'
-import { API_PATHS } from '@shared/constants'
+import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -84,7 +84,7 @@ describe('useBookmarkReorder', () => {
     })
 
     // エラーログ抑制
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     await act(async () => {
       result.current.handleReorder(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id)
@@ -104,7 +104,7 @@ describe('useBookmarkReorder', () => {
       expect(data?.bookmarks[0].id).toBe(MOCK_BOOKMARK_1.id)
     })
 
-    consoleSpy.mockRestore()
+    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.REORDER_FAILED_LOG('INTERNAL_SERVER_ERROR', 'Fail'))
   })
 
   it('存在しない ID が指定された場合は何もしないこと', async () => {

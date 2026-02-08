@@ -13,7 +13,6 @@ describe('db.ts', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 

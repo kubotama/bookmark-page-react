@@ -35,7 +35,6 @@ describe('useBookmarkActions', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 

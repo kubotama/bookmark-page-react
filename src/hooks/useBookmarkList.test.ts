@@ -1,13 +1,9 @@
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { useBookmarkList } from './useBookmarkList'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
 describe('useBookmarkList', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('selectedId / handleRowClick', () => {
     it('初期状態では何も選択されていないこと', () => {
       const { result } = renderHook(() => useBookmarkList())

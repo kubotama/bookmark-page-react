@@ -1,4 +1,4 @@
-import { HTTP_STATUS, UI_MESSAGES } from '@shared/constants'
+import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { client } from '../lib/api'
@@ -148,7 +148,7 @@ export const useReorderBookmarks = () => {
     onError: (err, _variables, context) => {
       // 4. エラー発生時に詳細な情報をコンソールに出力
       if (err instanceof BookmarkApiError) {
-        console.warn(`Reorder failed with code: ${err.code}, message: ${err.message}`)
+        console.warn(LOG_MESSAGES.REORDER_FAILED_LOG(err.code, err.message))
       }
 
       // 5. ロールバック
