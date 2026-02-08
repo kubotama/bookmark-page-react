@@ -10,7 +10,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
-import { API_PATHS, HTTP_STATUS } from '@shared/constants'
+import { API_PATHS, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import React from 'react'
 
@@ -105,6 +105,7 @@ describe('useBookmarks Hooks Error Paths', () => {
       }),
     )
 
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { result } = renderHook(() => useReorderBookmarks(), { wrapper })
 
     result.current.mutate({ ids: [MOCK_BOOKMARK_1.id] })
@@ -114,6 +115,7 @@ describe('useBookmarks Hooks Error Paths', () => {
     expect(error).toBeInstanceOf(BookmarkApiError)
     expect(error.message).toBe(ERROR_REORDER.message)
     expect(error.code).toBe(ERROR_REORDER.code)
+    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.REORDER_FAILED_LOG(ERROR_REORDER.code, ERROR_REORDER.message))
   })
 
   it('API レスポンスのパース失敗時にエラーをログ出力すること', async () => {
@@ -132,6 +134,5 @@ describe('useBookmarks Hooks Error Paths', () => {
       expect.stringContaining('Failed to parse API response (Status: 200):'),
       expect.any(Error)
     )
-    consoleSpy.mockRestore()
   })
 })

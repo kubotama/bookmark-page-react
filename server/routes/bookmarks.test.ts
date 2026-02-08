@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   API_PATHS,
@@ -21,9 +21,6 @@ describe('GET /api/bookmarks', () => {
     resetDatabase()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   const SEED_DATA_1 = { title: 'Example Domain', url: 'https://example.com' }
   const SEED_DATA_2 = { title: 'Google', url: 'https://google.com' }
@@ -88,9 +85,6 @@ describe('POST /api/bookmarks', () => {
     resetDatabase()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   const VALID_DATA = {
     title: 'New Bookmark',
@@ -189,9 +183,6 @@ describe('DELETE /api/bookmarks/:id', () => {
     resetDatabase()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   const VALID_DATA = {
     title: 'Delete Target',
@@ -267,7 +258,6 @@ describe('DELETE /api/bookmarks/:id', () => {
       LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
       dbError,
     )
-    consoleSpy.mockRestore()
   })
 })
 
@@ -277,9 +267,6 @@ describe('PATCH /api/bookmarks/:id', () => {
     resetDatabase()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   const INITIAL_DATA = {
     title: 'Initial Title',
@@ -393,7 +380,6 @@ describe('PATCH /api/bookmarks/:id', () => {
       LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
       dbError,
     )
-    consoleSpy.mockRestore()
   })
 })
 
@@ -403,9 +389,6 @@ describe('PUT /api/bookmarks/reorder', () => {
     resetDatabase()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   it('ブックマークの順序を正常に更新できること', async () => {
     // 3つのブックマークを登録
@@ -488,6 +471,5 @@ describe('PUT /api/bookmarks/reorder', () => {
       'Failed to reorder bookmarks:',
       dbError,
     )
-    consoleSpy.mockRestore()
   })
 })

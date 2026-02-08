@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import bookmarksRoute from './routes/bookmarks'
-import { HTTP_STATUS, ERROR_MESSAGES } from '@shared/constants'
+import { HTTP_STATUS, ERROR_MESSAGES, LOG_MESSAGES } from '@shared/constants'
 import { API_ERROR_CODES } from './utils/error'
 
 const app = new Hono()
@@ -24,7 +24,7 @@ app.use(
 
 // グローバルエラーハンドリング
 app.onError((err, c) => {
-  console.error(`Unhandled error: ${err.message}`, err)
+  console.error(LOG_MESSAGES.UNHANDLED_ERROR_LOG(err.message), err)
 
   // すでにステータスコードがセットされている場合はそれを尊重する
   // 200 (OK) のままエラーになった場合は 500 に倒す

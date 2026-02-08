@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { BookmarkList, type BookmarkProps } from './BookmarkList'
 import { UI_MESSAGES, ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
 import {
@@ -10,10 +10,6 @@ import {
 } from '@shared/test/fixtures'
 
 describe('BookmarkList', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   const defaultProps: BookmarkProps = {
     bookmarks: MOCK_BOOKMARKS,
     isLoading: false,

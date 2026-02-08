@@ -1,17 +1,13 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import app from './app'
 import { db, initializeDatabase, resetDatabase } from './db'
-import { HTTP_STATUS, API_PATHS, ERROR_MESSAGES } from '@shared/constants'
+import { HTTP_STATUS, API_PATHS, ERROR_MESSAGES, LOG_MESSAGES } from '@shared/constants'
 import { API_ERROR_CODES } from './utils/error'
 
 describe('App Global Handlers', () => {
   beforeEach(() => {
     initializeDatabase()
     resetDatabase()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('存在しないパスへのアクセス時に 404 エラーを共通形式で返すこと', async () => {
@@ -39,7 +35,7 @@ describe('App Global Handlers', () => {
     expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
     expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
 
-    expect(consoleSpy).toHaveBeenCalled()
+    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.UNHANDLED_ERROR_LOG(dbError.message), dbError)
   })
 
   it(' CORS 設定が正しく適用されていること', async () => {

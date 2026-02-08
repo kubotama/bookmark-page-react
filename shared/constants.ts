@@ -61,6 +61,8 @@ export const LOG_MESSAGES = {
   CREATE_BOOKMARK_FAILED: 'Failed to create bookmark:',
   DELETE_BOOKMARK_FAILED: 'Failed to delete bookmark:',
   UPDATE_BOOKMARK_FAILED: 'Failed to update bookmark:',
+  REORDER_FAILED_LOG: (code: string, message: string) => `Reorder failed with code: ${code}, message: ${message}`,
+  UNHANDLED_ERROR_LOG: (message: string) => `Unhandled error: ${message}`,
 } as const
 
 export const VALIDATION_MESSAGES = {

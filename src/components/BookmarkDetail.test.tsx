@@ -1,16 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { BookmarkDetail } from './BookmarkDetail'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { UI_MESSAGES } from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 
 describe('BookmarkDetail', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   const defaultProps = {
     bookmark: MOCK_BOOKMARK_1,
     onUpdate: vi.fn(),
