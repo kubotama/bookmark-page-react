@@ -3,7 +3,11 @@
   "name": "ブックマークを保存する拡張機能",
   "version": "0.10.1",
   "description": "開いているページをブックマークします",
-  "permissions": ["tabs", "storage", "activeTab"],
+  "permissions": [
+    "tabs",
+    "storage",
+    "activeTab"
+  ],
   "action": {
     "default_popup": "index.html",
     "default_icon": {

@@ -20,8 +20,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "extension:dev": "vite --config extension/vite.config.ts",
-    "extension:build": "tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
+    "extension:dev": "tsx extension/sync-version.ts && vite --config extension/vite.config.ts",
+    "extension:build": "tsx extension/sync-version.ts && tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
     "type-check:extension": "tsc -p extension/tsconfig.json --noEmit"
   },
   "engines": {
