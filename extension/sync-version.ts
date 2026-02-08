@@ -18,6 +18,11 @@ function syncVersion() {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     const manifestJson = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf-8'));
 
+    if (typeof packageJson.version !== 'string') {
+      console.error(`[sync-version] 'version' field in package.json is missing or not a string.`);
+      process.exit(1);
+    }
+
     if (manifestJson.version !== packageJson.version) {
       const oldVersion = manifestJson.version;
       manifestJson.version = packageJson.version;
