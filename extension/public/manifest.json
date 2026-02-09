@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ブックマークを保存する拡張機能",
-  "version": "0.10.3",
+  "version": "0.11.0",
   "description": "開いているページをブックマークします",
   "permissions": [
     "tabs",
