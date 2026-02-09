@@ -241,3 +241,7 @@ npm run test:coverage
 - **200 OK**: 更新成功
 - **400 Bad Request**: ID リストの形式が不正な場合
 - **500 Internal Server Error**: サーバーエラー
+
+## ライセンス (License)
+
+このプロジェクトは MIT ライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
