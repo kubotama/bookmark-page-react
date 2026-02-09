@@ -55,15 +55,22 @@ export const EXTENSION_MESSAGES = {
     'ブックマークを保存するサーバーのベースURL（/api/bookmarksの前まで）を入力してください。',
   INVALID_URL: '有効な URL 形式ではありません',
   INVALID_PROTOCOL: 'URL は http:// または https:// で始まる必要があります',
+  INVALID_HOST:
+    'このホストへの接続はセキュリティ上の理由により許可されていません。',
+  INVALID_PORT:
+    'セキュリティ上の理由により、このポートへの接続は許可されていません。',
+  SETTINGS_SAVING: '保存中...',
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
-  LOG_SETTING_SAVE_FAILED: 'Failed to save settings:',
-  LOG_SETTING_LOAD_FAILED: 'Failed to load extension settings:',
   CONNECTION_TESTING: '接続確認中...',
   CONNECTION_SUCCESS: (count: number) =>
     `接続成功: ${count} 件のブックマークが見つかりました`,
   CONNECTION_FAILED: (detail: string) => `接続失敗: ${detail}`,
+  CONNECTION_TIMEOUT: 'リクエストがタイムアウトしました',
+  CONNECTION_FAILED_HINT:
+    'サーバーが起動しているか、URLが正しいか確認してください。',
+  UNKNOWN_ERROR: '不明なエラーが発生しました。',
   UNEXPECTED_RESPONSE: '予期しないレスポンス形式です',
   BUTTON_SAVE: '保存',
   BUTTON_TEST: '接続確認',
@@ -89,6 +96,9 @@ export const LOG_MESSAGES = {
   REORDER_FAILED_LOG: (code: string, message: string) =>
     `Reorder failed with code: ${code}, message: ${message}`,
   UNHANDLED_ERROR_LOG: (message: string) => `Unhandled error: ${message}`,
+  EXTENSION_SETTING_SAVE_FAILED: 'Failed to save settings:',
+  EXTENSION_SETTING_LOAD_FAILED: 'Failed to load extension settings:',
+  EXTENSION_CONNECTION_FAILED: 'Connection test failed:',
 } as const
 
 export const VALIDATION_MESSAGES = {
