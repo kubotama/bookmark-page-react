@@ -51,9 +51,11 @@ export const STORAGE_KEYS = {
 export const EXTENSION_MESSAGES = {
   OPTIONS_TITLE: '拡張機能の設定',
   API_URL_LABEL: 'URL',
-    API_URL_DESCRIPTION: 'ブックマークを保存するサーバーのベースURL（/api/bookmarksの前まで）を入力してください。',
-    INVALID_URL: '有効な URL 形式ではありません',
-    SETTINGS_SAVED: '設定を保存しました',
+  API_URL_DESCRIPTION:
+    'ブックマークを保存するサーバーのベースURL（/api/bookmarksの前まで）を入力してください。',
+  INVALID_URL: '有効な URL 形式ではありません',
+  INVALID_PROTOCOL: 'URL は http:// または https:// で始まる必要があります',
+  SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
   LOG_SETTING_SAVE_FAILED: 'Failed to save settings:',

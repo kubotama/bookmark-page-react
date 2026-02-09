@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
-import { storage } from './lib/storage'
+import { useEffect, useState } from 'react'
+
+import { API_PATHS, EXTENSION_MESSAGES } from '@shared/constants'
+import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
+import { isHttpUrl } from '@shared/utils/url'
+
 import { Button } from '../../src/components/ui/Button'
-import { EXTENSION_MESSAGES, API_PATHS } from '@shared/constants'
+import { storage } from './lib/storage'
 
 type StatusType = 'idle' | 'loading' | 'success' | 'error'
 
@@ -40,8 +44,14 @@ export const Options = () => {
     setStatus({ type: 'loading' })
     try {
       // バリデーション
+      if (isHttpUrl(apiUrl)) {
+        setStatus({
+          type: 'error',
+          message: EXTENSION_MESSAGES.INVALID_PROTOCOL,
+        })
+        return
+      }
       new URL(apiUrl)
-      
       const sanitizedUrl = apiUrl.replace(/\/$/, '')
       await storage.setSettings({ apiUrl: sanitizedUrl })
       setApiUrl(sanitizedUrl)
@@ -51,7 +61,10 @@ export const Options = () => {
         setStatus({ type: 'error', message: EXTENSION_MESSAGES.INVALID_URL })
       } else {
         console.error(EXTENSION_MESSAGES.LOG_SETTING_SAVE_FAILED, err)
-        setStatus({ type: 'error', message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED })
+        setStatus({
+          type: 'error',
+          message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
+        })
       }
     }
   }
@@ -67,16 +80,13 @@ export const Options = () => {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const result = await response.json()
+      const validation = bookmarksResponseSchema.safeParse(result.data)
 
-      if (
-        result.success &&
-        result.data &&
-        Array.isArray(result.data.bookmarks)
-      ) {
+      if (result.success && validation.success) {
         setStatus({
           type: 'success',
           message: EXTENSION_MESSAGES.CONNECTION_SUCCESS(
-            result.data.bookmarks.length,
+            validation.data.bookmarks.length,
           ),
         })
       } else {
@@ -138,7 +148,9 @@ export const Options = () => {
 
         {/* Status Message */}
         {status.type !== 'idle' && (
-          <div className={`p-3 rounded-md text-sm ${statusStyles[status.type]}`}>
+          <div
+            className={`p-3 rounded-md text-sm ${statusStyles[status.type]}`}
+          >
             {status.message}
           </div>
         )}
