@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 
 import { UI_MESSAGES } from '@shared/constants'
-import { Button } from './ui/Button'
-import { InputField } from './ui/InputField'
+import { Button } from '@shared/ui/Button'
+import { InputField } from '@shared/ui/InputField'
 
 import type { Bookmark } from '@shared/schemas/bookmark'
 

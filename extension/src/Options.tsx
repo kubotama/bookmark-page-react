@@ -1,5 +1,5 @@
-import { Button } from '../../src/components/ui/Button'
-import { InputField } from '../../src/components/ui/InputField'
+import { Button } from '@shared/ui/Button'
+import { InputField } from '@shared/ui/InputField'
 import { EXTENSION_MESSAGES } from '@shared/constants'
 import { useOptions, type StatusType } from './hooks/useOptions'
 

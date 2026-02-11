@@ -19,7 +19,7 @@
 - `src/`: フロントエンド (React) コード
 - `server/`: バックエンド (Hono) コード。`index.ts` をエントリーポイントとし、起動時にデータベースの初期化を行います。
 - `extension/`: ブラウザ拡張機能 (Chrome Extension) コード
-- `shared/`: フロントエンド、バックエンド、および拡張機能で共有される型定義、スキーマ、共通定数
+- `shared/`: フロントエンド、バックエンド、および拡張機能で共有される型定義、スキーマ、共通定数、および共通 UI コンポーネント
 - `coverage/`: テストカバレッジレポート (自動生成)
 
 ## 機能 (Features)
@@ -52,7 +52,7 @@ npm install
 
 ### エディタ設定 (Editor Setup)
 
-VSCode を使用する場合、プロジェクトルートの `tsconfig.json` に基づき `@shared/*` パスエイリアスが自動的に認識されます。
+VSCode を使用する場合、プロジェクトルートの `tsconfig.json` に基づき `@shared/*` および `@shared/ui/*` パスエイリアスが自動的に認識されます。
 
 ### 環境変数 (Environment Variables)
 

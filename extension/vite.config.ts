@@ -9,9 +9,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      '@shared': path.resolve(__dirname, '../shared'),
-    },
+    alias: [
+      {
+        find: '@shared/ui',
+        replacement: path.resolve(__dirname, '../shared/components/ui'),
+      },
+      {
+        find: '@shared',
+        replacement: path.resolve(__dirname, '../shared'),
+      },
+    ],
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],
   },
   root: path.resolve(__dirname),
   build: {

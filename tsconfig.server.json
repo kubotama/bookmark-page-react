@@ -8,5 +8,6 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["server", "shared"]
+  "include": ["server", "shared"],
+  "exclude": ["shared/components/ui"]
 }

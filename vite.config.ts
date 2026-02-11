@@ -2,14 +2,25 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      '@shared': path.resolve(__dirname, './shared'),
-    },
+    alias: [
+      {
+        find: '@shared/ui',
+        replacement: path.resolve(__dirname, './shared/components/ui'),
+      },
+      {
+        find: '@shared',
+        replacement: path.resolve(__dirname, './shared'),
+      },
+    ],
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],
   },
   server: {
     proxy: {
