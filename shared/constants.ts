@@ -19,6 +19,8 @@ export const UI_MESSAGES = {
   BUTTON_OPEN: '開く',
   BUTTON_DELETE: '削除',
   BUTTON_CLOSE: '閉じる',
+  EXTENSION_TITLE: 'Bookmark Page',
+  EXTENSION_CONTENT: 'Popup Content',
 } as const
 
 export const ARIA_ROLES = {
