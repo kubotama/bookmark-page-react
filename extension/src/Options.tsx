@@ -1,5 +1,5 @@
-import { Button } from '../../src/components/ui/Button'
-import { InputField } from '../../src/components/ui/InputField'
+import { Button } from '@shared/ui/Button'
+import { InputField } from '@shared/ui/InputField'
 import { EXTENSION_MESSAGES } from '@shared/constants'
 import { useOptions, type StatusType } from './hooks/useOptions'
 
@@ -29,18 +29,23 @@ export const Options = () => {
             onChange={(e) => setApiUrl(e.target.value)}
             placeholder="http://localhost:3030"
           />
-          <p className="mt-2 text-xs text-gray-500 ml-12">
+          <p className="mt-2 text-xs text-gray-500 ml-14">
             {EXTENSION_MESSAGES.API_URL_DESCRIPTION}
           </p>
         </div>
 
-        <div className="flex space-x-3 ml-12">
-          <Button onClick={handleSave} disabled={status.type === 'loading'}>
+        <div className="flex space-x-3 ml-14">
+          <Button
+            onClick={handleSave}
+            size="medium"
+            disabled={status.type === 'loading'}
+          >
             {EXTENSION_MESSAGES.BUTTON_SAVE}
           </Button>
           <Button
             onClick={handleTestConnection}
             variant="secondary"
+            size="medium"
             disabled={status.type === 'loading'}
           >
             {EXTENSION_MESSAGES.BUTTON_TEST}
@@ -50,7 +55,7 @@ export const Options = () => {
         {status.type !== 'idle' && (
           <div
             role={status.type === 'error' ? 'alert' : 'status'}
-            className={`ml-12 p-3 rounded-md text-sm ${statusStyles[status.type]}`}
+            className={`ml-14 p-3 rounded-md text-sm ${statusStyles[status.type]}`}
           >
             {status.message}
           </div>

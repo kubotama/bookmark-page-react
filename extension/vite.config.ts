@@ -1,18 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      '@shared': path.resolve(__dirname, '../shared'),
-    },
-  },
+  plugins: [react(), tailwindcss(), tsconfigPaths()],
   root: path.resolve(__dirname),
   build: {
     outDir: path.resolve(__dirname, '../dist-extension'),

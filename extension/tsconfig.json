@@ -1,4 +1,5 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
@@ -23,10 +24,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    "baseUrl": "..",
-    "paths": {
-      "@shared/*": ["shared/*"]
-    }
+    "baseUrl": ".."
   },
   "include": ["src", "shared"]
 }
