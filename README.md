@@ -121,7 +121,7 @@ npm run type-check
 
 ### テスト (Testing)
 
-単体テストを実行します：
+Web アプリ、API サーバー、ブラウザ拡張機能の単体テストを実行します：
 
 ```bash
 npm run test
