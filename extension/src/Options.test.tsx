@@ -17,7 +17,7 @@ describe('Options Component', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
     vi.mocked(useOptions).mockReturnValue(baseMockUseOptions)
   })
 
@@ -30,7 +30,9 @@ describe('Options Component', () => {
     expect(
       screen.getByLabelText(EXTENSION_MESSAGES.API_URL_LABEL),
     ).toBeInTheDocument()
-    expect(screen.getByDisplayValue('http://localhost:3000')).toBeInTheDocument()
+    expect(
+      screen.getByDisplayValue('http://localhost:3000'),
+    ).toBeInTheDocument()
   })
 
   it('保存ボタンと接続確認ボタンが表示されること', () => {
