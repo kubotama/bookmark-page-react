@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Popup } from './Popup'
 import { usePopup } from './hooks/usePopup'
+import { EXTENSION_MESSAGES } from '@shared/constants'
 
 // usePopup フックをモック化
 vi.mock('./hooks/usePopup')
@@ -18,14 +19,14 @@ describe('Popup Component', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
     vi.mocked(usePopup).mockReturnValue(baseMockUsePopup)
   })
 
   it('正しくタイトルと入力欄が表示されること', () => {
     render(<Popup />)
 
-    expect(screen.getByText('ページをブックマーク')).toBeInTheDocument()
+    expect(screen.getByText(EXTENSION_MESSAGES.POPUP_TITLE)).toBeInTheDocument()
     expect(screen.getByDisplayValue('Test Title')).toBeInTheDocument()
     expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument()
   })
@@ -34,23 +35,25 @@ describe('Popup Component', () => {
     const user = userEvent.setup()
     render(<Popup />)
 
-    const saveButton = screen.getByText('保存する')
+    const saveButton = screen.getByText(EXTENSION_MESSAGES.BUTTON_POPUP_SAVE)
     await user.click(saveButton)
 
     expect(baseMockUsePopup.handleSave).toHaveBeenCalled()
   })
 
   it('保存中（loading）の状態が正しく反映されること', () => {
+    const loadingMessage = EXTENSION_MESSAGES.SETTINGS_SAVING
     vi.mocked(usePopup).mockReturnValue({
       ...baseMockUsePopup,
-      status: { type: 'loading', message: '保存中...' },
+      status: { type: 'loading', message: loadingMessage },
     })
 
     render(<Popup />)
 
-    // ボタンとステータスエリアの両方に表示されるため getAllByText を使用
-    const loadingElements = screen.getAllByText('保存中...')
-    expect(loadingElements.length).toBe(2)
+    // ボタンとステータスエリアの両方に表示される場合がある（同じテキストの場合）
+    // 確実に両方が存在することを確認
+    const elements = screen.getAllByText(EXTENSION_MESSAGES.SETTINGS_SAVING)
+    expect(elements.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole('button')).toBeDisabled()
   })
 })

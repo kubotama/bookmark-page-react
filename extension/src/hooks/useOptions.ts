@@ -2,17 +2,16 @@ import { useCallback, useEffect, useState } from 'react'
 
 import {
   API_PATHS,
+  EXTENSION_CONSTANTS,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
 } from '@shared/constants'
 import { createApiResponseSchema } from '@shared/schemas/api'
 import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
-import { isHttpUrl } from '@shared/utils/url'
+import { validateApiUrl } from '@shared/utils/url'
 
 import { storage } from '../lib/storage'
-
-const CONNECTION_TIMEOUT_MS = 8000
 
 export type StatusType = 'idle' | 'loading' | 'success' | 'error'
 
@@ -22,7 +21,7 @@ export interface StatusState {
 }
 
 const DEFAULT_SETTINGS = {
-  [STORAGE_KEYS.API_URL]: 'http://localhost:3030',
+  [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
 }
 
 // レスポンス全体のスキーマを定義
@@ -68,45 +67,14 @@ export const useOptions = () => {
     return new URL(apiUrl).origin
   }, [apiUrl])
 
-  const validateUrl = useCallback((url: string): string | null => {
-    if (!isHttpUrl(url)) {
-      return EXTENSION_MESSAGES.INVALID_PROTOCOL
-    }
-    try {
-      const parsed = new URL(url)
-
-      const hostname = parsed.hostname.toLowerCase()
-      const isLoopback =
-        hostname === 'localhost' ||
-        hostname === '127.0.0.1' ||
-        hostname === '[::1]'
-
-      if (!isLoopback) {
-        return EXTENSION_MESSAGES.INVALID_HOST
-      }
-
-      // ポート番号のチェック (SSRF対策)
-      if (!parsed.port) {
-        return EXTENSION_MESSAGES.INVALID_PORT
-      }
-      const port = Number(parsed.port)
-      if (isNaN(port) || port < 1024 || port > 65535) {
-        return EXTENSION_MESSAGES.INVALID_PORT
-      }
-      return null
-    } catch {
-      return EXTENSION_MESSAGES.INVALID_URL
-    }
-  }, [])
-
   const runValidation = useCallback((): boolean => {
-    const errorMessage = validateUrl(apiUrl)
+    const errorMessage = validateApiUrl(apiUrl)
     if (errorMessage) {
       setStatus({ type: 'error', message: errorMessage })
       return false
     }
     return true
-  }, [apiUrl, validateUrl])
+  }, [apiUrl])
 
   const handleSave = useCallback(async () => {
     if (!runValidation()) return
@@ -138,7 +106,7 @@ export const useOptions = () => {
     const controller = new AbortController()
     const timeoutId = setTimeout(
       () => controller.abort(),
-      CONNECTION_TIMEOUT_MS,
+      EXTENSION_CONSTANTS.CONNECTION_TIMEOUT_MS,
     ) // 8秒タイムアウト
 
     try {

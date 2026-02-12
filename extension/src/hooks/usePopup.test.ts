@@ -1,7 +1,15 @@
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  API_PATHS,
+  EXTENSION_CONSTANTS,
+  EXTENSION_MESSAGES,
+  LOG_MESSAGES,
+  STORAGE_KEYS,
+} from '@shared/constants'
+import { act, renderHook, waitFor } from '@testing-library/react'
+
 import { usePopup } from './usePopup'
-import { STORAGE_KEYS, API_PATHS } from '@shared/constants'
 
 describe('usePopup Hook', () => {
   const mockTab = {
@@ -11,17 +19,19 @@ describe('usePopup Hook', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
     vi.stubGlobal('fetch', vi.fn())
-    
-    // chrome.tabs.query のモック
-    vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
-      callback([mockTab] as chrome.tabs.Tab[])
-    })
+
+    // chrome.tabs.query のモック (Promise 形式)
+    vi.mocked(chrome.tabs.query).mockImplementation(() =>
+      Promise.resolve([mockTab] as chrome.tabs.Tab[]),
+    )
 
     // storage.get のモック
-    vi.mocked(chrome.storage.sync.get).mockImplementation(() => 
-      Promise.resolve({ [STORAGE_KEYS.API_URL]: 'http://localhost:3030' })
+    vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
+      Promise.resolve({
+        [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
+      }),
     )
   })
 
@@ -47,11 +57,15 @@ describe('usePopup Hook', () => {
       await result.current.handleSave()
     })
 
-    expect(fetch).toHaveBeenCalledWith('http://localhost:3030' + API_PATHS.BOOKMARKS, expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ title: mockTab.title, url: mockTab.url }),
-    }))
+    expect(fetch).toHaveBeenCalledWith(
+      EXTENSION_CONSTANTS.DEFAULT_API_URL + API_PATHS.BOOKMARKS,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ title: mockTab.title, url: mockTab.url }),
+      }),
+    )
     expect(result.current.status.type).toBe('success')
+    expect(result.current.status.message).toBe(EXTENSION_MESSAGES.POPUP_SAVED)
   })
 
   it('バリデーションエラー（空のタイトルなど）を適切に扱うこと', async () => {
@@ -72,11 +86,13 @@ describe('usePopup Hook', () => {
 
   it('API エラー時にエラーメッセージを表示すること', async () => {
     const apiErrorMessage = 'URL already exists'
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      json: async () => ({ 
-        success: false, 
-        error: { message: apiErrorMessage, code: 'CONFLICT' } 
+      json: async () => ({
+        success: false,
+        error: { message: apiErrorMessage, code: 'CONFLICT' },
       }),
     } as Response)
 
@@ -89,5 +105,10 @@ describe('usePopup Hook', () => {
 
     expect(result.current.status.type).toBe('error')
     expect(result.current.status.message).toBe(apiErrorMessage)
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
+      expect.objectContaining({ message: apiErrorMessage }),
+    )
   })
 })

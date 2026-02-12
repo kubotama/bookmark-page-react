@@ -1,18 +1,24 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useOptions } from './useOptions'
-import { STORAGE_KEYS, EXTENSION_MESSAGES } from '@shared/constants'
+import {
+  STORAGE_KEYS,
+  EXTENSION_MESSAGES,
+  EXTENSION_CONSTANTS,
+} from '@shared/constants'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
 describe('useOptions Hook', () => {
-  const defaultUrl = 'http://localhost:3030'
+  const defaultUrl = EXTENSION_CONSTANTS.DEFAULT_API_URL
 
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.stubGlobal('fetch', vi.fn())
-    vi.mocked(chrome.storage.sync.get).mockImplementation(() => Promise.resolve({
-      [STORAGE_KEYS.API_URL]: defaultUrl,
-    }))
+    vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
+      Promise.resolve({
+        [STORAGE_KEYS.API_URL]: defaultUrl,
+      }),
+    )
   })
 
   const setupHook = async () => {
