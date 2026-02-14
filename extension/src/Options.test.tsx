@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Options } from './Options'
-import { EXTENSION_MESSAGES } from '@shared/constants'
+import { EXTENSION_MESSAGES, EXTENSION_CONSTANTS } from '@shared/constants'
 import { useOptions } from './hooks/useOptions'
 
 // useOptions フックをモック化
@@ -9,7 +9,7 @@ vi.mock('./hooks/useOptions')
 
 describe('Options Component', () => {
   const baseMockUseOptions = {
-    apiUrl: 'http://localhost:3000',
+    apiUrl: EXTENSION_CONSTANTS.DEFAULT_API_URL,
     setApiUrl: vi.fn(),
     status: { type: 'idle' as const },
     handleSave: vi.fn(),
@@ -17,7 +17,7 @@ describe('Options Component', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
     vi.mocked(useOptions).mockReturnValue(baseMockUseOptions)
   })
 
@@ -30,7 +30,9 @@ describe('Options Component', () => {
     expect(
       screen.getByLabelText(EXTENSION_MESSAGES.API_URL_LABEL),
     ).toBeInTheDocument()
-    expect(screen.getByDisplayValue('http://localhost:3000')).toBeInTheDocument()
+    expect(
+      screen.getByDisplayValue(EXTENSION_CONSTANTS.DEFAULT_API_URL),
+    ).toBeInTheDocument()
   })
 
   it('保存ボタンと接続確認ボタンが表示されること', () => {

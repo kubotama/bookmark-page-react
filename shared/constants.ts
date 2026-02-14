@@ -74,8 +74,22 @@ export const EXTENSION_MESSAGES = {
     'サーバーが起動しているか、URLが正しいか確認してください。',
   UNKNOWN_ERROR: '不明なエラーが発生しました。',
   UNEXPECTED_RESPONSE: '予期しないレスポンス形式です',
+  POPUP_TITLE: 'ページをブックマーク',
+  POPUP_SAVED: 'ブックマークを保存しました',
+  POPUP_SAVE_FAILED: '保存に失敗しました',
   BUTTON_SAVE: '保存',
   BUTTON_TEST: '接続確認',
+  BUTTON_POPUP_SAVE: '保存する',
+  BUTTON_POPUP_SAVING: '保存中...',
+  POPUP_LABEL_URL: 'URL',
+  POPUP_LABEL_TITLE: 'TITLE',
+} as const
+
+export const EXTENSION_CONSTANTS = {
+  POPUP_WIDTH_CLASS: 'w-lg',
+  POPUP_CLOSE_DELAY_MS: 1500,
+  CONNECTION_TIMEOUT_MS: 8000,
+  DEFAULT_API_URL: 'http://localhost:3030',
 } as const
 
 export const HTTP_STATUS = {
