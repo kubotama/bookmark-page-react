@@ -18,19 +18,31 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
+    setupFiles: ['./src/test/setup.ts', './extension/test/setup.ts'],
     coverage: {
       provider: 'v8',
       clean: true,
       all: true,
       reporter: ['text', 'json', 'html'],
-      include: ['server/**/*.ts', 'shared/**/*.ts', 'src/**/*.ts', 'src/**/*.tsx'],
+      include: [
+        'server/**/*.ts',
+        'shared/**/*.ts',
+        'src/**/*.ts',
+        'src/**/*.tsx',
+        'extension/**/*.ts',
+        'extension/**/*.tsx',
+      ],
       exclude: [
         '**/*.test.ts',
+        '**/*.test.tsx',
         'src/test/**',
+        'extension/test/**',
         'vite.config.ts',
         'server/index.ts',
         'src/main.tsx',
+        'extension/sync-version.ts',
+        'extension/src/main-options.tsx',
+        'extension/src/main-popup.tsx',
       ],
       thresholds: {
         lines: 70,
