@@ -45,10 +45,12 @@ export default defineConfig({
         'extension/src/main-popup.tsx',
       ],
       thresholds: {
-        lines: 70,
-        branches: 70,
-        functions: 70,
-        statements: 70,
+        global: {
+          lines: 70,
+          branches: 70,
+          functions: 70,
+          statements: 70,
+        },
       },
     },
   },
