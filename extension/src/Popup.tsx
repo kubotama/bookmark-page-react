@@ -1,7 +1,12 @@
+import {
+  COMMON_MESSAGES,
+  EXTENSION_CONSTANTS,
+  FIELD_LABELS,
+} from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
-import { usePopup, type PopupStatusType } from './hooks/usePopup'
-import { EXTENSION_MESSAGES, EXTENSION_CONSTANTS } from '@shared/constants'
+
+import { type PopupStatusType, usePopup } from './hooks/usePopup'
 
 const statusStyles: Record<PopupStatusType, string> = {
   idle: '',
@@ -15,14 +20,14 @@ export const Popup = () => {
 
   return (
     <div className={`${EXTENSION_CONSTANTS.POPUP_WIDTH_CLASS} p-4 bg-white`}>
-      <h1 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-        {EXTENSION_MESSAGES.POPUP_TITLE}
+      <h1 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2 truncate">
+        {FIELD_LABELS.POPUP_TITLE}
       </h1>
 
       <div className="space-y-4">
         <InputField
           id="bookmark-title"
-          label={EXTENSION_MESSAGES.POPUP_LABEL_TITLE}
+          label={FIELD_LABELS.TITLE}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="タイトルを入力"
@@ -30,7 +35,7 @@ export const Popup = () => {
 
         <InputField
           id="bookmark-url"
-          label={EXTENSION_MESSAGES.POPUP_LABEL_URL}
+          label={FIELD_LABELS.URL}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://..."
@@ -44,8 +49,8 @@ export const Popup = () => {
             disabled={status.type === 'loading' || status.type === 'success'}
           >
             {status.type === 'loading'
-              ? EXTENSION_MESSAGES.BUTTON_POPUP_SAVING
-              : EXTENSION_MESSAGES.BUTTON_POPUP_SAVE}
+              ? COMMON_MESSAGES.SAVING
+              : FIELD_LABELS.BUTTON_SAVE}
           </Button>
         </div>
 

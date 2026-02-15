@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
-
+import { useState, useEffect, useCallback } from 'react'
+import { storage } from '../lib/storage'
 import {
   API_PATHS,
-  EXTENSION_CONSTANTS,
+  COMMON_MESSAGES,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
+  EXTENSION_CONSTANTS,
 } from '@shared/constants'
-import { createApiResponseSchema } from '@shared/schemas/api'
 import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
-import { validateApiUrl } from '@shared/utils/url'
-
-import { storage } from '../lib/storage'
+import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
 export type StatusType = 'idle' | 'loading' | 'success' | 'error'
 
@@ -25,7 +23,7 @@ const DEFAULT_SETTINGS = {
 }
 
 // レスポンス全体のスキーマを定義
-const apiResponseSchema = createApiResponseSchema(bookmarksResponseSchema)
+const apiResponseSchema = bookmarksResponseSchema
 
 export const useOptions = () => {
   const [apiUrl, setApiUrl] = useState('')
@@ -39,7 +37,6 @@ export const useOptions = () => {
         const result = await storage.get(DEFAULT_SETTINGS)
         if (isMounted) {
           const storedUrl = result[STORAGE_KEYS.API_URL]
-          // 型バリデーションを追加
           setApiUrl(
             typeof storedUrl === 'string'
               ? storedUrl
@@ -62,11 +59,6 @@ export const useOptions = () => {
     }
   }, [])
 
-  const getSanitizedUrl = useCallback(() => {
-    // 常に origin 部分のみを返すことで SSRF リスクを軽減
-    return new URL(apiUrl).origin
-  }, [apiUrl])
-
   const runValidation = useCallback((): boolean => {
     const errorMessage = validateApiUrl(apiUrl)
     if (errorMessage) {
@@ -79,10 +71,9 @@ export const useOptions = () => {
   const handleSave = useCallback(async () => {
     if (!runValidation()) return
 
-    setStatus({ type: 'loading', message: EXTENSION_MESSAGES.SETTINGS_SAVING })
+    setStatus({ type: 'loading', message: COMMON_MESSAGES.SAVING })
     try {
-      // 保存時にも origin のみを抽出して正規化
-      const sanitizedUrl = getSanitizedUrl()
+      const sanitizedUrl = getOrigin(apiUrl)
       await storage.set({ [STORAGE_KEYS.API_URL]: sanitizedUrl })
       setApiUrl(sanitizedUrl)
       setStatus({ type: 'success', message: EXTENSION_MESSAGES.SETTINGS_SAVED })
@@ -93,7 +84,7 @@ export const useOptions = () => {
         message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
       })
     }
-  }, [getSanitizedUrl, runValidation])
+  }, [apiUrl, runValidation])
 
   const handleTestConnection = useCallback(async () => {
     if (!runValidation()) return
@@ -107,36 +98,37 @@ export const useOptions = () => {
     const timeoutId = setTimeout(
       () => controller.abort(),
       EXTENSION_CONSTANTS.CONNECTION_TIMEOUT_MS,
-    ) // 8秒タイムアウト
+    )
 
     try {
-      const sanitizedUrl = getSanitizedUrl()
-      // new URL を使用して確実にパスを結合
-      const targetUrl = new URL(API_PATHS.BOOKMARKS, sanitizedUrl).href
-      const response = await fetch(targetUrl, { signal: controller.signal })
+      const sanitizedUrl = getOrigin(apiUrl)
+      const response = await fetch(
+        new URL(API_PATHS.BOOKMARKS, sanitizedUrl).href,
+        { signal: controller.signal },
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const result = await response.json()
-      // レスポンス全体の構造を Zod で検証
-      const validation = apiResponseSchema.safeParse(result)
 
+      if (!result.success) {
+        throw new Error(
+          result.error?.message ?? COMMON_MESSAGES.UNEXPECTED_RESPONSE,
+        )
+      }
+
+      const validation = apiResponseSchema.safeParse(result.data)
       if (validation.success) {
-        if (validation.data.success) {
-          setStatus({
-            type: 'success',
-            message: EXTENSION_MESSAGES.CONNECTION_SUCCESS(
-              validation.data.data.bookmarks.length,
-            ),
-          })
-        } else {
-          // success: false の場合
-          throw new Error(validation.data.error.message)
-        }
+        setStatus({
+          type: 'success',
+          message: EXTENSION_MESSAGES.CONNECTION_SUCCESS(
+            validation.data.bookmarks.length,
+          ),
+        })
       } else {
-        throw new Error(EXTENSION_MESSAGES.UNEXPECTED_RESPONSE)
+        throw new Error(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
       }
     } catch (err) {
       console.error(LOG_MESSAGES.EXTENSION_CONNECTION_FAILED, err)
@@ -145,11 +137,10 @@ export const useOptions = () => {
         if (err.name === 'AbortError') {
           detail = EXTENSION_MESSAGES.CONNECTION_TIMEOUT
         } else {
-          // "Failed to fetch" (TypeError) などの場合に、より具体的なヒントを与える
           detail = `${err.message} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`
         }
       } else {
-        detail = EXTENSION_MESSAGES.UNKNOWN_ERROR
+        detail = COMMON_MESSAGES.UNKNOWN_ERROR
       }
       setStatus({
         type: 'error',
@@ -158,7 +149,7 @@ export const useOptions = () => {
     } finally {
       clearTimeout(timeoutId)
     }
-  }, [getSanitizedUrl, runValidation])
+  }, [apiUrl, runValidation])
 
   return {
     apiUrl,

@@ -3,8 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useOptions } from './useOptions'
 import {
   STORAGE_KEYS,
+  ERROR_MESSAGES,
   EXTENSION_MESSAGES,
   EXTENSION_CONSTANTS,
+  VALIDATION_MESSAGES,
 } from '@shared/constants'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
@@ -75,7 +77,7 @@ describe('useOptions Hook', () => {
 
       expect(result.current.status.type).toBe('error')
       expect(result.current.status.message).toBe(
-        EXTENSION_MESSAGES.INVALID_PROTOCOL,
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
       )
     })
 
@@ -90,9 +92,7 @@ describe('useOptions Hook', () => {
       })
 
       expect(result.current.status.type).toBe('error')
-      expect(result.current.status.message).toBe(
-        EXTENSION_MESSAGES.INVALID_HOST,
-      )
+      expect(result.current.status.message).toBe(ERROR_MESSAGES.INVALID_HOST)
     })
 
     it('特権ポートへの接続を拒否すること', async () => {
@@ -106,9 +106,7 @@ describe('useOptions Hook', () => {
       })
 
       expect(result.current.status.type).toBe('error')
-      expect(result.current.status.message).toBe(
-        EXTENSION_MESSAGES.INVALID_PORT,
-      )
+      expect(result.current.status.message).toBe(ERROR_MESSAGES.INVALID_PORT)
     })
   })
 

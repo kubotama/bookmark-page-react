@@ -1,20 +1,27 @@
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { UI_MESSAGES, ARIA_ROLES, ARIA_ATTRIBUTES } from '@shared/constants'
-import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
+import {
+  ARIA_ATTRIBUTES,
+  ARIA_ROLES,
+  COMMON_MESSAGES,
+  UI_MESSAGES,
+} from '@shared/constants'
+
 import { BookmarkItem } from './BookmarkItem'
+
+import type { DragEndEvent } from '@dnd-kit/core'
+import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
 
 export type BookmarkProps = {
   bookmarks: Bookmark[]
@@ -41,7 +48,7 @@ export const BookmarkList = ({
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 5, // クリックとドラッグを区別するための遊び
-      }
+      },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -61,7 +68,7 @@ export const BookmarkList = ({
       <div
         className="flex justify-center items-center p-8"
         role={ARIA_ROLES.STATUS}
-        {...{ [ARIA_ATTRIBUTES.LABEL]: UI_MESSAGES.LOADING_LABEL }}
+        {...{ [ARIA_ATTRIBUTES.LABEL]: COMMON_MESSAGES.LOADING_LABEL }}
       >
         <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
       </div>
@@ -74,8 +81,10 @@ export const BookmarkList = ({
         className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-200"
         role={ARIA_ROLES.ALERT}
       >
-        {UI_MESSAGES.ERROR_PREFIX}:{' '}
-        {error instanceof Error ? error.message : UI_MESSAGES.UNEXPECTED_ERROR}
+        {COMMON_MESSAGES.ERROR_PREFIX}:{' '}
+        {error instanceof Error
+          ? error.message
+          : COMMON_MESSAGES.UNEXPECTED_RESPONSE}
       </div>
     )
   }

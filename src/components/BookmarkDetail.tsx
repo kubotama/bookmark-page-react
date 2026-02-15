@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-import { UI_MESSAGES } from '@shared/constants'
+import { FIELD_LABELS } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
@@ -36,24 +36,27 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
   }
 
   return (
-    <div className="bg-white p-2 w-full" onKeyDown={(e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    }}>
+    <div
+      className="bg-white p-2 w-full"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          onClose()
+        }
+      }}
+    >
       <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
         {/* 左側: テキストボックスを2段で配置 */}
         <div className="grid grid-rows-2 gap-4">
           <InputField
             id="detail-title"
-            label="Title"
+            label={FIELD_LABELS.TITLE}
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             placeholder="Bookmark Title"
           />
           <InputField
             id="detail-url"
-            label="URL"
+            label={FIELD_LABELS.URL}
             value={editUrl}
             onChange={(e) => setEditUrl(e.target.value)}
             placeholder="https://..."
@@ -64,20 +67,20 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
         {/* 右側: 4つのボタンを4段で配置 */}
         <div className="grid grid-rows-4 gap-0.5 min-w-20">
           <Button variant="primary" onClick={handleUpdate}>
-            {UI_MESSAGES.BUTTON_UPDATE}
+            {FIELD_LABELS.BUTTON_UPDATE}
           </Button>
           <Button variant="secondary" onClick={onOpen}>
-            {UI_MESSAGES.BUTTON_OPEN}
+            {FIELD_LABELS.BUTTON_OPEN}
           </Button>
           <Button variant="danger" onClick={onDelete}>
-            {UI_MESSAGES.BUTTON_DELETE}
+            {FIELD_LABELS.BUTTON_DELETE}
           </Button>
           <Button
             variant="secondary"
             onClick={onClose}
-            title={UI_MESSAGES.BUTTON_CLOSE}
+            title={FIELD_LABELS.BUTTON_CLOSE}
           >
-            {UI_MESSAGES.BUTTON_CLOSE}
+            {FIELD_LABELS.BUTTON_CLOSE}
           </Button>
         </div>
       </div>
