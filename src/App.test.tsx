@@ -1,9 +1,13 @@
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { API_PATHS, HTTP_STATUS, UI_MESSAGES, ARIA_ROLES } from '@shared/constants'
+import {
+  API_PATHS,
+  ARIA_ROLES,
+  FIELD_LABELS,
+  HTTP_STATUS,
+} from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import type { UpdateBookmarkRequest } from '@shared/schemas/bookmark'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -11,6 +15,7 @@ import userEvent from '@testing-library/user-event'
 import App from './App'
 import { server } from './test/setup'
 
+import type { UpdateBookmarkRequest } from '@shared/schemas/bookmark'
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -81,13 +86,17 @@ describe('App Integration', () => {
   it('行を選択した際に詳細パネルが表示されること', async () => {
     const { user } = setup()
 
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     await user.click(item)
 
     // 詳細パネルの要素が表示されているか確認
-    expect(await screen.findByDisplayValue(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
-    expect(screen.getByText(UI_MESSAGES.BUTTON_UPDATE)).toBeInTheDocument()
-    expect(screen.getByText(UI_MESSAGES.BUTTON_DELETE)).toBeInTheDocument()
+    expect(
+      await screen.findByDisplayValue(MOCK_BOOKMARK_1.title),
+    ).toBeInTheDocument()
+    expect(screen.getByText(FIELD_LABELS.BUTTON_UPDATE)).toBeInTheDocument()
+    expect(screen.getByText(FIELD_LABELS.BUTTON_DELETE)).toBeInTheDocument()
   })
 
   it('詳細パネルからブックマークを更新できること', async () => {
@@ -105,7 +114,9 @@ describe('App Integration', () => {
     const { user } = setup()
 
     // 選択
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     await user.click(item)
 
     // 編集
@@ -114,7 +125,7 @@ describe('App Integration', () => {
     await user.type(titleInput, 'Updated by Panel')
 
     // 更新実行
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_UPDATE))
+    await user.click(screen.getByText(FIELD_LABELS.BUTTON_UPDATE))
     expect(patchCalled).toBe(true)
   })
 
@@ -130,11 +141,13 @@ describe('App Integration', () => {
     const { user } = setup()
 
     // 選択
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     await user.click(item)
 
     // 削除実行
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_DELETE))
+    await user.click(screen.getByText(FIELD_LABELS.BUTTON_DELETE))
 
     expect(deleteCalled).toBe(true)
     // パネルが閉じていることを確認
@@ -147,9 +160,13 @@ describe('App Integration', () => {
     const { user } = setup()
 
     // 選択してパネルを表示
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     await user.click(item)
-    expect(await screen.findByDisplayValue(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
+    expect(
+      await screen.findByDisplayValue(MOCK_BOOKMARK_1.title),
+    ).toBeInTheDocument()
 
     // 詳細パネル内の入力欄にフォーカス
     const titleInput = screen.getByDisplayValue(MOCK_BOOKMARK_1.title)
@@ -167,7 +184,9 @@ describe('App Integration', () => {
   it('行をダブルクリックした際に URL が新しいタブで開かれること', async () => {
     const { user } = setup()
 
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     await user.dblClick(item)
 
     expect(window.open).toHaveBeenCalledWith(
@@ -181,11 +200,13 @@ describe('App Integration', () => {
     const { user } = setup()
 
     // 選択してパネルを表示
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     await user.click(item)
 
     // 「開く」ボタンをクリック
-    await user.click(screen.getByText(UI_MESSAGES.BUTTON_OPEN))
+    await user.click(screen.getByText(FIELD_LABELS.BUTTON_OPEN))
 
     expect(window.open).toHaveBeenCalledWith(
       MOCK_BOOKMARK_1.url,

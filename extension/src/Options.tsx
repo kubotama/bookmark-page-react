@@ -1,7 +1,8 @@
+import { EXTENSION_MESSAGES, FIELD_LABELS } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
-import { EXTENSION_MESSAGES } from '@shared/constants'
-import { useOptions, type StatusType } from './hooks/useOptions'
+
+import { type StatusType, useOptions } from './hooks/useOptions'
 
 const statusStyles: Record<StatusType, string> = {
   idle: '',
@@ -17,14 +18,14 @@ export const Options = () => {
   return (
     <div className="p-8 max-w-2xl mx-auto bg-white shadow-md rounded-lg mt-10">
       <h1 className="text-2xl font-bold mb-8 text-gray-800 border-b pb-4">
-        {EXTENSION_MESSAGES.OPTIONS_TITLE}
+        {FIELD_LABELS.OPTIONS_TITLE}
       </h1>
 
       <div className="space-y-6">
         <div>
           <InputField
             id="api-url"
-            label={EXTENSION_MESSAGES.API_URL_LABEL}
+            label={FIELD_LABELS.URL}
             value={apiUrl}
             onChange={(e) => setApiUrl(e.target.value)}
             placeholder="http://localhost:3030"
@@ -40,7 +41,7 @@ export const Options = () => {
             size="medium"
             disabled={status.type === 'loading'}
           >
-            {EXTENSION_MESSAGES.BUTTON_SAVE}
+            {FIELD_LABELS.BUTTON_SAVE}
           </Button>
           <Button
             onClick={handleTestConnection}
@@ -48,7 +49,7 @@ export const Options = () => {
             size="medium"
             disabled={status.type === 'loading'}
           >
-            {EXTENSION_MESSAGES.BUTTON_TEST}
+            {FIELD_LABELS.BUTTON_TEST}
           </Button>
         </div>
 

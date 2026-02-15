@@ -1,4 +1,4 @@
-import { EXTENSION_MESSAGES } from '@shared/constants'
+import { ERROR_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
 
 /**
  * URL が http:// または https:// で始まっているかを確認する
@@ -7,9 +7,24 @@ export const isHttpUrl = (url: string): boolean => {
   return /^https?:\/\//.test(url)
 }
 
+/**
+ * URL からオリジン（プロトコル + ホスト + ポート）を取得する
+ */
+export const getOrigin = (url: string): string => {
+  try {
+    return new URL(url).origin
+  } catch {
+    // new URL() のパースに失敗した場合、エラーをスローして呼び出し元に問題を通知します。
+    throw new Error(`${ERROR_MESSAGES.INVALID_URL}: ${url}`)
+  }
+}
+
+/**
+ * API URL の妥当性を検証する (SSRF対策を含む)
+ */
 export const validateApiUrl = (apiUrl: string): string | null => {
   if (!isHttpUrl(apiUrl)) {
-    return EXTENSION_MESSAGES.INVALID_PROTOCOL
+    return VALIDATION_MESSAGES.URL_INVALID_PROTOCOL
   }
   try {
     const parsed = new URL(apiUrl)
@@ -20,18 +35,20 @@ export const validateApiUrl = (apiUrl: string): string | null => {
       hostname === '[::1]'
 
     if (!isLoopback) {
-      return EXTENSION_MESSAGES.INVALID_HOST
+      return ERROR_MESSAGES.INVALID_HOST
     }
 
-    if (!parsed.port) {
-      return EXTENSION_MESSAGES.INVALID_PORT
-    }
-    const port = Number(parsed.port)
+    // ポート番号の取得 (明示的な指定がない場合はプロトコルから推測)
+    const portString =
+      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
+    const port = Number(portString)
+
     if (isNaN(port) || port < 1024 || port > 65535) {
-      return EXTENSION_MESSAGES.INVALID_PORT
+      return ERROR_MESSAGES.INVALID_PORT
     }
+
     return null
   } catch {
-    return EXTENSION_MESSAGES.INVALID_URL
+    return ERROR_MESSAGES.INVALID_URL
   }
 }

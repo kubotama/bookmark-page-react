@@ -12,10 +12,10 @@ export const InputField: React.FC<InputFieldProps> = ({
   ...props
 }) => {
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-4">
       <label
         htmlFor={id}
-        className="w-8 text-xs font-medium text-gray-500 uppercase tracking-wider"
+        className="w-12 text-xs font-medium text-gray-500 uppercase tracking-wider"
       >
         {label}
       </label>

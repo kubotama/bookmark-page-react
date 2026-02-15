@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
-import { z } from 'zod'
-
+import { useState, useEffect, useCallback } from 'react'
+import { storage } from '../lib/storage'
 import {
   API_PATHS,
+  COMMON_MESSAGES,
   EXTENSION_CONSTANTS,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
 } from '@shared/constants'
-import { createApiResponseSchema } from '@shared/schemas/api'
 import { createBookmarkSchema } from '@shared/schemas/bookmark'
-import { validateApiUrl } from '@shared/utils/url'
-
-import { storage } from '../lib/storage'
+import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
 export type PopupStatusType = 'idle' | 'loading' | 'success' | 'error'
 
@@ -25,9 +22,6 @@ const DEFAULT_SETTINGS = {
   [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
 }
 
-// 登録レスポンス用のスキーマ
-const createResponseSchema = createApiResponseSchema(z.unknown())
-
 export const usePopup = () => {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
@@ -36,6 +30,7 @@ export const usePopup = () => {
   // 現在のタブ情報を取得 (Async/Await 形式)
   useEffect(() => {
     let isMounted = true
+
     const fetchTabInfo = async () => {
       try {
         const [activeTab] = await chrome.tabs.query({
@@ -51,14 +46,13 @@ export const usePopup = () => {
       }
     }
     fetchTabInfo()
-
     return () => {
       isMounted = false
     }
   }, [])
 
   const handleSave = useCallback(async () => {
-    setStatus({ type: 'loading', message: EXTENSION_MESSAGES.SETTINGS_SAVING })
+    setStatus({ type: 'loading', message: COMMON_MESSAGES.SAVING })
 
     // 1. 入力バリデーション
     const validation = createBookmarkSchema.safeParse({ title, url })
@@ -80,7 +74,7 @@ export const usePopup = () => {
         throw new Error(urlError)
       }
 
-      const sanitizedBaseUrl = new URL(baseUrl).origin
+      const sanitizedBaseUrl = getOrigin(baseUrl)
 
       // 3. リクエスト送信
       const response = await fetch(
@@ -99,24 +93,20 @@ export const usePopup = () => {
       }
 
       const result = await response.json()
-      const responseValidation = createResponseSchema.safeParse(result)
 
-      if (responseValidation.success) {
-        if (responseValidation.data.success) {
-          setStatus({
-            type: 'success',
-            message: EXTENSION_MESSAGES.POPUP_SAVED,
-          })
-          setTimeout(
-            () => window.close(),
-            EXTENSION_CONSTANTS.POPUP_CLOSE_DELAY_MS,
-          )
-        } else {
-          throw new Error(responseValidation.data.error.message)
-        }
-      } else {
-        throw new Error(EXTENSION_MESSAGES.UNEXPECTED_RESPONSE)
+      // レスポンス処理の統一 (useOptions.ts と同様のパターン)
+      if (!result.success) {
+        throw new Error(
+          result.error?.message ?? COMMON_MESSAGES.UNEXPECTED_RESPONSE,
+        )
       }
+
+      // 成功時
+      setStatus({
+        type: 'success',
+        message: EXTENSION_MESSAGES.POPUP_SAVED,
+      })
+      setTimeout(() => window.close(), EXTENSION_CONSTANTS.POPUP_CLOSE_DELAY_MS)
     } catch (err) {
       console.error(LOG_MESSAGES.CREATE_BOOKMARK_FAILED, err)
       setStatus({

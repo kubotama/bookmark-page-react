@@ -1,10 +1,12 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { FIELD_LABELS } from '@shared/constants'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
+import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi } from 'vitest'
+
 import { BookmarkDetail } from './BookmarkDetail'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import { UI_MESSAGES } from '@shared/constants'
-import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 
 describe('BookmarkDetail', () => {
   const defaultProps = {
@@ -42,33 +44,36 @@ describe('BookmarkDetail', () => {
     it.each([
       {
         name: '更新',
-        label: UI_MESSAGES.BUTTON_UPDATE,
+        label: FIELD_LABELS.BUTTON_UPDATE,
         propName: 'onUpdate' as const,
       },
       {
         name: '開く',
-        label: UI_MESSAGES.BUTTON_OPEN,
+        label: FIELD_LABELS.BUTTON_OPEN,
         propName: 'onOpen' as const,
       },
       {
         name: '削除',
-        label: UI_MESSAGES.BUTTON_DELETE,
+        label: FIELD_LABELS.BUTTON_DELETE,
         propName: 'onDelete' as const,
       },
       {
         name: '閉じる',
-        label: UI_MESSAGES.BUTTON_CLOSE,
+        label: FIELD_LABELS.BUTTON_CLOSE,
         propName: 'onClose' as const,
       },
-    ])('$name ボタンクリック時に正しいハンドラが呼ばれること', async ({ label, propName }) => {
-      const user = userEvent.setup()
-      const mockFn = vi.fn()
-      const props = { ...defaultProps, [propName]: mockFn }
-      render(<BookmarkDetail {...props} />)
+    ])(
+      '$name ボタンクリック時に正しいハンドラが呼ばれること',
+      async ({ label, propName }) => {
+        const user = userEvent.setup()
+        const mockFn = vi.fn()
+        const props = { ...defaultProps, [propName]: mockFn }
+        render(<BookmarkDetail {...props} />)
 
-      await user.click(screen.getByText(label))
-      expect(mockFn).toHaveBeenCalled()
-    })
+        await user.click(screen.getByText(label))
+        expect(mockFn).toHaveBeenCalled()
+      },
+    )
   })
 
   it('Escape キーで onClose が呼ばれること', async () => {
@@ -80,7 +85,7 @@ describe('BookmarkDetail', () => {
     const titleInput = screen.getByPlaceholderText('Bookmark Title')
     await user.click(titleInput)
     await user.keyboard('{Escape}')
-    
+
     expect(onClose).toHaveBeenCalled()
   })
 
