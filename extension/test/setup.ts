@@ -28,3 +28,14 @@ const chromeMock = {
 }
 
 vi.stubGlobal('chrome', chromeMock)
+
+/**
+ * 拡張機能のテストで共通して使用するエラーテストケースの型定義
+ */
+export type ErrorTestCase = {
+  name: string
+  setup: () => void | Promise<void>
+  expectedMessage: string | RegExp
+  expectedLog?: string
+  expectedLogError?: unknown
+}
