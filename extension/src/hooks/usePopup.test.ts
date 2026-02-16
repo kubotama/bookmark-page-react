@@ -44,6 +44,21 @@ describe('usePopup Hook', () => {
     })
   })
 
+  it('タブ情報の取得に失敗した場合にログを出力すること', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const tabError = new Error('Tab Error')
+    vi.mocked(chrome.tabs.query).mockRejectedValue(tabError)
+
+    renderHook(() => usePopup())
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        tabError,
+      )
+    })
+  })
+
   it('ブックマークを正常に保存できること', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -84,6 +99,25 @@ describe('usePopup Hook', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('API URL のバリデーションエラーを適切に扱うこと', async () => {
+    // 不正な API URL をストレージにセット
+    vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
+      Promise.resolve({
+        [STORAGE_KEYS.API_URL]: 'ftp://invalid-protocol',
+      }),
+    )
+
+    const { result } = renderHook(() => usePopup())
+    await waitFor(() => expect(result.current.title).toBe(mockTab.title))
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.status.type).toBe('error')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('API エラー時にエラーメッセージを表示すること', async () => {
     const apiErrorMessage = 'URL already exists'
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -92,7 +126,7 @@ describe('usePopup Hook', () => {
       ok: true,
       json: async () => ({
         success: false,
-        error: { message: apiErrorMessage, code: 'CONFLICT' },
+        error: { message: apiErrorMessage },
       }),
     } as Response)
 
@@ -109,6 +143,42 @@ describe('usePopup Hook', () => {
     expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
       expect.objectContaining({ message: apiErrorMessage }),
+    )
+  })
+
+  it('HTTP エラー時に適切なエラーを表示すること', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+    } as Response)
+
+    const { result } = renderHook(() => usePopup())
+    await waitFor(() => expect(result.current.title).toBe(mockTab.title))
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.status.type).toBe('error')
+    expect(result.current.status.message).toContain('HTTP error! status: 500')
+  })
+
+  it('ネットワークエラー時にログを出力すること', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const networkError = new Error('Failed to fetch')
+    vi.mocked(fetch).mockRejectedValue(networkError)
+
+    const { result } = renderHook(() => usePopup())
+    await waitFor(() => expect(result.current.title).toBe(mockTab.title))
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.status.type).toBe('error')
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
+      networkError,
     )
   })
 })
