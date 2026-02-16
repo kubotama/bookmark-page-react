@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import React from 'react'
 
 import {
   ARIA_ATTRIBUTES,
@@ -17,6 +18,46 @@ import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'
 import { type BookmarkProps } from './BookmarkList'
+import type { DragEndEvent } from '@dnd-kit/core'
+
+// DndContext をモック化して内部のイベントをトリガーしやすくする
+vi.mock('@dnd-kit/core', async () => {
+  const actual = await vi.importActual('@dnd-kit/core')
+  return {
+    ...actual,
+    DndContext: ({
+      children,
+      onDragEnd,
+    }: {
+      children: React.ReactNode
+      onDragEnd: (event: DragEndEvent) => void
+    }) => (
+      <div
+        data-testid="mock-dnd-context"
+        onClick={() =>
+          onDragEnd({
+            active: {
+              id: MOCK_BOOKMARK_1.id,
+              data: { current: undefined },
+              rect: { current: null },
+            },
+            over: {
+              id: MOCK_BOOKMARK_2.id,
+              rect: { current: null },
+              data: { current: undefined },
+              disabled: false,
+            },
+            delta: { x: 0, y: 0 },
+            activatorEvent: {} as Event,
+            collisions: null,
+          } as unknown as DragEndEvent)
+        }
+      >
+        {children}
+      </div>
+    ),
+  }
+})
 
 describe('BookmarkList', () => {
   const defaultProps: BookmarkProps = {
@@ -112,6 +153,20 @@ describe('BookmarkList', () => {
 
     await user.click(screen.getByText(MOCK_BOOKMARK_1.title))
     expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
+  })
+
+  it('ドラッグ終了時に onReorder が適切な引数で呼ばれること', async () => {
+    const user = userEvent.setup()
+    const onReorder = vi.fn()
+    render(<BookmarkList {...defaultProps} onReorder={onReorder} />)
+
+    // モック化した DndContext をクリックしてドラッグ終了イベントを擬似的に発火
+    await user.click(screen.getByTestId('mock-dnd-context'))
+
+    expect(onReorder).toHaveBeenCalledWith(
+      MOCK_BOOKMARK_1.id,
+      MOCK_BOOKMARK_2.id,
+    )
   })
 
   it('行をダブルクリックした際に onDoubleClick が呼び出されること', async () => {
