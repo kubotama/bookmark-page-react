@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { COMMON_MESSAGES, FIELD_LABELS } from '@shared/constants'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-
-import { usePopup } from './hooks/usePopup'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Popup } from './Popup'
+import { usePopup } from './hooks/usePopup'
+import {
+  COMMON_MESSAGES,
+  FIELD_LABELS,
+} from '@shared/constants'
 
 // usePopup フックをモック化
 vi.mock('./hooks/usePopup')
@@ -33,6 +34,21 @@ describe('Popup Component', () => {
     expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument()
   })
 
+  it('入力欄の値を変更したときに setTitle, setUrl が呼ばれること', async () => {
+    const user = userEvent.setup()
+    render(<Popup />)
+
+    const titleInput = screen.getByLabelText(FIELD_LABELS.TITLE)
+    const urlInput = screen.getByLabelText(FIELD_LABELS.URL)
+
+    await user.type(titleInput, 'New Title')
+    expect(baseMockUsePopup.setTitle).toHaveBeenCalled()
+
+    await user.clear(urlInput)
+    await user.type(urlInput, 'https://new.com')
+    expect(baseMockUsePopup.setUrl).toHaveBeenCalled()
+  })
+
   it('保存ボタンをクリックしたときに handleSave が呼ばれること', async () => {
     const user = userEvent.setup()
     render(<Popup />)
@@ -56,5 +72,31 @@ describe('Popup Component', () => {
     const elements = screen.getAllByText(COMMON_MESSAGES.SAVING)
     expect(elements.length).toBe(2)
     expect(screen.getByRole('button')).toBeDisabled()
+  })
+
+  it('エラーメッセージが正しく表示されること', () => {
+    const errorMessage = 'Test Error Message'
+    vi.mocked(usePopup).mockReturnValue({
+      ...baseMockUsePopup,
+      status: { type: 'error', message: errorMessage },
+    })
+
+    render(<Popup />)
+
+    expect(screen.getByText(errorMessage)).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('成功メッセージが正しく表示されること', () => {
+    const successMessage = 'Test Success Message'
+    vi.mocked(usePopup).mockReturnValue({
+      ...baseMockUsePopup,
+      status: { type: 'success', message: successMessage },
+    })
+
+    render(<Popup />)
+
+    expect(screen.getByText(successMessage)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
   })
 })
