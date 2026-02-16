@@ -11,7 +11,9 @@ import {
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
-import { useOptions, type StatusState } from './useOptions'
+import { useOptions } from './useOptions'
+
+import type { ErrorTestCase } from '../../test/setup'
 
 import type { MockInstance } from 'vitest'
 
@@ -179,32 +181,21 @@ describe('useOptions Hook', () => {
 
     const errorMessage = 'API Logic Error'
 
-    type testDataType = {
-      description: string
-      setup: () => void
-      statusState: StatusState
-      logMessage: string
-      logError: Error | string
-    }
-    const testData: testDataType[] = [
+    const errorTestCases: ErrorTestCase[] = [
       {
-        description: 'HTTP ステータスエラーの場合にエラーを投げること',
+        name: 'HTTP ステータスエラーの場合',
         setup: () => {
           vi.mocked(fetch).mockResolvedValue({
             ok: false,
             status: 500,
           } as Response)
         },
-        statusState: {
-          type: 'error',
-          message: `HTTP error! status: 500 - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
-        },
-        logMessage: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
-        logError: expect.any(Error),
+        expectedMessage: `HTTP error! status: 500 - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expectedLogError: expect.any(Error),
       },
       {
-        description:
-          'API が成功フラグ false を返した場合にそのメッセージを表示すること',
+        name: 'API が成功フラグ false を返した場合',
         setup: () => {
           vi.mocked(fetch).mockResolvedValue({
             ok: true,
@@ -214,73 +205,65 @@ describe('useOptions Hook', () => {
             }),
           } as Response)
         },
-        statusState: {
-          type: 'error',
-          message: `${errorMessage} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
-        },
-        logMessage: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
-        logError: expect.any(Error),
+        expectedMessage: `${errorMessage} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expectedLogError: expect.any(Error),
       },
       {
-        description: 'レスポンス形式が不正な場合にエラーを返すこと',
+        name: 'レスポンス形式が不正な場合',
         setup: () => {
           vi.mocked(fetch).mockResolvedValue({
             ok: true,
             json: async () => ({ success: true, data: { wrongKey: [] } }),
           } as Response)
         },
-        statusState: {
-          type: 'error',
-          message: `${COMMON_MESSAGES.UNEXPECTED_RESPONSE} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
-        },
-        logMessage: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
-        logError: expect.any(Error),
+        expectedMessage: `${COMMON_MESSAGES.UNEXPECTED_RESPONSE} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expectedLogError: expect.any(Error),
       },
       {
-        description:
-          'タイムアウトエラーが発生した場合に適切なメッセージを表示すること',
+        name: 'タイムアウトエラーが発生した場合',
         setup: () => {
           const abortError = new Error('Abort')
           abortError.name = 'AbortError'
           vi.mocked(fetch).mockRejectedValue(abortError)
         },
-        statusState: {
-          type: 'error',
-          message: EXTENSION_MESSAGES.CONNECTION_TIMEOUT,
-        },
-        logMessage: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
-        logError: expect.any(Error),
+        expectedMessage: EXTENSION_MESSAGES.CONNECTION_TIMEOUT,
+        expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expectedLogError: expect.any(Error),
       },
       {
-        description: '不明なエラー（Error インスタンス以外）が発生した場合',
+        name: '不明なエラーが発生した場合',
         setup: () => {
           vi.mocked(fetch).mockImplementation(() => {
             throw 'String Error'
           })
         },
-        statusState: { type: 'error', message: COMMON_MESSAGES.UNKNOWN_ERROR },
-        logMessage: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
-        logError: 'String Error',
+        expectedMessage: COMMON_MESSAGES.UNKNOWN_ERROR,
+        expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expectedLogError: 'String Error',
       },
     ]
 
-    it.each(testData)(
-      '$description',
-      async ({ setup, statusState, logMessage, logError }) => {
-        setup()
+    it.each(errorTestCases)(
+      '$name の場合に適切なエラーを表示し、ログを出力すること',
+      async ({ setup, expectedMessage, expectedLog, expectedLogError }) => {
+        await setup()
 
         const { result } = await setupHook()
         await act(async () => {
           await result.current.handleTestConnection()
         })
 
-        expect(result.current.status.type).toBe(statusState.type)
-        if (statusState.message) {
+        expect(result.current.status.type).toBe('error')
+        if (expectedMessage) {
           expect(result.current.status.message).toBe(
-            EXTENSION_MESSAGES.CONNECTION_FAILED(statusState.message),
+            EXTENSION_MESSAGES.CONNECTION_FAILED(expectedMessage as string),
           )
         }
-        expect(consoleSpy).toHaveBeenCalledWith(logMessage, logError)
+        if (expectedLog) {
+          expect(consoleSpy).toHaveBeenCalledWith(expectedLog, expectedLogError)
+        }
       },
     )
   })
