@@ -25,6 +25,9 @@ describe('BookmarkDetail', () => {
   })
 
   it('入力内容を変更できること', async () => {
+    const UPDATED_TITLE = 'Updated Title'
+    const UPDATED_URL = 'https://updated.com'
+
     const user = userEvent.setup()
     render(<BookmarkDetail {...defaultProps} />)
 
@@ -32,12 +35,12 @@ describe('BookmarkDetail', () => {
     const urlInput = screen.getByPlaceholderText('https://...')
 
     await user.clear(titleInput)
-    await user.type(titleInput, 'Updated Title')
+    await user.type(titleInput, UPDATED_TITLE)
     await user.clear(urlInput)
-    await user.type(urlInput, 'https://updated.com')
+    await user.type(urlInput, UPDATED_URL)
 
-    expect(titleInput).toHaveValue('Updated Title')
-    expect(urlInput).toHaveValue('https://updated.com')
+    expect(titleInput).toHaveValue(UPDATED_TITLE)
+    expect(urlInput).toHaveValue(UPDATED_URL)
   })
 
   describe('ボタン操作', () => {
@@ -75,7 +78,7 @@ describe('BookmarkDetail', () => {
         render(<BookmarkDetail {...props} />)
 
         await user.click(screen.getByText(label))
-        
+
         if (expectedArgs.length > 0) {
           expect(mockFn).toHaveBeenCalledWith(...expectedArgs)
         } else {
