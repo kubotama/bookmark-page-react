@@ -69,15 +69,15 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
           <Button variant="primary" onClick={handleUpdate}>
             {FIELD_LABELS.BUTTON_UPDATE}
           </Button>
-          <Button variant="secondary" onClick={onOpen}>
+          <Button variant="secondary" onClick={() => onOpen()}>
             {FIELD_LABELS.BUTTON_OPEN}
           </Button>
-          <Button variant="danger" onClick={onDelete}>
+          <Button variant="danger" onClick={() => onDelete()}>
             {FIELD_LABELS.BUTTON_DELETE}
           </Button>
           <Button
             variant="secondary"
-            onClick={onClose}
+            onClick={() => onClose()}
             title={FIELD_LABELS.BUTTON_CLOSE}
           >
             {FIELD_LABELS.BUTTON_CLOSE}

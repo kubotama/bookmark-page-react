@@ -46,32 +46,41 @@ describe('BookmarkDetail', () => {
         name: '更新',
         label: FIELD_LABELS.BUTTON_UPDATE,
         propName: 'onUpdate' as const,
+        expectedArgs: [MOCK_BOOKMARK_1.title, MOCK_BOOKMARK_1.url],
       },
       {
         name: '開く',
         label: FIELD_LABELS.BUTTON_OPEN,
         propName: 'onOpen' as const,
+        expectedArgs: [],
       },
       {
         name: '削除',
         label: FIELD_LABELS.BUTTON_DELETE,
         propName: 'onDelete' as const,
+        expectedArgs: [],
       },
       {
         name: '閉じる',
         label: FIELD_LABELS.BUTTON_CLOSE,
         propName: 'onClose' as const,
+        expectedArgs: [],
       },
     ])(
       '$name ボタンクリック時に正しいハンドラが呼ばれること',
-      async ({ label, propName }) => {
+      async ({ label, propName, expectedArgs }) => {
         const user = userEvent.setup()
         const mockFn = vi.fn()
         const props = { ...defaultProps, [propName]: mockFn }
         render(<BookmarkDetail {...props} />)
 
         await user.click(screen.getByText(label))
-        expect(mockFn).toHaveBeenCalled()
+        
+        if (expectedArgs.length > 0) {
+          expect(mockFn).toHaveBeenCalledWith(...expectedArgs)
+        } else {
+          expect(mockFn).toHaveBeenCalledWith()
+        }
       },
     )
   })
@@ -86,7 +95,7 @@ describe('BookmarkDetail', () => {
     await user.click(titleInput)
     await user.keyboard('{Escape}')
 
-    expect(onClose).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledWith()
   })
 
   it('別のブックマークが選択された時に入力内容が更新されること', () => {

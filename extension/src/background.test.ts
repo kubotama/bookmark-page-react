@@ -18,7 +18,7 @@ describe('background service worker', () => {
     await import('./background')
 
     // リスナーが登録されたか確認
-    expect(addListenerMock).toHaveBeenCalled()
+    expect(addListenerMock).toHaveBeenCalledWith(expect.any(Function))
 
     // 登録されたリスナー（コールバック）を直接呼び出す
     const callback = addListenerMock.mock.calls[0][0]
