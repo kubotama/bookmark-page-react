@@ -18,10 +18,18 @@ export const MOCK_BOOKMARK_2: Bookmark = {
 
 export const MOCK_BOOKMARKS = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]
 
+export const VALID_URLS = {
+  HTTP: 'http://localhost:3030',
+  HTTPS: 'https://example.com',
+  LOOPBACK: 'http://127.0.0.1:8080',
+  IPV6_LOOPBACK: 'http://[::1]:3030',
+} as const
+
 export const INVALID_URLS = {
   JAVASCRIPT: 'javascript:alert(1)',
   NO_PROTOCOL: 'example.com',
   MALFORMED: 'not-a-url',
+  FTP: 'ftp://example.com',
 } as const
 
 export const TEST_MESSAGES = {
