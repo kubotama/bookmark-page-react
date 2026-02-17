@@ -1,12 +1,14 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi } from 'vitest'
-import { BookmarkItem } from './BookmarkItem'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import React from 'react'
+import { describe, expect, it, vi } from 'vitest'
+
 import { DndContext } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
-import { ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
-import React from 'react'
+import { ARIA_ATTRIBUTES, ARIA_ROLES, HTML_ATTRIBUTES } from '@shared/constants'
+import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+import { BookmarkItem } from './BookmarkItem'
 
 describe('BookmarkItem', () => {
   const defaultProps = {
@@ -20,9 +22,7 @@ describe('BookmarkItem', () => {
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <DndContext>
-      <SortableContext items={[MOCK_BOOKMARK_1.id]}>
-        {children}
-      </SortableContext>
+      <SortableContext items={[MOCK_BOOKMARK_1.id]}>{children}</SortableContext>
     </DndContext>
   )
 

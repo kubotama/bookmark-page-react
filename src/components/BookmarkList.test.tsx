@@ -12,6 +12,7 @@ import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARKS,
+  MOCK_BOOKMARK_TITLE_PREFIX,
 } from '@shared/test/fixtures'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -97,7 +98,9 @@ describe('BookmarkList', () => {
         // リストロールを確認
         expect(screen.getByRole(ARIA_ROLES.LIST)).toBeInTheDocument()
         expect(
-          screen.getAllByRole(ARIA_ROLES.BUTTON, { name: /Test Bookmark/ }),
+          screen.getAllByRole(ARIA_ROLES.BUTTON, {
+            name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
+          }),
         ).toHaveLength(2)
       },
     },
@@ -187,7 +190,7 @@ describe('BookmarkList', () => {
     render(<BookmarkList {...defaultProps} onDoubleClick={onDoubleClick} />)
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
     expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
@@ -206,7 +209,7 @@ describe('BookmarkList', () => {
     render(<BookmarkList {...defaultProps} onRowClick={onRowClick} />)
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
     await user.type(items[0]!, ' ')
     expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
@@ -218,7 +221,7 @@ describe('BookmarkList', () => {
     )
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
     expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
@@ -227,7 +230,7 @@ describe('BookmarkList', () => {
     // 選択解除時
     rerender(<BookmarkList {...defaultProps} selectedId={null} />)
     const updatedItems = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
     expect(updatedItems[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
     expect(updatedItems[1]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
