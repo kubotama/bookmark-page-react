@@ -42,12 +42,16 @@ describe('Popup Component', () => {
     const titleInput = screen.getByLabelText(FIELD_LABELS.TITLE)
     const urlInput = screen.getByLabelText(FIELD_LABELS.URL)
 
-    await user.type(titleInput, 'New Title')
-    expect(baseMockUsePopup.setTitle).toHaveBeenCalled()
+    // 1文字入力し、フックが「初期値 + 1文字」で呼ばれることを確認する
+    await user.type(titleInput, 's')
+    expect(baseMockUsePopup.setTitle).toHaveBeenCalledWith(
+      baseMockUsePopup.title + 's',
+    )
 
-    await user.clear(urlInput)
-    await user.type(urlInput, 'https://new.com')
-    expect(baseMockUsePopup.setUrl).toHaveBeenCalled()
+    await user.type(urlInput, 's')
+    expect(baseMockUsePopup.setUrl).toHaveBeenCalledWith(
+      baseMockUsePopup.url + 's',
+    )
   })
 
   it('保存ボタンをクリックしたときに handleSave が呼ばれること', async () => {

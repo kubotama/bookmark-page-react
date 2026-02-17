@@ -45,9 +45,14 @@ describe('Options Component', () => {
     render(<Options />)
 
     const input = screen.getByLabelText(FIELD_LABELS.URL)
-    await user.type(input, 'http://new-api.com')
+    // 1文字入力し、フックが「初期値 + 1文字」で呼ばれることを確認する
+    // フックをモックしているため、入力欄の内容は初期値にリセットされ続けるが、
+    // コンポーネントからフックへのデータの受け渡し自体はこれで検証可能。
+    await user.type(input, 's')
 
-    expect(baseMockUseOptions.setApiUrl).toHaveBeenCalled()
+    expect(baseMockUseOptions.setApiUrl).toHaveBeenCalledWith(
+      EXTENSION_CONSTANTS.DEFAULT_API_URL + 's',
+    )
   })
 
   it('保存ボタンと接続確認ボタンが表示されること', () => {
