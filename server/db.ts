@@ -28,6 +28,7 @@ export const initializeDatabase = () => {
 
     // 2. DBファイル全体の設定（WALモード: パフォーマンス向上）
     if (!isTest) {
+      /* v8 ignore next */
       sqlite.pragma('journal_mode = WAL')
     }
 
@@ -39,12 +40,12 @@ export const initializeDatabase = () => {
   }
 }
 
-// データベースを空にする（テスト用）
-export const resetDatabase = () => {
-  if (process.env.NODE_ENV !== 'test') {
-    throw new Error('resetDatabase can only be called in test environment')
-  }
-
+  // データベースを空にする（テスト用）
+  export const resetDatabase = () => {
+    if (process.env.NODE_ENV !== 'test') {
+      /* v8 ignore next */
+      throw new Error('resetDatabase can only be called in test environment')
+    }
   // ユーザ定義テーブルの一覧を取得（sqlite_sequence などのシステムテーブルを除外）
   const tableSchema = z.object({ name: z.string() })
   const tables = z

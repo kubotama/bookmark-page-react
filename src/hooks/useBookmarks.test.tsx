@@ -95,7 +95,10 @@ describe('useBookmarks Hooks Error Paths', () => {
   })
 
   it('並び替え失敗時に BookmarkApiError を投げること', async () => {
-    const ERROR_REORDER = { message: 'Max items exceeded', code: 'REORDER_MAX_ITEMS' }
+    const ERROR_REORDER = {
+      message: 'Max items exceeded',
+      code: 'REORDER_MAX_ITEMS',
+    }
     server.use(
       http.put(`${API_PATHS.BOOKMARKS}/reorder`, () => {
         return HttpResponse.json(
@@ -115,7 +118,12 @@ describe('useBookmarks Hooks Error Paths', () => {
     expect(error).toBeInstanceOf(BookmarkApiError)
     expect(error.message).toBe(ERROR_REORDER.message)
     expect(error.code).toBe(ERROR_REORDER.code)
-    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.REORDER_FAILED_LOG(ERROR_REORDER.code, ERROR_REORDER.message))
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.REORDER_FAILED_LOG(
+        ERROR_REORDER.code,
+        ERROR_REORDER.message,
+      ),
+    )
   })
 
   it('API レスポンスのパース失敗時にエラーをログ出力すること', async () => {
@@ -129,10 +137,10 @@ describe('useBookmarks Hooks Error Paths', () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    
+
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to parse API response (Status: 200):'),
-      expect.any(Error)
+      expect.any(Error),
     )
   })
 })

@@ -19,7 +19,8 @@ export const useBookmarkReorder = () => {
       const oldIndex = oldData.bookmarks.findIndex((b) => b.id === activeId)
       const newIndex = oldData.bookmarks.findIndex((b) => b.id === overId)
 
-      if (oldIndex === -1 || newIndex === -1) return
+      if (oldIndex === -1) return
+      if (newIndex === -1) return
 
       const newBookmarks = arrayMove(oldData.bookmarks, oldIndex, newIndex)
       const newIds = newBookmarks.map((b) => b.id)
