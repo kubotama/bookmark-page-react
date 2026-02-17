@@ -23,6 +23,7 @@ describe('Popup Component', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
     vi.mocked(usePopup).mockReturnValue(baseMockUsePopup)
   })
 

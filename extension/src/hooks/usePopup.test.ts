@@ -10,7 +10,6 @@ import {
 import { act, renderHook, waitFor } from '@testing-library/react'
 
 import { usePopup } from './usePopup'
-
 import type { ErrorTestCase } from '../../test/setup'
 
 describe('usePopup Hook', () => {
@@ -22,6 +21,7 @@ describe('usePopup Hook', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
     vi.stubGlobal('fetch', vi.fn())
 
     // chrome.tabs.query のモック (Promise 形式)
@@ -61,6 +61,30 @@ describe('usePopup Hook', () => {
     })
   })
 
+  it('タブが見つからない場合にタイトルとURLを更新しないこと', async () => {
+    vi.mocked(chrome.tabs.query).mockImplementation(() => Promise.resolve([]))
+
+    const { result } = renderHook(() => usePopup())
+
+    await waitFor(() => {
+      expect(result.current.title).toBe('')
+      expect(result.current.url).toBe('')
+    })
+  })
+
+  it('タイトルやURLが欠落しているタブの場合、空文字で補完すること', async () => {
+    vi.mocked(chrome.tabs.query).mockImplementation(() =>
+      Promise.resolve([{ id: 1 } as chrome.tabs.Tab]),
+    )
+
+    const { result } = renderHook(() => usePopup())
+
+    await waitFor(() => {
+      expect(result.current.title).toBe('')
+      expect(result.current.url).toBe('')
+    })
+  })
+
   it('ブックマークを正常に保存できること', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -89,7 +113,7 @@ describe('usePopup Hook', () => {
     const errorTestCases: ErrorTestCase[] = [
       {
         name: '入力バリデーションエラー（タイトル空）',
-        setup: () => {}, // 初期化後の act でタイトルを空にする
+        setup: () => {},
         expectedMessage: /必須/,
       },
       {
@@ -137,11 +161,22 @@ describe('usePopup Hook', () => {
         expectedMessage: 'Failed to fetch',
         expectedLog: LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
       },
+      {
+        name: '不明なエラー（Error以外がスローされた場合）',
+        setup: () => {
+          vi.mocked(fetch).mockImplementation(() => {
+            throw 'Unexpected String Error'
+          })
+        },
+        expectedMessage: EXTENSION_MESSAGES.POPUP_SAVE_FAILED,
+        expectedLog: LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
+        expectedLogError: 'Unexpected String Error',
+      },
     ]
 
     it.each(errorTestCases)(
       '$name の場合にエラーメッセージを表示し、必要に応じてログを出力すること',
-      async ({ name, setup, expectedMessage, expectedLog }) => {
+      async ({ name, setup, expectedMessage, expectedLog, expectedLogError }) => {
         await setup()
         const consoleSpy = vi
           .spyOn(console, 'error')
@@ -150,7 +185,7 @@ describe('usePopup Hook', () => {
         const { result } = renderHook(() => usePopup())
         await waitFor(() => expect(result.current.title).toBe(mockTab.title))
 
-        // 入力エラーの特殊ケース対応
+        // タイトル空ケースの特殊セットアップ
         if (name.includes('タイトル空')) {
           await act(async () => {
             result.current.setTitle('')
@@ -167,7 +202,7 @@ describe('usePopup Hook', () => {
         if (expectedLog) {
           expect(consoleSpy).toHaveBeenCalledWith(
             expectedLog,
-            expect.any(Error),
+            expectedLogError ?? expect.any(Error),
           )
         }
       },

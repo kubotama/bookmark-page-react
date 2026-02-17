@@ -22,6 +22,7 @@ describe('Options Component', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
     vi.mocked(useOptions).mockReturnValue(baseMockUseOptions)
   })
 

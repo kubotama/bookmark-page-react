@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from '@shared/constants'
 describe('extension storage utility', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('get', () => {

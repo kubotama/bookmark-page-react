@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 describe('background service worker', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
     // background.ts を再読み込みしてイベントリスナーを登録させる
     vi.resetModules()
   })

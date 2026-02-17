@@ -22,6 +22,7 @@ describe('useOptions Hook', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
     vi.stubGlobal('fetch', vi.fn())
     vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
       Promise.resolve({

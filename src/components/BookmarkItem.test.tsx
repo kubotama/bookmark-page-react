@@ -6,6 +6,7 @@ import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { DndContext } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
 import { ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
+import React from 'react'
 
 describe('BookmarkItem', () => {
   const defaultProps = {
@@ -70,8 +71,11 @@ describe('BookmarkItem', () => {
         { wrapper },
       )
 
-      const item = screen.getByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
-      await user.type(item, '{enter}')
+      const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(MOCK_BOOKMARK_1.title),
+      })
+      item.focus()
+      await user.keyboard('{Enter}')
       expect(onDoubleClick).toHaveBeenCalledWith(
         MOCK_BOOKMARK_1.id,
         MOCK_BOOKMARK_1.url,
@@ -85,8 +89,11 @@ describe('BookmarkItem', () => {
         wrapper,
       })
 
-      const item = screen.getByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
-      await user.type(item, ' ')
+      const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(MOCK_BOOKMARK_1.title),
+      })
+      item.focus()
+      await user.keyboard(' ')
       expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
     })
 
@@ -95,9 +102,37 @@ describe('BookmarkItem', () => {
       const onClose = vi.fn()
       render(<BookmarkItem {...defaultProps} onClose={onClose} />, { wrapper })
 
-      const item = screen.getByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
-      await user.type(item, '{escape}')
+      const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(MOCK_BOOKMARK_1.title),
+      })
+      item.focus()
+      await user.keyboard('{Escape}')
       expect(onClose).toHaveBeenCalled()
+    })
+
+    it('その他のキー（aなど）では何も呼ばれないこと', async () => {
+      const user = userEvent.setup()
+      const onRowClick = vi.fn()
+      const onDoubleClick = vi.fn()
+      const onClose = vi.fn()
+      render(
+        <BookmarkItem
+          {...defaultProps}
+          onRowClick={onRowClick}
+          onDoubleClick={onDoubleClick}
+          onClose={onClose}
+        />,
+        { wrapper },
+      )
+
+      const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(MOCK_BOOKMARK_1.title),
+      })
+      item.focus()
+      await user.keyboard('a')
+      expect(onRowClick).not.toHaveBeenCalled()
+      expect(onDoubleClick).not.toHaveBeenCalled()
+      expect(onClose).not.toHaveBeenCalled()
     })
   })
 
@@ -107,7 +142,9 @@ describe('BookmarkItem', () => {
         wrapper,
       })
       expect(
-        screen.getByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) }),
+        screen.getByRole(ARIA_ROLES.BUTTON, {
+          name: new RegExp(MOCK_BOOKMARK_1.title),
+        }),
       ).toHaveAttribute('tabIndex', '0')
     })
 
@@ -116,7 +153,9 @@ describe('BookmarkItem', () => {
         wrapper,
       })
       expect(
-        screen.getByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) }),
+        screen.getByRole(ARIA_ROLES.BUTTON, {
+          name: new RegExp(MOCK_BOOKMARK_1.title),
+        }),
       ).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
     })
   })
@@ -124,7 +163,9 @@ describe('BookmarkItem', () => {
   it('選択状態の行に aria-selected="true" が付与されること', () => {
     render(<BookmarkItem {...defaultProps} isSelected={true} />, { wrapper })
 
-    const item = screen.getByRole(ARIA_ROLES.BUTTON, { name: new RegExp(MOCK_BOOKMARK_1.title) })
+    const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+      name: new RegExp(MOCK_BOOKMARK_1.title),
+    })
     expect(item).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
   })
 })
