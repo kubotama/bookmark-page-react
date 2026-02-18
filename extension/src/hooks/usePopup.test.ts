@@ -11,12 +11,13 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 
 import { usePopup } from './usePopup'
 import type { ErrorTestCase } from '../../test/setup'
+import { VALID_URLS } from '@shared/test/fixtures'
 
 describe('usePopup Hook', () => {
   const mockTab = {
     id: 1,
     title: 'Test Page',
-    url: 'https://example.com/test',
+    url: `${VALID_URLS.HTTPS}/test`,
   }
 
   beforeEach(() => {

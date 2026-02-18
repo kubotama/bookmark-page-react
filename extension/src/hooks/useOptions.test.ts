@@ -8,11 +8,10 @@ import {
   STORAGE_KEYS,
   VALIDATION_MESSAGES,
 } from '@shared/constants'
-import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2, VALID_URLS } from '@shared/test/fixtures'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
 import { useOptions } from './useOptions'
-
 import type { ErrorTestCase } from '../../test/setup'
 
 import type { MockInstance } from 'vitest'
@@ -75,7 +74,7 @@ describe('useOptions Hook', () => {
   describe('handleSave', () => {
     it('有効な URL の場合に設定を保存できること', async () => {
       const { result } = await setupHook()
-      const newUrl = 'http://localhost:4000'
+      const newUrl = VALID_URLS.TEST_API
 
       await act(async () => {
         result.current.setApiUrl(newUrl)

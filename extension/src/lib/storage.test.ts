@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { STORAGE_KEYS, EXTENSION_CONSTANTS } from '@shared/constants'
+import { VALID_URLS } from '@shared/test/fixtures'
 
 import { storage } from './storage'
 
@@ -12,7 +13,7 @@ describe('extension storage utility', () => {
 
   describe('get', () => {
     it('指定されたキーの値をストレージから取得できること', async () => {
-      const mockResult = { [STORAGE_KEYS.API_URL]: 'https://example.com' }
+      const mockResult = { [STORAGE_KEYS.API_URL]: VALID_URLS.HTTPS }
       vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
         Promise.resolve(mockResult),
       )
@@ -44,7 +45,7 @@ describe('extension storage utility', () => {
 
   describe('set', () => {
     it('値をストレージに保存できること', async () => {
-      const items = { [STORAGE_KEYS.API_URL]: 'https://new-api.com' }
+      const items = { [STORAGE_KEYS.API_URL]: VALID_URLS.LOOPBACK }
       vi.mocked(chrome.storage.sync.set).mockResolvedValue(undefined)
 
       await storage.set(items)

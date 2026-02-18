@@ -7,6 +7,7 @@ import {
   COMMON_MESSAGES,
   FIELD_LABELS,
 } from '@shared/constants'
+import { VALID_URLS } from '@shared/test/fixtures'
 
 // usePopup フックをモック化
 vi.mock('./hooks/usePopup')
@@ -15,7 +16,7 @@ describe('Popup Component', () => {
   const baseMockUsePopup = {
     title: 'Test Title',
     setTitle: vi.fn(),
-    url: 'https://example.com',
+    url: VALID_URLS.HTTPS,
     setUrl: vi.fn(),
     status: { type: 'idle' as const },
     handleSave: vi.fn(),
@@ -32,7 +33,7 @@ describe('Popup Component', () => {
 
     expect(screen.getByText(FIELD_LABELS.POPUP_TITLE)).toBeInTheDocument()
     expect(screen.getByDisplayValue('Test Title')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument()
+    expect(screen.getByDisplayValue(VALID_URLS.HTTPS)).toBeInTheDocument()
   })
 
   it('入力欄の値を変更したときに setTitle, setUrl が呼ばれること', async () => {

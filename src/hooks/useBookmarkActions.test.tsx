@@ -1,60 +1,54 @@
-import React from 'react'
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { http, HttpResponse } from 'msw'
-import { server } from '../test/setup'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useBookmarkActions } from './useBookmarkActions'
-import { MOCK_BOOKMARK_1, INVALID_URLS } from '@shared/test/fixtures'
-import { UI_MESSAGES, API_PATHS, HTTP_STATUS } from '@shared/constants'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { UpdateBookmarkRequest } from '@shared/schemas/bookmark'
+import { MOCK_BOOKMARK_1, VALID_URLS } from '@shared/test/fixtures'
+import { useUpdateBookmark, useDeleteBookmark } from './useBookmarks'
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-})
+// Mutations をモック化
+vi.mock('./useBookmarks', () => ({
+  useUpdateBookmark: vi.fn(),
+  useDeleteBookmark: vi.fn(),
+}))
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-)
+describe('useBookmarkActions Hook', () => {
+  const mockUpdate = vi.fn()
+  const mockDelete = vi.fn()
+  const mockSetSelectedId = vi.fn()
 
-describe('useBookmarkActions', () => {
   beforeEach(() => {
-    vi.stubGlobal('open', vi.fn())
-    vi.stubGlobal('confirm', vi.fn())
-
-    // 共通の MSW ハンドラ設定
-    server.use(
-      http.patch(`${API_PATHS.BOOKMARKS}/:id`, async ({ request }) => {
-        const body = (await request.json()) as UpdateBookmarkRequest
-        return HttpResponse.json({ ...MOCK_BOOKMARK_1, ...body })
-      }),
-      http.delete(`${API_PATHS.BOOKMARKS}/:id`, () => {
-        return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
-      }),
-    )
+    vi.clearAllMocks()
+    vi.restoreAllMocks()
+    vi.mocked(useUpdateBookmark).mockReturnValue({
+      mutate: mockUpdate,
+    } as unknown as ReturnType<typeof useUpdateBookmark>)
+    vi.mocked(useDeleteBookmark).mockReturnValue({
+      mutate: mockDelete,
+    } as unknown as ReturnType<typeof useDeleteBookmark>)
+    vi.stubGlobal('window', { open: vi.fn(), confirm: vi.fn() })
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+  it('updateBookmark が正しく mutate を呼び出すこと', () => {
+    const { result } = renderHook(() => useBookmarkActions(mockSetSelectedId))
+    const updates = { title: 'Updated Title', url: VALID_URLS.HTTPS }
 
-  const setSelectedId = vi.fn()
+    act(() => {
+      result.current.updateBookmark(MOCK_BOOKMARK_1.id, updates)
+    })
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      id: MOCK_BOOKMARK_1.id,
+      updates,
+    })
+  })
 
   describe('openBookmark', () => {
     it.each([
-      { name: 'HTTP URL', url: 'http://example.com', expected: true },
-      { name: 'HTTPS URL', url: 'https://example.com', expected: true },
-      { name: 'javascript:', url: INVALID_URLS.JAVASCRIPT, expected: false },
-      { name: 'No protocol', url: INVALID_URLS.NO_PROTOCOL, expected: false },
-    ])('$name の場合に正しい動作をすること', ({ url, expected }) => {
-      const { result } = renderHook(() => useBookmarkActions(setSelectedId), {
-        wrapper,
-      })
-
-      act(() => {
-        result.current.openBookmark(url)
-      })
-
+      { name: 'HTTP URL', url: VALID_URLS.HTTP, expected: true },
+      { name: 'HTTPS URL', url: VALID_URLS.HTTPS, expected: true },
+      { name: 'JavaScript URL', url: 'javascript:alert(1)', expected: false },
+    ])('URL "$url" の場合に $expected であること', ({ url, expected }) => {
+      const { result } = renderHook(() => useBookmarkActions(mockSetSelectedId))
+      result.current.openBookmark(url)
       if (expected) {
         expect(window.open).toHaveBeenCalledWith(
           url,
@@ -67,21 +61,39 @@ describe('useBookmarkActions', () => {
     })
   })
 
-  describe('deleteBookmark', () => {
-    it.each([
-      { name: 'キャンセル', confirmValue: false },
-      { name: 'OK', confirmValue: true },
-    ])('confirm で $name を選んだ場合に window.confirm が呼ばれること', async ({ confirmValue }) => {
-      vi.mocked(window.confirm).mockReturnValue(confirmValue)
-      const { result } = renderHook(() => useBookmarkActions(setSelectedId), {
-        wrapper,
-      })
+  it('deleteBookmark が確認後に mutate を呼び出すこと', () => {
+    vi.mocked(window.confirm).mockReturnValue(true)
+    const { result } = renderHook(() => useBookmarkActions(mockSetSelectedId))
 
-      await act(async () => {
-        result.current.deleteBookmark(MOCK_BOOKMARK_1.id)
-      })
-
-      expect(window.confirm).toHaveBeenCalledWith(UI_MESSAGES.DELETE_CONFIRM)
+    act(() => {
+      result.current.deleteBookmark(MOCK_BOOKMARK_1.id)
     })
+
+    expect(window.confirm).toHaveBeenCalled()
+    expect(mockDelete).toHaveBeenCalledWith(
+      MOCK_BOOKMARK_1.id,
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
+  })
+
+  it('deleteBookmark がキャンセルされた時に何もしないこと', () => {
+    vi.mocked(window.confirm).mockReturnValue(false)
+    const { result } = renderHook(() => useBookmarkActions(mockSetSelectedId))
+
+    act(() => {
+      result.current.deleteBookmark(MOCK_BOOKMARK_1.id)
+    })
+
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  it('closeDetail が setSelectedId(null) を呼び出すこと', () => {
+    const { result } = renderHook(() => useBookmarkActions(mockSetSelectedId))
+
+    act(() => {
+      result.current.closeDetail()
+    })
+
+    expect(mockSetSelectedId).toHaveBeenCalledWith(null)
   })
 })

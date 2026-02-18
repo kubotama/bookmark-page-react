@@ -21,8 +21,11 @@ export const MOCK_BOOKMARKS = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]
 export const VALID_URLS = {
   HTTP: 'http://localhost:3030',
   HTTPS: 'https://example.com',
+  GOOGLE: 'https://google.com',
   LOOPBACK: 'http://127.0.0.1:8080',
   IPV6_LOOPBACK: 'http://[::1]:3030',
+  FRONTEND: 'http://localhost:5173',
+  TEST_API: 'http://localhost:4000',
 } as const
 
 export const INVALID_URLS = {

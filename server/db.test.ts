@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { sqlite, db, initializeDatabase, resetDatabase } from './db'
 import { bookmarks, keywords, bookmarkKeywords, bookmarksRelations, keywordsRelations, bookmarkKeywordsRelations } from './db/schema'
 import { LOG_MESSAGES } from '@shared/constants'
-import { TEST_MESSAGES } from '@shared/test/fixtures'
+import { TEST_MESSAGES, VALID_URLS } from '@shared/test/fixtures'
 import { eq } from 'drizzle-orm'
 
 describe('db.ts', () => {
@@ -16,9 +16,10 @@ describe('db.ts', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
   })
 
-  const SEED_DATA = { title: 'Initial', url: 'https://initial.com' }
+  const SEED_DATA = { title: 'Initial', url: VALID_URLS.HTTPS }
 
   describe('initializeDatabase', () => {
     it('正常に初期化が行われること', () => {
@@ -58,7 +59,6 @@ describe('db.ts', () => {
 
   describe('Schema Definitions & Relations', () => {
     it('スキーマとリレーションの定義が正しく読み込まれていること', () => {
-      // 宣言されているオブジェクトにアクセスして実行パスを通過させる
       expect(bookmarks).toBeDefined()
       expect(keywords).toBeDefined()
       expect(bookmarkKeywords).toBeDefined()
@@ -69,7 +69,7 @@ describe('db.ts', () => {
 
     it('CASCADE 削除が正常に動作すること', async () => {
       const [b] = await db.insert(bookmarks).values({
-        title: 'C', url: 'https://c.com'
+        title: 'C', url: VALID_URLS.HTTP
       }).returning();
       const [k] = await db.insert(keywords).values({
         keywordName: 'K'
