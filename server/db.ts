@@ -11,9 +11,9 @@ const isTestEnvironment = () => process.env.NODE_ENV === 'test'
 const getDbPath = () => {
   return isTestEnvironment()
     ? ':memory:'
-    /* v8 ignore next 2 */
-    // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
-    : path.resolve(process.cwd(), 'bookmarks.sqlite')
+    : /* v8 ignore next 2 */
+      // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
+      path.resolve(process.cwd(), 'bookmarks.sqlite')
 }
 
 export const sqlite = new Database(getDbPath())
@@ -28,6 +28,7 @@ export const initializeDatabase = () => {
 
     // 2. DBファイル全体の設定（WALモード: パフォーマンス向上）
     if (!isTest) {
+      /* v8 ignore next */
       sqlite.pragma('journal_mode = WAL')
     }
 
@@ -42,9 +43,9 @@ export const initializeDatabase = () => {
 // データベースを空にする（テスト用）
 export const resetDatabase = () => {
   if (process.env.NODE_ENV !== 'test') {
+    /* v8 ignore next */
     throw new Error('resetDatabase can only be called in test environment')
   }
-
   // ユーザ定義テーブルの一覧を取得（sqlite_sequence などのシステムテーブルを除外）
   const tableSchema = z.object({ name: z.string() })
   const tables = z

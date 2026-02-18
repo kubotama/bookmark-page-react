@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core';
 
 export const bookmarks = sqliteTable('bookmarks', {
@@ -24,3 +25,23 @@ export const bookmarkKeywords = sqliteTable('bookmark_keywords', {
   unique().on(t.bookmarkId, t.keywordId),
   index('idx_bookmark_keywords_keyword_id').on(t.keywordId),
 ]);
+
+// リレーションの定義
+export const bookmarksRelations = relations(bookmarks, ({ many }) => ({
+  bookmarkKeywords: many(bookmarkKeywords),
+}));
+
+export const keywordsRelations = relations(keywords, ({ many }) => ({
+  bookmarkKeywords: many(bookmarkKeywords),
+}));
+
+export const bookmarkKeywordsRelations = relations(bookmarkKeywords, ({ one }) => ({
+  bookmark: one(bookmarks, {
+    fields: [bookmarkKeywords.bookmarkId],
+    references: [bookmarks.bookmarkId],
+  }),
+  keyword: one(keywords, {
+    fields: [bookmarkKeywords.keywordId],
+    references: [keywords.keywordId],
+  }),
+}));

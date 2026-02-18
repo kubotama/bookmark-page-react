@@ -1,0 +1,102 @@
+import { describe, it, expect } from 'vitest'
+import { isHttpUrl, getOrigin, validateApiUrl } from './url'
+import { ERROR_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
+import { VALID_URLS, INVALID_URLS } from '@shared/test/fixtures'
+
+describe('url utilities', () => {
+  describe('isHttpUrl', () => {
+    const isHttpTestData = [
+      { url: VALID_URLS.HTTP, expected: true },
+      { url: VALID_URLS.HTTPS, expected: true },
+      { url: INVALID_URLS.FTP, expected: false },
+      { url: INVALID_URLS.JAVASCRIPT, expected: false },
+      { url: INVALID_URLS.MALFORMED, expected: false },
+    ]
+
+    it.each(isHttpTestData)(
+      'URL "$url" の場合に $expected を返すこと',
+      ({ url, expected }) => {
+        expect(isHttpUrl(url)).toBe(expected)
+      },
+    )
+  })
+
+  describe('getOrigin', () => {
+    it('URL からオリジンを抽出できること', () => {
+      expect(getOrigin(`${VALID_URLS.HTTP}/api/test`)).toBe(VALID_URLS.HTTP)
+      expect(getOrigin(`${VALID_URLS.HTTPS}/path?query=1`)).toBe(
+        VALID_URLS.HTTPS,
+      )
+    })
+
+    it('無効な URL の場合にエラーを投げること', () => {
+      expect(() => getOrigin(INVALID_URLS.MALFORMED)).toThrow(
+        ERROR_MESSAGES.INVALID_URL,
+      )
+    })
+  })
+
+  describe('validateApiUrl', () => {
+    const validateTestData = [
+      {
+        name: '正しい localhost URL の場合に null を返すこと',
+        url: VALID_URLS.HTTP,
+        message: null,
+      },
+      {
+        name: '正しい 127.0.0.1 URL の場合に null を返すこと',
+        url: VALID_URLS.LOOPBACK,
+        message: null,
+      },
+      {
+        name: '正しい IPv6 loopback URL の場合に null を返すこと',
+        url: VALID_URLS.IPV6_LOOPBACK,
+        message: null,
+      },
+      {
+        name: 'プロトコルが不正な場合にエラーメッセージを返すこと',
+        url: INVALID_URLS.FTP,
+        message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      },
+      {
+        name: 'ホストが loopback 以外の場合にエラーを返すこと',
+        url: 'http://example.com:3000',
+        message: ERROR_MESSAGES.INVALID_HOST,
+      },
+      {
+        name: 'デフォルトポート（80）が特権ポートとして拒否されること',
+        url: 'http://localhost',
+        message: ERROR_MESSAGES.INVALID_PORT,
+      },
+      {
+        name: 'デフォルトポート（443）が特権ポートとして拒否されること',
+        url: 'https://localhost',
+        message: ERROR_MESSAGES.INVALID_PORT,
+      },
+      {
+        name: '1024 未満の明示的な特権ポート(80)を拒否すること',
+        url: 'http://localhost:80',
+        message: ERROR_MESSAGES.INVALID_PORT,
+      },
+      {
+        name: '1024 未満の明示的な特権ポート(1023)を拒否すること',
+        url: 'http://localhost:1023',
+        message: ERROR_MESSAGES.INVALID_PORT,
+      },
+      {
+        name: '有効範囲外のポート番号を拒否すること',
+        url: 'http://localhost:65536',
+        message: ERROR_MESSAGES.INVALID_URL,
+      },
+      {
+        name: 'URL パースに失敗する場合にエラーを返すこと',
+        url: 'http://[invalid-ipv6]',
+        message: ERROR_MESSAGES.INVALID_URL,
+      },
+    ]
+
+    it.each(validateTestData)('$name', ({ url, message }) => {
+      expect(validateApiUrl(url)).toBe(message)
+    })
+  })
+})

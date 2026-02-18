@@ -5,13 +5,13 @@ import {
   reorderBookmarksSchema,
   updateBookmarkSchema,
 } from './bookmark'
-import { MOCK_BOOKMARK_1, INVALID_URLS } from '../test/fixtures'
+import { MOCK_BOOKMARK_1, INVALID_URLS, VALID_URLS } from '../test/fixtures'
 import { VALIDATION_MESSAGES } from '../constants'
 
 describe('bookmarkSchema', () => {
   it.each([
-    { name: 'HTTP URL', url: 'http://example.com' },
-    { name: 'HTTPS URL', url: 'https://example.com' },
+    { name: 'HTTP URL', url: VALID_URLS.HTTP },
+    { name: 'HTTPS URL', url: VALID_URLS.HTTPS },
   ])('有効な $name を受け入れること', ({ url }) => {
     const valid = { ...MOCK_BOOKMARK_1, url }
     const result = bookmarkSchema.safeParse(valid)
@@ -32,24 +32,24 @@ describe('bookmarkSchema', () => {
 
 describe('createBookmarkSchema', () => {
   it('正常なデータを受け入れること', () => {
-    const valid = { title: 'Test', url: 'https://example.com' }
+    const valid = { title: 'Test', url: VALID_URLS.HTTP }
     expect(createBookmarkSchema.safeParse(valid).success).toBe(true)
   })
 
   it.each([
     {
       name: 'タイトルが空',
-      data: { title: '', url: 'https://example.com' },
+      data: { title: '', url: VALID_URLS.HTTP },
       expected: VALIDATION_MESSAGES.TITLE_REQUIRED,
     },
     {
       name: 'URL 形式が不正',
-      data: { title: 'Test', url: 'not-a-url' },
+      data: { title: 'Test', url: INVALID_URLS.MALFORMED },
       expected: VALIDATION_MESSAGES.URL_INVALID_FORMAT,
     },
     {
       name: 'プロトコルが不正 (ftp)',
-      data: { title: 'Test', url: 'ftp://example.com' },
+      data: { title: 'Test', url: INVALID_URLS.FTP },
       expected: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
@@ -64,8 +64,8 @@ describe('createBookmarkSchema', () => {
 describe('updateBookmarkSchema', () => {
   it.each([
     { name: 'タイトルのみ', data: { title: 'Updated' } },
-    { name: 'URLのみ', data: { url: 'https://example.com' } },
-    { name: '両方', data: { title: 'Updated', url: 'https://example.com' } },
+    { name: 'URLのみ', data: { url: VALID_URLS.HTTP } },
+    { name: '両方', data: { title: 'Updated', url: VALID_URLS.HTTP } },
   ])('正常系: $name の場合に成功すること', ({ data }) => {
     expect(updateBookmarkSchema.safeParse(data).success).toBe(true)
   })
@@ -83,7 +83,7 @@ describe('updateBookmarkSchema', () => {
     },
     {
       name: 'URL 形式が不正',
-      data: { url: 'not-a-url' },
+      data: { url: INVALID_URLS.MALFORMED },
       expected: VALIDATION_MESSAGES.URL_INVALID_FORMAT,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {

@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { COMMON_MESSAGES, FIELD_LABELS } from '@shared/constants'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-
-import { usePopup } from './hooks/usePopup'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Popup } from './Popup'
+import { usePopup } from './hooks/usePopup'
+import {
+  COMMON_MESSAGES,
+  FIELD_LABELS,
+} from '@shared/constants'
+import { VALID_URLS } from '@shared/test/fixtures'
 
 // usePopup フックをモック化
 vi.mock('./hooks/usePopup')
@@ -14,7 +16,7 @@ describe('Popup Component', () => {
   const baseMockUsePopup = {
     title: 'Test Title',
     setTitle: vi.fn(),
-    url: 'https://example.com',
+    url: VALID_URLS.HTTPS,
     setUrl: vi.fn(),
     status: { type: 'idle' as const },
     handleSave: vi.fn(),
@@ -22,6 +24,7 @@ describe('Popup Component', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
     vi.mocked(usePopup).mockReturnValue(baseMockUsePopup)
   })
 
@@ -30,7 +33,26 @@ describe('Popup Component', () => {
 
     expect(screen.getByText(FIELD_LABELS.POPUP_TITLE)).toBeInTheDocument()
     expect(screen.getByDisplayValue('Test Title')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument()
+    expect(screen.getByDisplayValue(VALID_URLS.HTTPS)).toBeInTheDocument()
+  })
+
+  it('入力欄の値を変更したときに setTitle, setUrl が呼ばれること', async () => {
+    const user = userEvent.setup()
+    render(<Popup />)
+
+    const titleInput = screen.getByLabelText(FIELD_LABELS.TITLE)
+    const urlInput = screen.getByLabelText(FIELD_LABELS.URL)
+
+    // 1文字入力し、フックが「初期値 + 1文字」で呼ばれることを確認する
+    await user.type(titleInput, 's')
+    expect(baseMockUsePopup.setTitle).toHaveBeenCalledWith(
+      baseMockUsePopup.title + 's',
+    )
+
+    await user.type(urlInput, 's')
+    expect(baseMockUsePopup.setUrl).toHaveBeenCalledWith(
+      baseMockUsePopup.url + 's',
+    )
   })
 
   it('保存ボタンをクリックしたときに handleSave が呼ばれること', async () => {
@@ -56,5 +78,31 @@ describe('Popup Component', () => {
     const elements = screen.getAllByText(COMMON_MESSAGES.SAVING)
     expect(elements.length).toBe(2)
     expect(screen.getByRole('button')).toBeDisabled()
+  })
+
+  it('エラーメッセージが正しく表示されること', () => {
+    const errorMessage = 'Test Error Message'
+    vi.mocked(usePopup).mockReturnValue({
+      ...baseMockUsePopup,
+      status: { type: 'error', message: errorMessage },
+    })
+
+    render(<Popup />)
+
+    expect(screen.getByText(errorMessage)).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('成功メッセージが正しく表示されること', () => {
+    const successMessage = 'Test Success Message'
+    vi.mocked(usePopup).mockReturnValue({
+      ...baseMockUsePopup,
+      status: { type: 'success', message: successMessage },
+    })
+
+    render(<Popup />)
+
+    expect(screen.getByText(successMessage)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
   })
 })

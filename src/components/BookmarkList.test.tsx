@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import React from 'react'
 
 import {
   ARIA_ATTRIBUTES,
@@ -11,12 +12,53 @@ import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARKS,
+  MOCK_BOOKMARK_TITLE_PREFIX,
 } from '@shared/test/fixtures'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'
 import { type BookmarkProps } from './BookmarkList'
+import type { DragEndEvent } from '@dnd-kit/core'
+
+// DndContext をモック化して内部のイベントをトリガーしやすくする
+vi.mock('@dnd-kit/core', async () => {
+  const actual = await vi.importActual('@dnd-kit/core')
+  return {
+    ...actual,
+    DndContext: ({
+      children,
+      onDragEnd,
+    }: {
+      children: React.ReactNode
+      onDragEnd: (event: DragEndEvent) => void
+    }) => (
+      <div
+        data-testid="mock-dnd-context"
+        onClick={() =>
+          onDragEnd({
+            active: {
+              id: MOCK_BOOKMARK_1.id,
+              data: { current: undefined },
+              rect: { current: null },
+            },
+            over: {
+              id: MOCK_BOOKMARK_2.id,
+              rect: { current: null },
+              data: { current: undefined },
+              disabled: false,
+            },
+            delta: { x: 0, y: 0 },
+            activatorEvent: {} as Event,
+            collisions: null,
+          } as unknown as DragEndEvent)
+        }
+      >
+        {children}
+      </div>
+    ),
+  }
+})
 
 describe('BookmarkList', () => {
   const defaultProps: BookmarkProps = {
@@ -56,7 +98,9 @@ describe('BookmarkList', () => {
         // リストロールを確認
         expect(screen.getByRole(ARIA_ROLES.LIST)).toBeInTheDocument()
         expect(
-          screen.getAllByRole(ARIA_ROLES.BUTTON, { name: /Test Bookmark/ }),
+          screen.getAllByRole(ARIA_ROLES.BUTTON, {
+            name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
+          }),
         ).toHaveLength(2)
       },
     },
@@ -114,6 +158,20 @@ describe('BookmarkList', () => {
     expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
   })
 
+  it('ドラッグ終了時に onReorder が適切な引数で呼ばれること', async () => {
+    const user = userEvent.setup()
+    const onReorder = vi.fn()
+    render(<BookmarkList {...defaultProps} onReorder={onReorder} />)
+
+    // モック化した DndContext をクリックしてドラッグ終了イベントを擬似的に発火
+    await user.click(screen.getByTestId('mock-dnd-context'))
+
+    expect(onReorder).toHaveBeenCalledWith(
+      MOCK_BOOKMARK_1.id,
+      MOCK_BOOKMARK_2.id,
+    )
+  })
+
   it('行をダブルクリックした際に onDoubleClick が呼び出されること', async () => {
     const user = userEvent.setup()
     const onDoubleClick = vi.fn()
@@ -132,7 +190,7 @@ describe('BookmarkList', () => {
     render(<BookmarkList {...defaultProps} onDoubleClick={onDoubleClick} />)
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
     expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
@@ -151,7 +209,7 @@ describe('BookmarkList', () => {
     render(<BookmarkList {...defaultProps} onRowClick={onRowClick} />)
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
     await user.type(items[0]!, ' ')
     expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
@@ -163,7 +221,7 @@ describe('BookmarkList', () => {
     )
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
     expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
@@ -172,7 +230,7 @@ describe('BookmarkList', () => {
     // 選択解除時
     rerender(<BookmarkList {...defaultProps} selectedId={null} />)
     const updatedItems = screen.getAllByRole(ARIA_ROLES.BUTTON, {
-      name: /Test Bookmark/,
+      name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
     expect(updatedItems[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
     expect(updatedItems[1]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')

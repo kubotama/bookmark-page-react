@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import type { ContentfulStatusCode } from 'hono/utils/http-status'
+
+import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
+
 import bookmarksRoute from './routes/bookmarks'
-import { HTTP_STATUS, ERROR_MESSAGES, LOG_MESSAGES } from '@shared/constants'
 import { API_ERROR_CODES } from './utils/error'
 
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 const app = new Hono()
 
 // フロントエンド(Vite:5173)および Chrome 拡張機能からのアクセスを許可
@@ -14,7 +16,10 @@ app.use(
     origin: (origin) => {
       const allowedOrigin =
         process.env.BOOKMARK_PAGE_FRONTEND_URL || 'http://localhost:5173'
-      if (origin === allowedOrigin || origin.startsWith('chrome-extension://')) {
+      if (
+        origin === allowedOrigin ||
+        origin.startsWith('chrome-extension://')
+      ) {
         return origin
       }
       return allowedOrigin
@@ -28,9 +33,11 @@ app.onError((err, c) => {
 
   // すでにステータスコードがセットされている場合はそれを尊重する
   // 200 (OK) のままエラーになった場合は 500 に倒す
-  const status = (c.res.status === 200
-    ? HTTP_STATUS.INTERNAL_SERVER_ERROR
-    : c.res.status) as ContentfulStatusCode
+  const status = (
+    c.res.status === HTTP_STATUS.OK
+      ? HTTP_STATUS.INTERNAL_SERVER_ERROR
+      : c.res.status
+  ) as ContentfulStatusCode
 
   return c.json(
     {

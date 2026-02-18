@@ -25,6 +25,9 @@ describe('BookmarkDetail', () => {
   })
 
   it('入力内容を変更できること', async () => {
+    const UPDATED_TITLE = 'Updated Title'
+    const UPDATED_URL = 'https://updated.com'
+
     const user = userEvent.setup()
     render(<BookmarkDetail {...defaultProps} />)
 
@@ -32,12 +35,12 @@ describe('BookmarkDetail', () => {
     const urlInput = screen.getByPlaceholderText('https://...')
 
     await user.clear(titleInput)
-    await user.type(titleInput, 'Updated Title')
+    await user.type(titleInput, UPDATED_TITLE)
     await user.clear(urlInput)
-    await user.type(urlInput, 'https://updated.com')
+    await user.type(urlInput, UPDATED_URL)
 
-    expect(titleInput).toHaveValue('Updated Title')
-    expect(urlInput).toHaveValue('https://updated.com')
+    expect(titleInput).toHaveValue(UPDATED_TITLE)
+    expect(urlInput).toHaveValue(UPDATED_URL)
   })
 
   describe('ボタン操作', () => {
@@ -46,32 +49,41 @@ describe('BookmarkDetail', () => {
         name: '更新',
         label: FIELD_LABELS.BUTTON_UPDATE,
         propName: 'onUpdate' as const,
+        expectedArgs: [MOCK_BOOKMARK_1.title, MOCK_BOOKMARK_1.url],
       },
       {
         name: '開く',
         label: FIELD_LABELS.BUTTON_OPEN,
         propName: 'onOpen' as const,
+        expectedArgs: [],
       },
       {
         name: '削除',
         label: FIELD_LABELS.BUTTON_DELETE,
         propName: 'onDelete' as const,
+        expectedArgs: [],
       },
       {
         name: '閉じる',
         label: FIELD_LABELS.BUTTON_CLOSE,
         propName: 'onClose' as const,
+        expectedArgs: [],
       },
     ])(
       '$name ボタンクリック時に正しいハンドラが呼ばれること',
-      async ({ label, propName }) => {
+      async ({ label, propName, expectedArgs }) => {
         const user = userEvent.setup()
         const mockFn = vi.fn()
         const props = { ...defaultProps, [propName]: mockFn }
         render(<BookmarkDetail {...props} />)
 
         await user.click(screen.getByText(label))
-        expect(mockFn).toHaveBeenCalled()
+
+        if (expectedArgs.length > 0) {
+          expect(mockFn).toHaveBeenCalledWith(...expectedArgs)
+        } else {
+          expect(mockFn).toHaveBeenCalledWith()
+        }
       },
     )
   })
@@ -86,7 +98,7 @@ describe('BookmarkDetail', () => {
     await user.click(titleInput)
     await user.keyboard('{Escape}')
 
-    expect(onClose).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledWith()
   })
 
   it('別のブックマークが選択された時に入力内容が更新されること', () => {
