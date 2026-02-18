@@ -1,7 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  API_PATHS,
+  ERROR_MESSAGES,
+  HTTP_STATUS,
+  LOG_MESSAGES,
+} from '@shared/constants'
+
 import app from './app'
 import { db, initializeDatabase, resetDatabase } from './db'
-import { HTTP_STATUS, API_PATHS, ERROR_MESSAGES, LOG_MESSAGES } from '@shared/constants'
 import { API_ERROR_CODES } from './utils/error'
 
 describe('App Global Handlers', () => {
@@ -16,6 +23,7 @@ describe('App Global Handlers', () => {
 
     const body = await res.json()
     expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.NOT_FOUND)
     expect(body.error.code).toBe(API_ERROR_CODES.NOT_FOUND)
   })
 
@@ -35,7 +43,10 @@ describe('App Global Handlers', () => {
     expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
     expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
 
-    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.UNHANDLED_ERROR_LOG(dbError.message), dbError)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.UNHANDLED_ERROR_LOG(dbError.message),
+      dbError,
+    )
   })
 
   it(' CORS 設定が正しく適用されていること', async () => {

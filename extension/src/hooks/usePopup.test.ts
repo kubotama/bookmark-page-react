@@ -4,6 +4,7 @@ import {
   API_PATHS,
   EXTENSION_CONSTANTS,
   EXTENSION_MESSAGES,
+  HTTP_STATUS,
   LOG_MESSAGES,
   STORAGE_KEYS,
 } from '@shared/constants'
@@ -134,7 +135,7 @@ describe('usePopup Hook', () => {
         setup: () => {
           vi.mocked(fetch).mockResolvedValue({
             ok: false,
-            status: 500,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           } as Response)
         },
         expectedMessage: /HTTP error! status: 500/,
@@ -177,7 +178,13 @@ describe('usePopup Hook', () => {
 
     it.each(errorTestCases)(
       '$name の場合にエラーメッセージを表示し、必要に応じてログを出力すること',
-      async ({ name, setup, expectedMessage, expectedLog, expectedLogError }) => {
+      async ({
+        name,
+        setup,
+        expectedMessage,
+        expectedLog,
+        expectedLogError,
+      }) => {
         await setup()
         const consoleSpy = vi
           .spyOn(console, 'error')

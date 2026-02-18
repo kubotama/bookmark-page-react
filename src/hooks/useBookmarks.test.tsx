@@ -1,18 +1,20 @@
-import { renderHook, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import {
-  useBookmarks,
-  useUpdateBookmark,
-  useDeleteBookmark,
-  useReorderBookmarks,
-  BookmarkApiError,
-} from './useBookmarks'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
-import { server } from '../test/setup'
+import React from 'react'
+import { describe, expect, it, vi } from 'vitest'
+
 import { API_PATHS, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
+
+import { server } from '../test/setup'
+import {
+  BookmarkApiError,
+  useBookmarks,
+  useDeleteBookmark,
+  useReorderBookmarks,
+  useUpdateBookmark,
+} from './useBookmarks'
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -129,7 +131,7 @@ describe('useBookmarks Hooks Error Paths', () => {
   it('API レスポンスのパース失敗時にエラーをログ出力すること', async () => {
     server.use(
       http.get(API_PATHS.BOOKMARKS, () => {
-        return new HttpResponse('Invalid JSON', { status: 200 })
+        return new HttpResponse('Invalid JSON', { status: HTTP_STATUS.OK })
       }),
     )
 
