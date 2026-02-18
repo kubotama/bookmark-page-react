@@ -123,6 +123,13 @@ export const HTTP_STATUS = {
 } as const
 
 /**
+ * 拡張機能とのメッセージ通信用定数
+ */
+export const EXTENSION_MESSAGE_TYPES = {
+  GET_API_CONFIG: 'GET_API_CONFIG',
+} as const
+
+/**
  * ストレージキー
  */
 export const STORAGE_KEYS = {
