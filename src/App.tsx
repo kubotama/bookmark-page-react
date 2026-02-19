@@ -7,7 +7,7 @@ import { useBookmarks } from './hooks/useBookmarks'
 import { useBookmarkList } from './hooks/useBookmarkList'
 import { useBookmarkActions } from './hooks/useBookmarkActions'
 import { useBookmarkReorder } from './hooks/useBookmarkReorder'
-import { STORAGE_KEYS } from '@shared/constants'
+import { FIELD_LABELS, STORAGE_KEYS } from '@shared/constants'
 import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
 
 function App() {
@@ -65,11 +65,11 @@ function App() {
     <div className="flex flex-col h-full w-full bg-white overflow-hidden">
       {/* ヘッダー / 設定ボタン */}
       <header className="p-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        <div className="font-bold text-gray-700 ml-2">Bookmark Page</div>
+        <div className="font-bold text-gray-700 mx-auto">Bookmark Page</div>
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="p-1 rounded-md hover:bg-gray-200 text-gray-600 transition-colors"
-          title="設定"
+          title={FIELD_LABELS.SETTING_TITLE}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

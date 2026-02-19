@@ -1,4 +1,4 @@
-import { EXTENSION_MESSAGES, FIELD_LABELS } from '@shared/constants'
+import { COMMON_MESSAGES, FIELD_LABELS } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
@@ -31,7 +31,7 @@ export const Options = () => {
             placeholder="http://localhost:3030"
           />
           <p className="mt-2 text-xs text-gray-500 ml-14">
-            {EXTENSION_MESSAGES.API_URL_DESCRIPTION}
+            {COMMON_MESSAGES.API_URL_DESCRIPTION}
           </p>
         </div>
 

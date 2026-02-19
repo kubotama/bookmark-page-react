@@ -11,8 +11,12 @@ export const FIELD_LABELS = {
   BUTTON_CLOSE: '閉じる',
   BUTTON_SAVE: '保存',
   BUTTON_TEST: '接続確認',
+  BUTTON_SAVE_AND_APPLY: '保存して適用',
+  BUTTON_SYNCHRONIZE: '同期',
+  BUTTON_SYNCHRONIZING: '同期中...',
   OPTIONS_TITLE: '拡張機能の設定',
   POPUP_TITLE: 'ページをブックマーク',
+  SETTING_TITLE: '設定',
 } as const
 
 /**
@@ -24,6 +28,8 @@ export const COMMON_MESSAGES = {
   UNEXPECTED_RESPONSE: '予期しないレスポンス形式です',
   SAVING: '保存中...',
   LOADING_LABEL: '読み込み中...',
+  API_URL_DESCRIPTION:
+    'ブックマークを保存するサーバーのベースURL（/api/bookmarksの前まで）を入力してください。',
 } as const
 
 /**
@@ -57,8 +63,6 @@ export const UI_MESSAGES = {
  * ブラウザ拡張機能用のメッセージ
  */
 export const EXTENSION_MESSAGES = {
-  API_URL_DESCRIPTION:
-    'ブックマークを保存するサーバーのベースURL（/api/bookmarksの前まで）を入力してください。',
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
