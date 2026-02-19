@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Options } from './Options'
 import {
-  EXTENSION_CONSTANTS,
+  DEFAULT_API_URL,
   FIELD_LABELS,
 } from '@shared/constants'
 import { useOptions } from './hooks/useOptions'
@@ -13,7 +13,7 @@ vi.mock('./hooks/useOptions')
 
 describe('Options Component', () => {
   const baseMockUseOptions = {
-    apiUrl: EXTENSION_CONSTANTS.DEFAULT_API_URL,
+    apiUrl: DEFAULT_API_URL,
     setApiUrl: vi.fn(),
     status: { type: 'idle' as const },
     handleSave: vi.fn(),
@@ -36,7 +36,7 @@ describe('Options Component', () => {
       screen.getByLabelText(FIELD_LABELS.URL),
     ).toBeInTheDocument()
     expect(
-      screen.getByDisplayValue(EXTENSION_CONSTANTS.DEFAULT_API_URL),
+      screen.getByDisplayValue(DEFAULT_API_URL),
     ).toBeInTheDocument()
   })
 
@@ -51,7 +51,7 @@ describe('Options Component', () => {
     await user.type(input, 's')
 
     expect(baseMockUseOptions.setApiUrl).toHaveBeenCalledWith(
-      EXTENSION_CONSTANTS.DEFAULT_API_URL + 's',
+      DEFAULT_API_URL + 's',
     )
   })
 

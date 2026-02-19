@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
-
-import { COMMON_MESSAGES, FIELD_LABELS } from '@shared/constants'
+import { useExtensionSync } from '../hooks/useExtensionSync'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
-
-import { useExtensionSync } from '../hooks/useExtensionSync'
+import { COMMON_MESSAGES, FIELD_LABELS, DEFAULT_API_URL } from '@shared/constants'
+import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -20,19 +19,35 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const [url, setUrl] = useState(currentApiUrl)
   const { syncFromExtension, isSyncing, syncError } = useExtensionSync()
   const [localMessage, setLocalMessage] = useState<string | null>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const handleSync = async () => {
     setLocalMessage(null)
+    setValidationError(null)
     const syncedUrl = await syncFromExtension()
     if (syncedUrl) {
       setUrl(syncedUrl)
-      setLocalMessage('拡張機能から設定を読み込みました')
+      setLocalMessage(COMMON_MESSAGES.SETTINGS_SYNCED)
     }
   }
 
   const handleSave = () => {
-    onSave(url)
-    onClose()
+    setLocalMessage(null)
+    setValidationError(null)
+
+    const error = validateApiUrl(url)
+    if (error) {
+      setValidationError(error)
+      return
+    }
+
+    try {
+      const sanitizedUrl = getOrigin(url)
+      onSave(sanitizedUrl)
+      onClose()
+    } catch {
+      setValidationError(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
+    }
   }
 
   return (
@@ -47,7 +62,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               label={FIELD_LABELS.URL}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="http://localhost:3030"
+              placeholder={DEFAULT_API_URL}
             />
           </div>
         </div>
@@ -56,11 +71,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           {COMMON_MESSAGES.API_URL_DESCRIPTION}
         </p>
 
-        {(syncError || localMessage) && (
+        {(syncError || localMessage || validationError) && (
           <p
-            className={`text-sm ${syncError ? 'text-red-600' : 'text-green-600'}`}
+            className={`text-sm ${
+              syncError || validationError ? 'text-red-600' : 'text-green-600'
+            }`}
           >
-            {syncError || localMessage}
+            {syncError || validationError || localMessage}
           </p>
         )}
 

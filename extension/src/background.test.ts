@@ -1,22 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { EXTENSION_MESSAGE_TYPES, STORAGE_KEYS } from '@shared/constants'
+import { EXTENSION_MESSAGE_TYPES, STORAGE_KEYS, LOG_MESSAGES } from '@shared/constants'
 
 describe('background service worker', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.clearAllMocks()
+    vi.spyOn(console, 'log').mockImplementation(() => {})
     // background.ts を再読み込みしてイベントリスナーを登録させる
     vi.resetModules()
   })
 
   it('拡張機能インストール時にログを出力すること', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const consoleSpy = vi.mocked(console.log)
 
     // chrome.runtime.onInstalled.addListener のモックを取得
     const addListenerMock = vi.mocked(chrome.runtime.onInstalled.addListener)
 
-    // background.ts をインポート
+    // background.ts をインポート (初期ロードログが走る)
     await import('./background')
+    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.BACKGROUND_LOADED)
 
     // リスナーが登録されたか確認
     expect(addListenerMock).toHaveBeenCalledWith(expect.any(Function))
@@ -25,7 +27,7 @@ describe('background service worker', () => {
     const callback = addListenerMock.mock.calls[0][0]
     callback({ reason: 'install' } as chrome.runtime.InstalledDetails)
 
-    expect(consoleSpy).toHaveBeenCalledWith('Extension installed')
+    expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.EXTENSION_INSTALLED)
   })
 
   it('外部からの GET_API_CONFIG メッセージに対してストレージの値を返すこと', async () => {

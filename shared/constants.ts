@@ -20,6 +20,11 @@ export const FIELD_LABELS = {
 } as const
 
 /**
+ * プロダクト全体で共有されるデフォルト設定
+ */
+export const DEFAULT_API_URL = 'http://localhost:3030'
+
+/**
  * プロダクト共通の UI メッセージ
  */
 export const COMMON_MESSAGES = {
@@ -29,7 +34,8 @@ export const COMMON_MESSAGES = {
   SAVING: '保存中...',
   LOADING_LABEL: '読み込み中...',
   API_URL_DESCRIPTION:
-    'ブックマークを保存するサーバーのベースURL（/api/bookmarksの前まで）を入力してください。',
+    'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
+  SETTINGS_SYNCED: '拡張機能から設定を読み込みました',
 } as const
 
 /**
@@ -57,6 +63,10 @@ export const UI_MESSAGES = {
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
+  SYNC_ID_NOT_CONFIGURED: '拡張機能 ID が設定されていません',
+  SYNC_NOT_DETECTED: '拡張機能環境が検出されませんでした',
+  SYNC_INVALID_RESPONSE: '拡張機能から不正なレスポンスが返されました',
+  SYNC_CONNECTION_FAILED: '拡張機能との接続に失敗しました',
 } as const
 
 /**
@@ -84,7 +94,13 @@ export const EXTENSION_CONSTANTS = {
   POPUP_WIDTH_CLASS: 'w-lg',
   POPUP_CLOSE_DELAY_MS: 1500,
   CONNECTION_TIMEOUT_MS: 8000,
-  DEFAULT_API_URL: 'http://localhost:3030',
+} as const
+
+/**
+ * 拡張機能とのメッセージ通信用定数
+ */
+export const EXTENSION_MESSAGE_TYPES = {
+  GET_API_CONFIG: 'GET_API_CONFIG',
 } as const
 
 /**
@@ -127,13 +143,6 @@ export const HTTP_STATUS = {
 } as const
 
 /**
- * 拡張機能とのメッセージ通信用定数
- */
-export const EXTENSION_MESSAGE_TYPES = {
-  GET_API_CONFIG: 'GET_API_CONFIG',
-} as const
-
-/**
  * ストレージキー
  */
 export const STORAGE_KEYS = {
@@ -146,6 +155,8 @@ export const STORAGE_KEYS = {
 export const LOG_MESSAGES = {
   DB_INIT_FAILED: 'Failed to initialize database:',
   SERVER_START_FAILED: 'Failed to start server:',
+  BACKGROUND_LOADED: 'Background Service Worker loaded',
+  EXTENSION_INSTALLED: 'Extension installed',
   FETCH_BOOKMARKS_FAILED: 'Failed to fetch bookmarks:',
   CREATE_BOOKMARK_FAILED: 'Failed to create bookmark:',
   DELETE_BOOKMARK_FAILED: 'Failed to delete bookmark:',

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   API_PATHS,
-  EXTENSION_CONSTANTS,
+  DEFAULT_API_URL,
   EXTENSION_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
@@ -34,7 +34,7 @@ describe('usePopup Hook', () => {
     // storage.get のモック
     vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
       Promise.resolve({
-        [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
+        [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
       }),
     )
   })
@@ -101,7 +101,7 @@ describe('usePopup Hook', () => {
     })
 
     expect(fetch).toHaveBeenCalledWith(
-      EXTENSION_CONSTANTS.DEFAULT_API_URL + API_PATHS.BOOKMARKS,
+      DEFAULT_API_URL + API_PATHS.BOOKMARKS,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ title: mockTab.title, url: mockTab.url }),

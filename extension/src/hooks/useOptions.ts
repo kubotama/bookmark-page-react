@@ -6,6 +6,7 @@ import {
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
+  DEFAULT_API_URL,
   EXTENSION_CONSTANTS,
 } from '@shared/constants'
 import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
@@ -19,7 +20,7 @@ export interface StatusState {
 }
 
 const DEFAULT_SETTINGS = {
-  [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
+  [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
 }
 
 // レスポンス全体のスキーマを定義

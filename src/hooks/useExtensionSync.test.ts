@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useExtensionSync } from './useExtensionSync'
+import { UI_MESSAGES } from '@shared/constants'
 
 describe('useExtensionSync Hook', () => {
   const mockExtensionId = 'test-extension-id'
@@ -17,6 +18,7 @@ describe('useExtensionSync Hook', () => {
       callback({ success: true, apiUrl: mockApiUrl })
     })
 
+    // window.chrome.runtime.sendMessage をモック
     ;(window as unknown as { chrome: unknown }).chrome = {
       runtime: {
         sendMessage: mockSendMessage,
@@ -46,7 +48,7 @@ describe('useExtensionSync Hook', () => {
       expect(syncedUrl).toBeNull()
     })
 
-    expect(result.current.syncError).toContain('not detected')
+    expect(result.current.syncError).toBe(UI_MESSAGES.SYNC_NOT_DETECTED)
   })
 
   it('VITE_EXTENSION_ID が設定されていない場合にエラーを返すこと', async () => {
@@ -59,7 +61,7 @@ describe('useExtensionSync Hook', () => {
       expect(syncedUrl).toBeNull()
     })
 
-    expect(result.current.syncError).toContain('not configured')
+    expect(result.current.syncError).toBe(UI_MESSAGES.SYNC_ID_NOT_CONFIGURED)
   })
 
   it('拡張機能側でエラーが発生した場合にエラーを返すこと', async () => {
@@ -105,6 +107,6 @@ describe('useExtensionSync Hook', () => {
       expect(syncedUrl).toBeNull()
     })
 
-    expect(result.current.syncError).toContain('invalid response')
+    expect(result.current.syncError).toBe(UI_MESSAGES.SYNC_INVALID_RESPONSE)
   })
 })

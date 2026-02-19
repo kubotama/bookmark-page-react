@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsPanel } from './SettingsPanel'
-import { FIELD_LABELS, COMMON_MESSAGES } from '@shared/constants'
+import { FIELD_LABELS, COMMON_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
 import { useExtensionSync } from '../hooks/useExtensionSync'
 
 // useExtensionSync をモック化
@@ -13,7 +13,7 @@ describe('SettingsPanel', () => {
   const defaultProps = {
     onClose: vi.fn(),
     onSave: vi.fn(),
-    currentApiUrl: 'http://old-api.com',
+    currentApiUrl: 'http://localhost:3030',
   }
 
   const mockSyncFromExtension = vi.fn()
@@ -39,11 +39,12 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel {...defaultProps} />)
     const input = screen.getByLabelText(FIELD_LABELS.URL)
     
-    fireEvent.change(input, { target: { value: 'http://manual-update.com' } })
-    expect(input).toHaveValue('http://manual-update.com')
+    const validUrl = 'http://127.0.0.1:4000'
+    fireEvent.change(input, { target: { value: validUrl } })
+    expect(input).toHaveValue(validUrl)
   })
 
-  it('保存して適用ボタンで onSave が呼ばれること', () => {
+  it('有効な URL の場合、保存して適用ボタンで onSave が呼ばれること', () => {
     render(<SettingsPanel {...defaultProps} />)
     const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
     
@@ -52,8 +53,21 @@ describe('SettingsPanel', () => {
     expect(defaultProps.onClose).toHaveBeenCalled()
   })
 
+  it('無効な URL の場合、エラーメッセージを表示し保存を中断すること', () => {
+    render(<SettingsPanel {...defaultProps} />)
+    const input = screen.getByLabelText(FIELD_LABELS.URL)
+    const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
+
+    // 不正なプロトコル
+    fireEvent.change(input, { target: { value: 'ftp://invalid' } })
+    fireEvent.click(saveButton)
+
+    expect(screen.getByText(VALIDATION_MESSAGES.URL_INVALID_PROTOCOL)).toBeInTheDocument()
+    expect(defaultProps.onSave).not.toHaveBeenCalled()
+  })
+
   it('同期ボタンクリック時に拡張機能からの同期が試行されること', async () => {
-    const syncedUrl = 'http://extension-synced.com'
+    const syncedUrl = 'http://localhost:4000'
     mockSyncFromExtension.mockResolvedValue(syncedUrl)
 
     render(<SettingsPanel {...defaultProps} />)
@@ -65,7 +79,7 @@ describe('SettingsPanel', () => {
 
     expect(mockSyncFromExtension).toHaveBeenCalled()
     expect(screen.getByDisplayValue(syncedUrl)).toBeInTheDocument()
-    expect(screen.getByText(/読み込みました/)).toBeInTheDocument()
+    expect(screen.getByText(COMMON_MESSAGES.SETTINGS_SYNCED)).toBeInTheDocument()
   })
 
   it('同期エラー時にエラーメッセージが表示されること', () => {

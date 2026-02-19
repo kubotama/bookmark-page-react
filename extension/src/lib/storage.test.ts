@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { STORAGE_KEYS, EXTENSION_CONSTANTS } from '@shared/constants'
+import { STORAGE_KEYS, DEFAULT_API_URL } from '@shared/constants'
 import { VALID_URLS } from '@shared/test/fixtures'
 
 import { storage } from './storage'
@@ -28,7 +28,7 @@ describe('extension storage utility', () => {
 
     it('値が設定されていない場合はデフォルト値を返すこと', async () => {
       const defaultValue = {
-        [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
+        [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
       }
 
       // 値が保存されていない場合に chrome.storage.get が引数のデフォルト値をそのまま返す動作をシミュレート

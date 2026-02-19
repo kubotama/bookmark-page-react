@@ -1,15 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
-import { storage } from '../lib/storage'
+import { useCallback, useEffect, useState } from 'react'
+
 import {
   API_PATHS,
   COMMON_MESSAGES,
+  DEFAULT_API_URL,
   EXTENSION_CONSTANTS,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
 } from '@shared/constants'
 import { createBookmarkSchema } from '@shared/schemas/bookmark'
-import { validateApiUrl, getOrigin } from '@shared/utils/url'
+import { getOrigin, validateApiUrl } from '@shared/utils/url'
+
+import { storage } from '../lib/storage'
 
 export type PopupStatusType = 'idle' | 'loading' | 'success' | 'error'
 
@@ -19,9 +22,8 @@ export interface PopupStatusState {
 }
 
 const DEFAULT_SETTINGS = {
-  [STORAGE_KEYS.API_URL]: EXTENSION_CONSTANTS.DEFAULT_API_URL,
+  [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
 }
-
 export const usePopup = () => {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')

@@ -1,4 +1,8 @@
-import { COMMON_MESSAGES, FIELD_LABELS } from '@shared/constants'
+import {
+  COMMON_MESSAGES,
+  FIELD_LABELS,
+  DEFAULT_API_URL,
+} from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
@@ -28,7 +32,7 @@ export const Options = () => {
             label={FIELD_LABELS.URL}
             value={apiUrl}
             onChange={(e) => setApiUrl(e.target.value)}
-            placeholder="http://localhost:3030"
+            placeholder={DEFAULT_API_URL}
           />
           <p className="mt-2 text-xs text-gray-500 ml-14">
             {COMMON_MESSAGES.API_URL_DESCRIPTION}
