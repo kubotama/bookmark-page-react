@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   COMMON_MESSAGES,
-  EXTENSION_CONSTANTS,
+  DEFAULT_API_URL,
   EXTENSION_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
@@ -23,7 +23,7 @@ import type { ErrorTestCase } from '../../test/setup'
 import type { MockInstance } from 'vitest'
 
 describe('useOptions Hook', () => {
-  const defaultUrl = EXTENSION_CONSTANTS.DEFAULT_API_URL
+  const defaultUrl = DEFAULT_API_URL
 
   beforeEach(() => {
     vi.restoreAllMocks()

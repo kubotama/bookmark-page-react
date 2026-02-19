@@ -1,6 +1,15 @@
 import { hc } from 'hono/client'
 import type { AppType } from '../../server/app'
+import { STORAGE_KEYS } from '@shared/constants'
 
-// Vite の開発サーバーのプロキシ設定（vite.config.ts）により、
-// /api へのリクエストはバックエンドに転送されます。
-export const client = hc<AppType>('/')
+/**
+ * API クライアントを取得する
+ * localStorage に保存されたベースURLがあればそれを使用する
+ */
+export const createClient = () => {
+  const savedUrl = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.API_URL) : null
+  return hc<AppType>(savedUrl || '/')
+}
+
+// アプリ全体で使用するクライアントインスタンス
+export const client = createClient()
