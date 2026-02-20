@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsPanel } from './SettingsPanel'
-import { FIELD_LABELS, COMMON_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
+import { FIELD_LABELS, COMMON_MESSAGES } from '@shared/constants'
 import { useExtensionSync } from '../hooks/useExtensionSync'
 
 // useExtensionSync をモック化
@@ -12,7 +12,7 @@ vi.mock('../hooks/useExtensionSync', () => ({
 describe('SettingsPanel', () => {
   const defaultProps = {
     onClose: vi.fn(),
-    onSave: vi.fn(),
+    onSave: vi.fn(() => null), // デフォルトは成功を返す
     currentApiUrl: 'http://localhost:3030',
   }
 
@@ -44,26 +44,24 @@ describe('SettingsPanel', () => {
     expect(input).toHaveValue(validUrl)
   })
 
-  it('有効な URL の場合、保存して適用ボタンで onSave が呼ばれること', () => {
+  it('保存して適用ボタンで onSave が呼ばれること', () => {
     render(<SettingsPanel {...defaultProps} />)
     const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
     
     fireEvent.click(saveButton)
     expect(defaultProps.onSave).toHaveBeenCalledWith(defaultProps.currentApiUrl)
-    expect(defaultProps.onClose).toHaveBeenCalled()
   })
 
-  it('無効な URL の場合、エラーメッセージを表示し保存を中断すること', () => {
-    render(<SettingsPanel {...defaultProps} />)
-    const input = screen.getByLabelText(FIELD_LABELS.URL)
+  it('onSave がエラーを返した場合、エラーメッセージを表示すること', () => {
+    const errorMsg = 'Validation Error'
+    const onSave = vi.fn(() => errorMsg)
+    render(<SettingsPanel {...defaultProps} onSave={onSave} />)
+    
     const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
-
-    // 不正なプロトコル
-    fireEvent.change(input, { target: { value: 'ftp://invalid' } })
     fireEvent.click(saveButton)
 
-    expect(screen.getByText(VALIDATION_MESSAGES.URL_INVALID_PROTOCOL)).toBeInTheDocument()
-    expect(defaultProps.onSave).not.toHaveBeenCalled()
+    expect(screen.getByText(errorMsg)).toBeInTheDocument()
+    expect(defaultProps.onClose).not.toHaveBeenCalled()
   })
 
   it('同期ボタンクリック時に拡張機能からの同期が試行されること', async () => {

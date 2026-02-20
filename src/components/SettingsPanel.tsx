@@ -3,11 +3,10 @@ import { useExtensionSync } from '../hooks/useExtensionSync'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 import { COMMON_MESSAGES, FIELD_LABELS, DEFAULT_API_URL } from '@shared/constants'
-import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
 interface SettingsPanelProps {
   onClose: () => void
-  onSave: (apiUrl: string) => void
+  onSave: (apiUrl: string) => string | null
   currentApiUrl: string
 }
 
@@ -35,19 +34,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     setLocalMessage(null)
     setValidationError(null)
 
-    const error = validateApiUrl(url)
+    // フック側のバリデーション付き保存を実行
+    const error = onSave(url)
     if (error) {
       setValidationError(error)
       return
     }
-
-    try {
-      const sanitizedUrl = getOrigin(url)
-      onSave(sanitizedUrl)
-      onClose()
-    } catch {
-      setValidationError(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
-    }
+    
+    // 成功時は親コンポーネント側で閉じられる
   }
 
   return (
