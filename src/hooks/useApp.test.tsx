@@ -34,50 +34,51 @@ describe('useApp Hook', () => {
     )
   })
 
-  it('初期状態が正しいこと', async () => {
-    const { result } = renderHook(() => useApp(), { 
-      initialUrl: 'http://localhost:3030' 
-    })
-
+  /**
+   * フックをレンダリングし、初期ロードが完了するまで待機するヘルパー
+   */
+  const renderAppHook = async (initialUrl?: string) => {
+    const renderResult = renderHook(() => useApp(), { initialUrl })
     await vi.waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
+      expect(renderResult.result.current.isLoading).toBe(false)
     })
+    return renderResult
+  }
+
+  it('初期状態が正しいこと', async () => {
+    const { result } = await renderAppHook('http://localhost:3030')
 
     expect(result.current.showSettings).toBe(false)
     expect(result.current.currentApiUrl).toBe('http://localhost:3030')
   })
 
   it('toggleSettings で showSettings が切り替わること', async () => {
-    const { result } = renderHook(() => useApp())
-    await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
+    const { result } = await renderAppHook()
 
-    act(() => {
+    await act(async () => {
       result.current.toggleSettings()
     })
     expect(result.current.showSettings).toBe(true)
 
-    act(() => {
+    await act(async () => {
       result.current.toggleSettings()
     })
     expect(result.current.showSettings).toBe(false)
   })
 
   it('closeSettings で showSettings が false になること', async () => {
-    const { result } = renderHook(() => useApp())
-    await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
+    const { result } = await renderAppHook()
 
-    act(() => { result.current.toggleSettings() })
+    await act(async () => { result.current.toggleSettings() })
     expect(result.current.showSettings).toBe(true)
 
-    act(() => { result.current.closeSettings() })
+    await act(async () => { result.current.closeSettings() })
     expect(result.current.showSettings).toBe(false)
   })
 
   describe('handleSaveSettings', () => {
     it('有効な URL の場合、localStorage が更新され、リロードは呼ばれないこと', async () => {
-      const { result } = renderHook(() => useApp())
-      await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
-
+      const { result } = await renderAppHook()
       const inputUrl = 'http://localhost:4000/path'
       const expectedUrl = 'http://localhost:4000'
 
@@ -92,9 +93,7 @@ describe('useApp Hook', () => {
     })
 
     it('無効な URL の場合、エラーを返し、保存を中断すること', async () => {
-      const { result } = renderHook(() => useApp())
-      await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
-
+      const { result } = await renderAppHook()
       const invalidUrl = 'ftp://invalid'
 
       let error: string | null = null
@@ -112,8 +111,7 @@ describe('useApp Hook', () => {
         throw new Error('Unexpected error')
       })
 
-      const { result } = renderHook(() => useApp())
-      await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
+      const { result } = await renderAppHook()
       
       let error: string | null = null
       await act(async () => {
@@ -130,8 +128,7 @@ describe('useApp Hook', () => {
         throw 'String Error'
       })
 
-      const { result } = renderHook(() => useApp())
-      await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
+      const { result } = await renderAppHook()
       
       let error: string | null = null
       await act(async () => {
@@ -144,13 +141,9 @@ describe('useApp Hook', () => {
 
   describe('ブックマーク操作の検証', () => {
     it('handleRowClick でブックマークが選択されること', async () => {
-      const { result } = renderHook(() => useApp())
+      const { result } = await renderAppHook()
       
-      await vi.waitFor(() => {
-        expect(result.current.bookmarks).toHaveLength(1)
-      })
-
-      act(() => {
+      await act(async () => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
 
@@ -158,26 +151,33 @@ describe('useApp Hook', () => {
       expect(result.current.selectedBookmark).toEqual(MOCK_BOOKMARK_1)
     })
 
-    it('選択状態で handleUpdate を呼んだ場合、API 呼び出しが発生すること', async () => {
-      const { result } = renderHook(() => useApp())
-      
-      await vi.waitFor(() => {
-        expect(result.current.bookmarks).toHaveLength(1)
-      })
+    it('選択状態で handleUpdate を呼んだ場合、状態が維持され副作用が発生すること', async () => {
+      let patchCalled = false
+      server.use(
+        http.patch('*/api/bookmarks/:id', () => {
+          patchCalled = true
+          return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
+        })
+      )
 
-      act(() => {
+      const { result } = await renderAppHook()
+      
+      await act(async () => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
 
       await act(async () => {
         result.current.handleUpdate('New Title', 'http://new.com')
       })
+
+      // 副作用 (API 呼び出し) を検証
+      expect(patchCalled).toBe(true)
+      expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
     })
 
     it('handleDoubleClick でブックマークが選択され、開かれること', async () => {
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-      const { result } = renderHook(() => useApp())
-      await vi.waitFor(() => expect(result.current.isLoading).toBe(false))
+      const { result } = await renderAppHook()
 
       await act(async () => {
         result.current.handleDoubleClick(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_1.url)
@@ -188,12 +188,20 @@ describe('useApp Hook', () => {
     })
 
     it('handleDelete, handleOpen, handleClose が正しく動作すること', async () => {
+      let deleteCalled = false
       vi.spyOn(window, 'confirm').mockReturnValue(true)
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-      const { result } = renderHook(() => useApp())
       
-      await vi.waitFor(() => expect(result.current.bookmarks).toHaveLength(1))
-      act(() => { result.current.handleRowClick(MOCK_BOOKMARK_1.id) })
+      server.use(
+        http.delete('*/api/bookmarks/:id', () => {
+          deleteCalled = true
+          return new HttpResponse(null, { status: 204 })
+        })
+      )
+
+      const { result } = await renderAppHook()
+      
+      await act(async () => { result.current.handleRowClick(MOCK_BOOKMARK_1.id) })
 
       await act(async () => {
         result.current.handleOpen()
@@ -201,7 +209,9 @@ describe('useApp Hook', () => {
         result.current.handleClose()
       })
 
+      // 全ての操作が呼ばれたことを検証
       expect(openSpy).toHaveBeenCalled()
+      expect(deleteCalled).toBe(true)
       expect(result.current.selectedId).toBeNull()
     })
   })

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { render, renderHook } from '@testing-library/react'
 import type { RenderOptions, RenderHookOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -30,8 +30,9 @@ export const AllTheProviders = ({
   children: React.ReactNode, 
   initialUrl?: string 
 }) => {
-  // キャッシュの干渉を防ぐため常に新鮮な QueryClient を使用
-  const queryClient = createTestQueryClient()
+  // QueryClient をメモ化して再生成を防ぐ
+  const queryClient = useMemo(() => createTestQueryClient(), [])
+  
   return (
     <ApiProvider initialUrl={initialUrl}>
       <QueryClientProvider client={queryClient}>

@@ -6,66 +6,93 @@ describe('background service worker', () => {
     vi.restoreAllMocks()
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
-    // background.ts を再読み込みしてイベントリスナーを登録させる
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // background.ts を再読み込み
     vi.resetModules()
   })
 
   it('拡張機能インストール時にログを出力すること', async () => {
     const consoleSpy = vi.mocked(console.log)
-
-    // chrome.runtime.onInstalled.addListener のモックを取得
     const addListenerMock = vi.mocked(chrome.runtime.onInstalled.addListener)
 
-    // background.ts をインポート (初期ロードログが走る)
     await import('./background')
     expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.BACKGROUND_LOADED)
 
-    // リスナーが登録されたか確認
-    expect(addListenerMock).toHaveBeenCalledWith(expect.any(Function))
-
-    // 登録されたリスナー（コールバック）を直接呼び出す
     const callback = addListenerMock.mock.calls[0][0]
     callback({ reason: 'install' } as chrome.runtime.InstalledDetails)
 
     expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.EXTENSION_INSTALLED)
   })
 
-  it('外部からの GET_API_CONFIG メッセージに対してストレージの値を返すこと', async () => {
+  describe('外部メッセージハンドリング (onMessageExternal)', () => {
     const mockApiUrl = 'http://test-api.com'
-    const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
-    
-    // storage.sync.get の戻り値を設定
-    vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
-      if (callback) {
-        callback({ [STORAGE_KEYS.API_URL]: mockApiUrl })
-      }
-      return Promise.resolve({ [STORAGE_KEYS.API_URL]: mockApiUrl })
+
+    beforeEach(() => {
+      vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
+        if (callback) {
+          callback({ [STORAGE_KEYS.API_URL]: mockApiUrl })
+        }
+        return Promise.resolve({ [STORAGE_KEYS.API_URL]: mockApiUrl })
+      })
     })
 
-    // background.ts をロード
-    await import('./background')
+    it('許可されたオリジンからの GET_API_CONFIG メッセージに対してストレージの値を返すこと', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+      await import('./background')
 
-    // リスナーが登録されたか確認
-    expect(addListenerMock).toHaveBeenCalledWith(expect.any(Function))
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
 
-    // 登録されたリスナーを取得
-    const messageHandler = addListenerMock.mock.calls[0][0]
-    const sendResponse = vi.fn()
+      const result = messageHandler(
+        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
+        { origin: 'http://localhost:5173' }, // 許可されたオリジン
+        sendResponse
+      )
 
-    // メッセージ受信をシミュレート
-    const result = messageHandler(
-      { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
-      {},
-      sendResponse
-    )
+      expect(result).toBe(true)
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        apiUrl: mockApiUrl
+      })
+    })
 
-    // 非同期応答のために true が返されることを確認
-    expect(result).toBe(true)
+    it('許可されていないオリジンからのメッセージをブロックし警告を出力すること', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+      const consoleSpy = vi.mocked(console.warn)
+      await import('./background')
 
-    // レスポンスが正しく送信されたか確認
-    expect(sendResponse).toHaveBeenCalledWith({
-      success: true,
-      apiUrl: mockApiUrl
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const result = messageHandler(
+        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
+        { origin: 'http://malicious-site.com' }, // 不許可オリジン
+        sendResponse
+      )
+
+      expect(result).toBe(false)
+      expect(sendResponse).not.toHaveBeenCalled()
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Blocked unauthorized message'),
+        'http://malicious-site.com'
+      )
+    })
+
+    it('未知のメッセージタイプに対しては処理を行わず false を返すこと', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const result = messageHandler(
+        { type: 'UNKNOWN_TYPE' },
+        { origin: 'http://localhost:5173' },
+        sendResponse
+      )
+
+      expect(result).toBeFalsy()
+      expect(sendResponse).not.toHaveBeenCalled()
     })
   })
 })

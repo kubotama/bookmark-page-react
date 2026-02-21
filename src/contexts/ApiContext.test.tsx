@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { ApiProvider, useApi } from './ApiContext'
-import { STORAGE_KEYS, DEFAULT_API_URL } from '@shared/constants'
+import { STORAGE_KEYS, DEFAULT_API_URL, LOG_MESSAGES, ERROR_MESSAGES } from '@shared/constants'
 import React from 'react'
 
 describe('ApiContext', () => {
@@ -45,7 +45,7 @@ describe('ApiContext', () => {
 
     expect(result.current.apiUrl).toBe(DEFAULT_API_URL)
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid API URL found in localStorage'),
+      LOG_MESSAGES.INVALID_STORAGE_URL,
       expect.any(String)
     )
   })
@@ -92,17 +92,17 @@ describe('ApiContext', () => {
     // URL は初期値のまま
     expect(result.current.apiUrl).toBe(DEFAULT_API_URL)
     expect(consoleSpy).toHaveBeenCalledWith(
-      'Failed to update API URL:',
+      ERROR_MESSAGES.UPDATE_API_URL_FAILED,
       expect.any(String)
     )
   })
 
   it('ApiProvider 外で useApi を呼び出した場合にエラーを投げること', () => {
-    // コンソール出力を抑制（Error 境界のテストのため）
+    // コンソール出力を抑制
     vi.spyOn(console, 'error').mockImplementation(() => {})
     
     expect(() => {
       renderHook(() => useApi())
-    }).toThrow('useApi must be used within an ApiProvider')
+    }).toThrow(ERROR_MESSAGES.API_PROVIDER_REQUIRED)
   })
 })
