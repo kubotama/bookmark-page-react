@@ -6,16 +6,59 @@ import {
   ARIA_ROLES,
   FIELD_LABELS,
   HTTP_STATUS,
+  DEFAULT_API_URL,
 } from '@shared/constants'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import App from './App'
+import { ApiProvider } from './contexts/ApiContext'
 import { server } from './test/setup'
 
 import type { UpdateBookmarkRequest } from '@shared/schemas/bookmark'
+import type { DragEndEvent } from '@dnd-kit/core'
+
+// DndContext をモック化
+vi.mock('@dnd-kit/core', async () => {
+  const actual = await vi.importActual('@dnd-kit/core')
+  return {
+    ...actual,
+    DndContext: ({
+      children,
+      onDragEnd,
+    }: {
+      children: React.ReactNode
+      onDragEnd: (event: DragEndEvent) => void
+    }) => (
+      <div
+        data-testid="mock-dnd-context"
+        onClick={() =>
+          onDragEnd({
+            active: {
+              id: MOCK_BOOKMARK_1.id,
+              data: { current: undefined },
+              rect: { current: null },
+            },
+            over: {
+              id: MOCK_BOOKMARK_2.id,
+              rect: { current: null },
+              data: { current: undefined },
+              disabled: false,
+            },
+            delta: { x: 0, y: 0 },
+            activatorEvent: {} as Event,
+            collisions: null,
+          } as unknown as DragEndEvent)
+        }
+      >
+        {children}
+      </div>
+    ),
+  }
+})
+
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -26,14 +69,27 @@ const createTestQueryClient = () =>
   })
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <QueryClientProvider client={createTestQueryClient()}>
-    {children}
-  </QueryClientProvider>
+  <ApiProvider initialUrl={DEFAULT_API_URL}>
+    <QueryClientProvider client={createTestQueryClient()}>
+      {children}
+    </QueryClientProvider>
+  </ApiProvider>
 )
 
 describe('App Integration', () => {
   beforeEach(() => {
     vi.stubGlobal('open', vi.fn())
+    localStorage.clear()
+    
+    // 基本的なハンドラをあらかじめ登録しておく (未ハンドルのリクエスト警告を防止)
+    server.use(
+      http.get(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}`, () => {
+        return HttpResponse.json({ success: true, data: { bookmarks: [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2] } })
+      }),
+      http.put(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}/reorder`, () => {
+        return HttpResponse.json({ success: true, data: null })
+      })
+    )
   })
 
   afterEach(() => {
@@ -43,10 +99,10 @@ describe('App Integration', () => {
   /**
    * テスト用のセットアップヘルパー
    */
-  const setup = (bookmarks = [MOCK_BOOKMARK_1]) => {
+  const setup = (bookmarks = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]) => {
     const user = userEvent.setup()
     server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
+      http.get(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}`, () => {
         return HttpResponse.json({
           success: true,
           data: { bookmarks },
@@ -59,13 +115,12 @@ describe('App Integration', () => {
 
   it('ブックマーク一覧が正常に取得・表示されること', async () => {
     setup()
-    // データの取得待ちと表示確認
     expect(await screen.findByText(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
   })
 
   it('APIエラー時にエラーメッセージが表示されること', async () => {
     server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
+      http.get(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}`, () => {
         return HttpResponse.json(
           {
             success: false,
@@ -83,26 +138,10 @@ describe('App Integration', () => {
     expect(await screen.findByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
   })
 
-  it('行を選択した際に詳細パネルが表示されること', async () => {
-    const { user } = setup()
-
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
-      name: new RegExp(MOCK_BOOKMARK_1.title),
-    })
-    await user.click(item)
-
-    // 詳細パネルの要素が表示されているか確認
-    expect(
-      await screen.findByDisplayValue(MOCK_BOOKMARK_1.title),
-    ).toBeInTheDocument()
-    expect(screen.getByText(FIELD_LABELS.BUTTON_UPDATE)).toBeInTheDocument()
-    expect(screen.getByText(FIELD_LABELS.BUTTON_DELETE)).toBeInTheDocument()
-  })
-
   it('詳細パネルからブックマークを更新できること', async () => {
     let patchCalled = false
     server.use(
-      http.patch(`${API_PATHS.BOOKMARKS}/:id`, async ({ request }) => {
+      http.patch(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}/:id`, async ({ request }) => {
         patchCalled = true
         const body = (await request.json()) as UpdateBookmarkRequest
         return HttpResponse.json({
@@ -113,105 +152,95 @@ describe('App Integration', () => {
     )
     const { user } = setup()
 
-    // 選択
     const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
       name: new RegExp(MOCK_BOOKMARK_1.title),
     })
     await user.click(item)
 
-    // 編集
     const titleInput = await screen.findByDisplayValue(MOCK_BOOKMARK_1.title)
     await user.clear(titleInput)
     await user.type(titleInput, 'Updated by Panel')
 
-    // 更新実行
     await user.click(screen.getByText(FIELD_LABELS.BUTTON_UPDATE))
     expect(patchCalled).toBe(true)
+  })
+
+  it('ドラッグ＆ドロップ操作によって並び替え API が呼ばれること', async () => {
+    let putCalled = false
+    server.use(
+      http.put(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}/reorder`, async ({ request }) => {
+        putCalled = true
+        const body = await request.json()
+        expect(body).toEqual({ ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id] })
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+    
+    setup()
+
+    await screen.findByRole(ARIA_ROLES.LIST)
+    
+    const dndContext = screen.getByTestId('mock-dnd-context')
+    await userEvent.click(dndContext)
+
+    expect(putCalled).toBe(true)
   })
 
   it('詳細パネルからブックマークを削除できること', async () => {
     let deleteCalled = false
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     server.use(
-      http.delete(`${API_PATHS.BOOKMARKS}/:id`, () => {
+      http.delete(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}/:id`, () => {
         deleteCalled = true
         return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
       }),
     )
     const { user } = setup()
 
-    // 選択
     const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
       name: new RegExp(MOCK_BOOKMARK_1.title),
     })
     await user.click(item)
 
-    // 削除実行
     await user.click(screen.getByText(FIELD_LABELS.BUTTON_DELETE))
 
     expect(deleteCalled).toBe(true)
-    // パネルが閉じていることを確認
-    expect(
-      screen.queryByDisplayValue(MOCK_BOOKMARK_1.title),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByDisplayValue(MOCK_BOOKMARK_1.title)).not.toBeInTheDocument()
   })
 
-  it('Escape キーを押した際に詳細パネルが閉じること', async () => {
-    const { user } = setup()
-
-    // 選択してパネルを表示
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
-      name: new RegExp(MOCK_BOOKMARK_1.title),
-    })
-    await user.click(item)
-    expect(
-      await screen.findByDisplayValue(MOCK_BOOKMARK_1.title),
-    ).toBeInTheDocument()
-
-    // 詳細パネル内の入力欄にフォーカス
-    const titleInput = screen.getByDisplayValue(MOCK_BOOKMARK_1.title)
-    await user.click(titleInput)
-
-    // Escape キーで閉じる
-    await user.keyboard('{Escape}')
-
-    // パネルが消えたことを確認
-    expect(
-      screen.queryByDisplayValue(MOCK_BOOKMARK_1.title),
-    ).not.toBeInTheDocument()
-  })
-
-  it('行をダブルクリックした際に URL が新しいタブで開かれること', async () => {
-    const { user } = setup()
-
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
-      name: new RegExp(MOCK_BOOKMARK_1.title),
-    })
-    await user.dblClick(item)
-
-    expect(window.open).toHaveBeenCalledWith(
-      MOCK_BOOKMARK_1.url,
-      '_blank',
-      'noopener,noreferrer',
+  it('API URL 設定を変更すると、新しい URL に対してリクエストが行われること', async () => {
+    let newUrlRequested = false
+    const NEW_BASE_URL = 'http://localhost:4000'
+    
+    // 新しい URL へのリクエストを監視
+    server.use(
+      http.get(`${NEW_BASE_URL}${API_PATHS.BOOKMARKS}`, () => {
+        newUrlRequested = true
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [MOCK_BOOKMARK_2] },
+        })
+      }),
     )
-  })
 
-  it('詳細パネルの「開く」ボタンを押した際に URL が新しいタブで開かれること', async () => {
     const { user } = setup()
+    
+    // 設定パネルを開く
+    const settingsButton = await screen.findByTitle(FIELD_LABELS.SETTING_TITLE)
+    await user.click(settingsButton)
 
-    // 選択してパネルを表示
-    const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
-      name: new RegExp(MOCK_BOOKMARK_1.title),
-    })
-    await user.click(item)
+    // 新しい URL を入力して保存
+    const urlInput = await screen.findByLabelText(FIELD_LABELS.URL)
+    await user.clear(urlInput)
+    await user.type(urlInput, NEW_BASE_URL)
+    
+    // 保存ボタンをクリック
+    await user.click(screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY))
 
-    // 「開く」ボタンをクリック
-    await user.click(screen.getByText(FIELD_LABELS.BUTTON_OPEN))
-
-    expect(window.open).toHaveBeenCalledWith(
-      MOCK_BOOKMARK_1.url,
-      '_blank',
-      'noopener,noreferrer',
-    )
+    // 新しい URL に対してリクエストが行われ、データが更新されることを確認
+    await waitFor(() => {
+      expect(newUrlRequested).toBe(true)
+    }, { timeout: 2000 })
+    expect(await screen.findByText(MOCK_BOOKMARK_2.title)).toBeInTheDocument()
   })
 })

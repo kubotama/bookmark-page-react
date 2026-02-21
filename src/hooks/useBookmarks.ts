@@ -1,7 +1,7 @@
 import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { client } from '../lib/api'
+import { useApi } from '../contexts/ApiContext'
 import { bookmarkKeys } from '../lib/queryKeys'
 
 import type {
@@ -27,13 +27,16 @@ export class BookmarkApiError extends Error {
 /**
  * レスポンスをパースし、エラーがある場合は適切なエラーオブジェクトを投げる
  */
-const parseResponse = async <T>(res: Response, defaultMessage: string): Promise<T> => {
+const parseResponse = async <T>(
+  res: Response,
+  defaultMessage: string,
+): Promise<T> => {
   try {
     const result = await res.json()
     if (res.ok && 'success' in result && result.success) {
       return result.data as T
     }
-    
+
     if (result.success === false && result.error) {
       throw new BookmarkApiError(
         result.error.message || defaultMessage,
@@ -42,27 +45,28 @@ const parseResponse = async <T>(res: Response, defaultMessage: string): Promise<
     }
   } catch (err) {
     if (err instanceof BookmarkApiError) throw err
-    
+
     // パース失敗時などのデバッグ情報をログ出力
     console.error(`Failed to parse API response (Status: ${res.status}):`, err)
   }
-  
+
   throw new Error(defaultMessage)
 }
 
-const fetchBookmarks = async () => {
-  const res = await client.api.bookmarks.$get()
-  return await parseResponse<BookmarksResponse>(res, UI_MESSAGES.FETCH_FAILED)
-}
-
 export const useBookmarks = () => {
+  const { client } = useApi()
+  
   return useQuery({
     queryKey: bookmarkKeys.lists(),
-    queryFn: fetchBookmarks,
+    queryFn: async () => {
+      const res = await client.api.bookmarks.$get()
+      return await parseResponse<BookmarksResponse>(res, UI_MESSAGES.FETCH_FAILED)
+    },
   })
 }
 
 export const useUpdateBookmark = () => {
+  const { client } = useApi()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -90,6 +94,7 @@ export const useUpdateBookmark = () => {
 }
 
 export const useDeleteBookmark = () => {
+  const { client } = useApi()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -111,6 +116,7 @@ export const useDeleteBookmark = () => {
 }
 
 export const useReorderBookmarks = () => {
+  const { client } = useApi()
   const queryClient = useQueryClient()
 
   return useMutation({
