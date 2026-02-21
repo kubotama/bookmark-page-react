@@ -1,65 +1,30 @@
-import { useCallback, useState } from 'react'
 import './App.css'
 import { BookmarkList } from './components/BookmarkList'
 import { BookmarkDetail } from './components/BookmarkDetail'
 import { SettingsPanel } from './components/SettingsPanel'
-import { useBookmarks } from './hooks/useBookmarks'
-import { useBookmarkList } from './hooks/useBookmarkList'
-import { useBookmarkActions } from './hooks/useBookmarkActions'
-import { useBookmarkReorder } from './hooks/useBookmarkReorder'
-import { FIELD_LABELS, STORAGE_KEYS } from '@shared/constants'
-import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
+import { useApp } from './hooks/useApp'
+import { FIELD_LABELS } from '@shared/constants'
 
 function App() {
-  const [showSettings, setShowSettings] = useState(false)
-  const { data, isLoading, error } = useBookmarks()
-  const { selectedId, handleRowClick, setSelectedId } = useBookmarkList()
-  const { updateBookmark, deleteBookmark, openBookmark, closeDetail } =
-    useBookmarkActions(setSelectedId)
-  const { handleReorder } = useBookmarkReorder()
-
-  const bookmarks = data?.bookmarks ?? []
-  const selectedBookmark = bookmarks.find((b: Bookmark) => b.id === selectedId)
-
-  const handleDoubleClick = useCallback(
-    (id: BookmarkId, url: string) => {
-      setSelectedId(id)
-      openBookmark(url)
-    },
-    [setSelectedId, openBookmark],
-  )
-
-  const handleUpdate = useCallback(
-    (title: string, url: string) => {
-      if (selectedBookmark) {
-        updateBookmark(selectedBookmark.id, { title, url })
-      }
-    },
-    [selectedBookmark, updateBookmark],
-  )
-
-  const handleDelete = useCallback(() => {
-    if (selectedBookmark) {
-      deleteBookmark(selectedBookmark.id)
-    }
-  }, [selectedBookmark, deleteBookmark])
-
-  const handleOpen = useCallback(() => {
-    if (selectedBookmark) {
-      openBookmark(selectedBookmark.url)
-    }
-  }, [selectedBookmark, openBookmark])
-
-  const handleClose = useCallback(() => {
-    closeDetail()
-  }, [closeDetail])
-
-  const handleSaveSettings = (apiUrl: string) => {
-    localStorage.setItem(STORAGE_KEYS.API_URL, apiUrl)
-    window.location.reload()
-  }
-
-  const currentApiUrl = localStorage.getItem(STORAGE_KEYS.API_URL) || ''
+  const {
+    bookmarks,
+    selectedBookmark,
+    selectedId,
+    isLoading,
+    error,
+    showSettings,
+    currentApiUrl,
+    handleRowClick,
+    handleDoubleClick,
+    handleUpdate,
+    handleDelete,
+    handleOpen,
+    handleClose,
+    handleReorder,
+    handleSaveSettings,
+    toggleSettings,
+    closeSettings,
+  } = useApp()
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden">
@@ -67,7 +32,7 @@ function App() {
       <header className="p-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
         <div className="font-bold text-gray-700 mx-auto">Bookmark Page</div>
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={toggleSettings}
           className="p-1 rounded-md hover:bg-gray-200 text-gray-600 transition-colors"
           title={FIELD_LABELS.SETTING_TITLE}
         >
@@ -96,7 +61,7 @@ function App() {
 
       {showSettings && (
         <SettingsPanel
-          onClose={() => setShowSettings(false)}
+          onClose={closeSettings}
           onSave={handleSaveSettings}
           currentApiUrl={currentApiUrl}
         />
