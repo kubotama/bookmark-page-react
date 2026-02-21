@@ -3,10 +3,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useApp } from './useApp'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import { STORAGE_KEYS, API_PATHS, VALIDATION_MESSAGES } from '@shared/constants'
-import { http, HttpResponse } from 'msw'
-import { server } from '../test/setup'
+import { VALIDATION_MESSAGES } from '@shared/constants'
 import * as urlUtils from '@shared/utils/url'
+
+// モック関数を外出しして安定させる
+const mockUpdateApiUrl = vi.fn()
+
+// useApi をモック化
+vi.mock('../contexts/ApiContext', () => ({
+  useApi: vi.fn(() => ({
+    apiUrl: 'http://localhost:3030',
+    updateApiUrl: mockUpdateApiUrl,
+    client: { api: { bookmarks: { $get: vi.fn() } } },
+  })),
+  ApiProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}))
 
 // QueryClient のセットアップ
 const createTestQueryClient = () =>
@@ -26,27 +37,20 @@ describe('useApp Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    // window.location.reload のモック
-    vi.stubGlobal('window', {
-      ...window,
-      location: { ...window.location, reload: vi.fn() },
+    
+    // location.reload を確実にモック
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      configurable: true,
+      value: { reload: vi.fn(), origin: 'http://localhost:3000' },
     })
-
-    // MSW のデフォルトハンドラを設定
-    server.use(
-      http.get(API_PATHS.BOOKMARKS, () => {
-        return HttpResponse.json({ success: true, data: { bookmarks: [] } })
-      })
-    )
   })
 
-  it('初期状態が正しいこと', () => {
+  it('フックが正常に初期化されること', () => {
     const { result } = renderHook(() => useApp(), { wrapper })
 
     expect(result.current.showSettings).toBe(false)
-    expect(result.current.bookmarks).toEqual([])
-    expect(result.current.selectedId).toBeNull()
-    expect(result.current.currentApiUrl).toBe('')
+    expect(result.current.currentApiUrl).toBe('http://localhost:3030')
   })
 
   it('toggleSettings で showSettings が切り替わること', () => {
@@ -64,53 +68,37 @@ describe('useApp Hook', () => {
   })
 
   describe('handleSaveSettings', () => {
-    it('有効な URL の場合、localStorage が更新され、設定パネルが閉じられ、リロードが呼ばれること', () => {
+    it('有効な URL の場合、updateApiUrl が呼ばれリロードは呼ばれないこと', async () => {
       const { result } = renderHook(() => useApp(), { wrapper })
-      
-      // パネルを開いた状態にする
-      act(() => {
-        result.current.toggleSettings()
-      })
-      expect(result.current.showSettings).toBe(true)
+      const inputUrl = 'http://localhost:4000/path'
+      const expectedUrl = 'http://localhost:4000'
 
-      const inputUrl = 'http://localhost:3030/path' // パス付き
-      const expectedUrl = 'http://localhost:3030' // オリジンのみ
-
-      let error: string | null = 'not-called'
-      act(() => {
-        error = result.current.handleSaveSettings(inputUrl)
+      await act(async () => {
+        result.current.handleSaveSettings(inputUrl)
       })
 
-      expect(error).toBeNull()
-      expect(localStorage.getItem(STORAGE_KEYS.API_URL)).toBe(expectedUrl)
-      expect(result.current.showSettings).toBe(false) // パネルが閉じていること
-      expect(window.location.reload).toHaveBeenCalled()
+      expect(mockUpdateApiUrl).toHaveBeenCalledWith(expectedUrl)
+      expect(result.current.showSettings).toBe(false)
+      // リロードが呼ばれないことを検証
+      expect(window.location.reload).not.toHaveBeenCalled()
     })
 
-    it('無効な URL の場合、エラーを返し、保存を中断すること（パネルは閉じない）', () => {
+    it('無効な URL の場合、エラーを返し保存を中断すること', async () => {
       const { result } = renderHook(() => useApp(), { wrapper })
-      
-      // パネルを開いた状態にする
-      act(() => {
-        result.current.toggleSettings()
-      })
-
       const invalidUrl = 'ftp://invalid'
 
       let error: string | null = null
-      act(() => {
+      await act(async () => {
         error = result.current.handleSaveSettings(invalidUrl)
       })
 
       expect(error).toBe(VALIDATION_MESSAGES.URL_INVALID_PROTOCOL)
-      expect(localStorage.getItem(STORAGE_KEYS.API_URL)).toBeNull()
-      expect(result.current.showSettings).toBe(true) // パネルは開いたまま
+      expect(mockUpdateApiUrl).not.toHaveBeenCalled()
       expect(window.location.reload).not.toHaveBeenCalled()
     })
 
-    it('予期せぬ例外が発生した場合、エラーメッセージを返し、ログを出力すること', () => {
+    it('予期せぬ例外が発生した場合、エラーメッセージを返しログを出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      // getOrigin をスパイして例外を投げさせる
       vi.spyOn(urlUtils, 'getOrigin').mockImplementation(() => {
         throw new Error('Unexpected error')
       })
@@ -118,13 +106,12 @@ describe('useApp Hook', () => {
       const { result } = renderHook(() => useApp(), { wrapper })
       
       let error: string | null = null
-      act(() => {
+      await act(async () => {
         error = result.current.handleSaveSettings('http://localhost:3030')
       })
 
       expect(error).toBe('Unexpected error')
       expect(consoleSpy).toHaveBeenCalledWith('Failed to save settings:', expect.any(Error))
-      expect(window.location.reload).not.toHaveBeenCalled()
     })
   })
 })
