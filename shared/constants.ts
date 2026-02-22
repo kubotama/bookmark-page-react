@@ -90,6 +90,44 @@ export const EXTENSION_MESSAGES = {
 } as const
 
 /**
+ * ブックマークの状態定義
+ */
+export const BOOKMARK_STATUS = {
+  NONE: 'none',
+  REGISTERED: 'registered',
+  MODIFIED: 'modified',
+  ERROR: 'error',
+} as const
+
+export type BookmarkStatus = typeof BOOKMARK_STATUS[keyof typeof BOOKMARK_STATUS]
+
+/**
+ * 拡張機能のアイコンパス定義
+ */
+export const EXTENSION_ICONS = {
+  [BOOKMARK_STATUS.NONE]: {
+    16: '/icon-default-16.png',
+    48: '/icon-default-48.png',
+    128: '/icon-default-128.png',
+  },
+  [BOOKMARK_STATUS.REGISTERED]: {
+    16: '/icon-registered-16.png',
+    48: '/icon-registered-48.png',
+    128: '/icon-registered-128.png',
+  },
+  [BOOKMARK_STATUS.MODIFIED]: {
+    16: '/icon-modified-16.png',
+    48: '/icon-modified-48.png',
+    128: '/icon-modified-128.png',
+  },
+  [BOOKMARK_STATUS.ERROR]: {
+    16: '/icon-error-16.png',
+    48: '/icon-error-48.png',
+    128: '/icon-error-128.png',
+  },
+} as const
+
+/**
  * 拡張機能用の定数
  */
 export const EXTENSION_CONSTANTS = {
