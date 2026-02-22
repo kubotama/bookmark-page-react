@@ -7,10 +7,11 @@ import React, {
   useState,
 } from 'react'
 
-import { DEFAULT_API_URL, STORAGE_KEYS } from '@shared/constants'
+import { DEFAULT_API_URL, STORAGE_KEYS, LOG_MESSAGES, ERROR_MESSAGES } from '@shared/constants'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
 import type { AppType } from '../../server/app'
+
 interface ApiContextType {
   client: ReturnType<typeof hc<AppType>>
   apiUrl: string
@@ -50,7 +51,7 @@ export const ApiProvider = ({ children, initialUrl }: ApiProviderProps) => {
       }
       // 不正な場合はログを出力してデフォルトへフォールバック
       console.warn(
-        'Invalid API URL found in localStorage, falling back to default:',
+        LOG_MESSAGES.INVALID_STORAGE_URL,
         error,
       )
     }
@@ -65,7 +66,7 @@ export const ApiProvider = ({ children, initialUrl }: ApiProviderProps) => {
   const updateApiUrl = useCallback((newUrl: string) => {
     const error = validateApiUrl(newUrl)
     if (error) {
-      console.error('Failed to update API URL:', error)
+      console.error(ERROR_MESSAGES.UPDATE_API_URL_FAILED, error)
       return
     }
 
@@ -87,7 +88,7 @@ export const ApiProvider = ({ children, initialUrl }: ApiProviderProps) => {
 export const useApi = () => {
   const context = useContext(ApiContext)
   if (!context) {
-    throw new Error('useApi must be used within an ApiProvider')
+    throw new Error(ERROR_MESSAGES.API_PROVIDER_REQUIRED)
   }
   return context
 }

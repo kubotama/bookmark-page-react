@@ -131,21 +131,21 @@ npm run type-check
 
 ### テスト (Testing)
 
-Web アプリ、API サーバー、ブラウザ拡張機能の単体テストを実行します：
+プロジェクト全体で Vitest を使用した自動テストを実施しており、Stmts カバレッジ 90% 以上を維持することを方針としています。
 
-```bash
-npm run test
-```
+#### テストの実行
+- **全レイヤー（Web/Server/Extension）**: `npm run test`
+- **カバレッジの確認**: `npm run test:coverage`
 
-テストカバレッジを測定します：
+#### テスト共通基盤
+フロントエンドのテストでは、`src/test/utils.tsx` に用意されたカスタムユーティリティを使用することを推奨します。これらは自動的に `ApiProvider` や `QueryClientProvider` をセットアップし、ボイラープレートを削減します。
 
-```bash
-npm run test:coverage
+```typescript
+import { render, renderHook } from './test/utils'
+// 通常の @testing-library/react の代わりに上記を使用することで Provider が自動適用されます
 ```
 
 #### テスト方針とカバレッジ
-プロジェクト全体の品質を維持するため、主要なロジックにおいて高いテストカバレッジ（目標 90% 以上）を維持することを方針としています。
-
 - テスト実行時は、開発用データベースに影響を与えないよう SQLite のインメモリモード (`:memory:`) が自動的に使用されます。
 - フロントエンドのテストには **React Testing Library** と **MSW (Mock Service Worker)** を使用しており、API リクエストをモックしてコンポーネントの挙動を検証しています。
 - テストデータは Fixture (例: `shared/test/fixtures.ts`) として集約管理されており、保守性と一貫性が確保されています。

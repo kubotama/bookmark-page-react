@@ -1,35 +1,38 @@
-import { useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { arrayMove } from '@dnd-kit/sortable'
-import { bookmarkKeys } from '../lib/queryKeys'
-import type { BookmarkId, BookmarksResponse } from '@shared/schemas/bookmark'
-import { useReorderBookmarks } from './useBookmarks'
+import { useBookmarks, useReorderBookmarks } from './useBookmarks'
+import { LOG_MESSAGES } from '@shared/constants'
 
-export const useBookmarkReorder = () => {
-  const queryClient = useQueryClient()
-  const { mutate: reorderMutation } = useReorderBookmarks()
+/**
+ * ブックマークの並び替えロジックを管理するフック
+ * テスト用に依存フックを注入可能にする (DIパターン)
+ */
+export const useBookmarkReorder = (
+  reorderHook = useReorderBookmarks,
+  bookmarksHook = useBookmarks
+) => {
+  const { mutate } = reorderHook()
+  const { data } = bookmarksHook()
 
-  const handleReorder = useCallback(
-    (activeId: BookmarkId, overId: BookmarkId) => {
-      const oldData = queryClient.getQueryData<BookmarksResponse>(
-        bookmarkKeys.lists(),
-      )
-      if (!oldData) return
+  const handleReorder = (activeId: string | null, overId: string | null) => {
+    if (!activeId || !overId || activeId === overId || !data) {
+      return
+    }
 
-      const oldIndex = oldData.bookmarks.findIndex((b) => b.id === activeId)
-      const newIndex = oldData.bookmarks.findIndex((b) => b.id === overId)
+    try {
+      const oldIndex = data.bookmarks.findIndex((b) => b.id === activeId)
+      const newIndex = data.bookmarks.findIndex((b) => b.id === overId)
 
-      if (oldIndex === -1) return
-      if (newIndex === -1) return
-
-      const newBookmarks = arrayMove(oldData.bookmarks, oldIndex, newIndex)
-      const newIds = newBookmarks.map((b) => b.id)
-
-      // サーバーへ保存（mutation 内部で楽観的更新が行われる）
-      reorderMutation({ ids: newIds })
-    },
-    [queryClient, reorderMutation],
-  )
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newBookmarks = arrayMove(data.bookmarks, oldIndex, newIndex)
+        const newIds = newBookmarks.map((b) => b.id)
+        
+        // 全 ID リストを送信して整合性を保つ
+        mutate({ ids: newIds })
+      }
+    } catch (err) {
+      console.error(LOG_MESSAGES.REORDER_FAILED_CONSOLE, err)
+    }
+  }
 
   return { handleReorder }
 }

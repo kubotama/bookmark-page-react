@@ -51,6 +51,8 @@ export const ERROR_MESSAGES = {
     'このホストへの接続はセキュリティ上の理由により許可されていません。',
   INVALID_PORT:
     'セキュリティ上の理由により、このポートへの接続は許可されていません。',
+  API_PROVIDER_REQUIRED: 'useApi は ApiProvider の内側で使用する必要があります',
+  UPDATE_API_URL_FAILED: 'API URL の更新に失敗しました:',
 } as const
 
 /**
@@ -167,6 +169,8 @@ export const LOG_MESSAGES = {
   EXTENSION_SETTING_SAVE_FAILED: 'Failed to save settings:',
   EXTENSION_SETTING_LOAD_FAILED: 'Failed to load extension settings:',
   EXTENSION_CONNECTION_FAILED: 'Connection test failed:',
+  INVALID_STORAGE_URL: 'Invalid API URL found in localStorage, falling back to default:',
+  REORDER_FAILED_CONSOLE: 'Failed to reorder bookmarks:',
 } as const
 
 /**
