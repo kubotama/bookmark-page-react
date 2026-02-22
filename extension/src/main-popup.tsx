@@ -8,6 +8,6 @@ if (root) {
   createRoot(root).render(
     <React.StrictMode>
       <Popup />
-    </React.StrictMode>
+    </React.StrictMode>,
   )
 }

@@ -108,6 +108,8 @@ export const usePopup = () => {
         type: 'success',
         message: EXTENSION_MESSAGES.POPUP_SAVED,
       })
+      // background.ts にキャッシュ無効化を通知
+      chrome.runtime.sendMessage({ type: 'INVALIDATE_CACHE' })
       setTimeout(() => window.close(), EXTENSION_CONSTANTS.POPUP_CLOSE_DELAY_MS)
     } catch (err) {
       console.error(LOG_MESSAGES.CREATE_BOOKMARK_FAILED, err)
