@@ -190,6 +190,26 @@ export const STORAGE_KEYS = {
 } as const
 
 /**
+ * データベース関連の定数
+ */
+export const DB_CONSTANTS = {
+  FILENAME: 'bookmarks.sqlite',
+  MIGRATIONS_DIR: 'server/db/migrations',
+  PRAGMA_FOREIGN_KEYS_ON: 'foreign_keys = ON',
+  PRAGMA_FOREIGN_KEYS_OFF: 'foreign_keys = OFF',
+  PRAGMA_JOURNAL_MODE_WAL: 'journal_mode = WAL',
+} as const
+
+/**
+ * 環境変数名の定数
+ */
+export const ENV_NAMES = {
+  TEST: 'test',
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production',
+} as const
+
+/**
  * ログメッセージ (開発者向け)
  */
 export const LOG_MESSAGES = {

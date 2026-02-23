@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { z } from 'zod'
 import { sqlite, db, initializeDatabase, resetDatabase } from './db'
 import { bookmarks, keywords, bookmarkKeywords, bookmarksRelations, keywordsRelations, bookmarkKeywordsRelations } from './db/schema'
-import { LOG_MESSAGES } from '@shared/constants'
+import { LOG_MESSAGES, DB_CONSTANTS, ENV_NAMES } from '@shared/constants'
 import { TEST_MESSAGES, VALID_URLS } from '@shared/test/fixtures'
 import { eq } from 'drizzle-orm'
 
 describe('db.ts', () => {
   beforeEach(() => {
     // 確実にテスト環境で初期化
-    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('NODE_ENV', ENV_NAMES.TEST)
     initializeDatabase()
     resetDatabase()
   })
@@ -34,7 +34,7 @@ describe('db.ts', () => {
       })
 
       expect(() => initializeDatabase()).toThrow(dbError)
-      expect(pragmaSpy).toHaveBeenCalledWith('foreign_keys = ON')
+      expect(pragmaSpy).toHaveBeenCalledWith(DB_CONSTANTS.PRAGMA_FOREIGN_KEYS_ON)
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.DB_INIT_FAILED,
         dbError,
@@ -57,7 +57,7 @@ describe('db.ts', () => {
     })
 
     it('テスト環境以外で実行された場合にエラーをスローすること', () => {
-      vi.stubEnv('NODE_ENV', 'development')
+      vi.stubEnv('NODE_ENV', ENV_NAMES.DEVELOPMENT)
       expect(() => resetDatabase()).toThrow(LOG_MESSAGES.RESET_DB_ENV_ERROR)
     })
   })
