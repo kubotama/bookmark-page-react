@@ -44,7 +44,7 @@ export const initializeDatabase = () => {
 export const resetDatabase = () => {
   if (process.env.NODE_ENV !== 'test') {
     /* v8 ignore next */
-    throw new Error('resetDatabase can only be called in test environment')
+    throw new Error(LOG_MESSAGES.RESET_DB_ENV_ERROR)
   }
   // ユーザ定義テーブルの一覧を取得（sqlite_sequence などのシステムテーブルを除外）
   const tableSchema = z.object({ name: z.string() })

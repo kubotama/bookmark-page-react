@@ -55,6 +55,11 @@ describe('db.ts', () => {
         .parse(sqlite.prepare('SELECT COUNT(*) as count FROM bookmarks').get())
       expect(count.count).toBe(0)
     })
+
+    it('テスト環境以外で実行された場合にエラーをスローすること', () => {
+      vi.stubEnv('NODE_ENV', 'development')
+      expect(() => resetDatabase()).toThrow(LOG_MESSAGES.RESET_DB_ENV_ERROR)
+    })
   })
 
   describe('Schema Definitions & Relations', () => {
