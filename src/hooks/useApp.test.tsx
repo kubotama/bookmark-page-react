@@ -65,12 +65,12 @@ describe('useApp Hook', () => {
   it('toggleSettings で showSettings が切り替わること', async () => {
     const { result } = await renderAppHook()
 
-    await act(async () => {
+    act(() => {
       result.current.toggleSettings()
     })
     expect(result.current.showSettings).toBe(true)
 
-    await act(async () => {
+    act(() => {
       result.current.toggleSettings()
     })
     expect(result.current.showSettings).toBe(false)
@@ -79,12 +79,12 @@ describe('useApp Hook', () => {
   it('closeSettings で showSettings が false になること', async () => {
     const { result } = await renderAppHook()
 
-    await act(async () => {
+    act(() => {
       result.current.toggleSettings()
     })
     expect(result.current.showSettings).toBe(true)
 
-    await act(async () => {
+    act(() => {
       result.current.closeSettings()
     })
     expect(result.current.showSettings).toBe(false)
@@ -97,7 +97,7 @@ describe('useApp Hook', () => {
       const expectedUrl = 'http://localhost:4000'
 
       let error: string | null = 'not-called'
-      await act(async () => {
+      act(() => {
         error = result.current.handleSaveSettings(inputUrl)
       })
 
@@ -111,7 +111,7 @@ describe('useApp Hook', () => {
       const invalidUrl = 'ftp://invalid'
 
       let error: string | null = null
-      await act(async () => {
+      act(() => {
         error = result.current.handleSaveSettings(invalidUrl)
       })
 
@@ -128,7 +128,7 @@ describe('useApp Hook', () => {
       const { result } = await renderAppHook()
 
       let error: string | null = null
-      await act(async () => {
+      act(() => {
         error = result.current.handleSaveSettings('http://localhost:3030')
       })
 
@@ -148,7 +148,7 @@ describe('useApp Hook', () => {
       const { result } = await renderAppHook()
 
       let error: string | null = null
-      await act(async () => {
+      act(() => {
         error = result.current.handleSaveSettings('http://localhost:3030')
       })
 
@@ -160,7 +160,7 @@ describe('useApp Hook', () => {
     it('handleRowClick でブックマークが選択されること', async () => {
       const { result } = await renderAppHook()
 
-      await act(async () => {
+      act(() => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
 
@@ -196,7 +196,7 @@ describe('useApp Hook', () => {
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
       const { result } = await renderAppHook()
 
-      await act(async () => {
+      act(() => {
         result.current.handleDoubleClick(
           MOCK_BOOKMARK_1.id,
           MOCK_BOOKMARK_1.url,
@@ -225,7 +225,7 @@ describe('useApp Hook', () => {
 
       const { result } = await renderAppHook()
 
-      await act(async () => {
+      act(() => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
 
