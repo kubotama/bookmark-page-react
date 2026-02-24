@@ -253,4 +253,5 @@ export const VALIDATION_MESSAGES = {
 export const TEST_MESSAGES = {
   UNEXPECTED_ERROR: 'Unexpected error',
   MUTATION_FAILED: 'Mutation failed',
+  TEST_ERROR: 'Test Error',
 } as const
