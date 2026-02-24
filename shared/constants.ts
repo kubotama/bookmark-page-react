@@ -246,3 +246,11 @@ export const VALIDATION_MESSAGES = {
   REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
 } as const
+
+/**
+ * テスト用メッセージ (テストコード内でのみ使用)
+ */
+export const TEST_MESSAGES = {
+  UNEXPECTED_ERROR: 'Unexpected error',
+  MUTATION_FAILED: 'Mutation failed',
+} as const

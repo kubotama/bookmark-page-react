@@ -1,85 +1,67 @@
-import { useCallback, useState } from 'react'
-import { COMMON_MESSAGES } from '@shared/constants'
-import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
-import { validateApiUrl, getOrigin } from '@shared/utils/url'
-import { useBookmarks } from './useBookmarks'
-import { useBookmarkList } from './useBookmarkList'
-import { useBookmarkActions } from './useBookmarkActions'
-import { useBookmarkReorder } from './useBookmarkReorder'
-import { useApi } from '../contexts/ApiContext'
+import { useState, useCallback } from 'react'
+import { useBookmarks, useUpdateBookmark, useDeleteBookmark } from './useBookmarks'
+import { getOrigin, validateApiUrl } from '@shared/utils/url'
+import {
+  LOG_MESSAGES,
+  UI_MESSAGES,
+  COMMON_MESSAGES,
+} from '@shared/constants'
 import { useQueryClient } from '@tanstack/react-query'
+import { useApi } from '../contexts/ApiContext'
+import { useBookmarkReorder } from './useBookmarkReorder'
+import type { BookmarkId } from '@shared/schemas/bookmark'
 
 export const useApp = () => {
+  const [selectedId, setSelectedId] = useState<BookmarkId | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const { apiUrl, updateApiUrl } = useApi()
   const queryClient = useQueryClient()
+  const { apiUrl: currentApiUrl, updateApiUrl } = useApi()
 
   const { data, isLoading, error } = useBookmarks()
-  const { selectedId, handleRowClick, setSelectedId } = useBookmarkList()
-  const { updateBookmark, deleteBookmark, openBookmark, closeDetail } =
-    useBookmarkActions(setSelectedId)
+  const updateMutation = useUpdateBookmark()
+  const deleteMutation = useDeleteBookmark()
   const { handleReorder } = useBookmarkReorder()
 
-  const bookmarks = data?.bookmarks ?? []
-  const selectedBookmark = bookmarks.find((b: Bookmark) => b.id === selectedId)
+  const bookmarks = data?.bookmarks || []
+  const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
 
-  const handleDoubleClick = useCallback(
-    (id: BookmarkId, url: string) => {
-      setSelectedId(id)
-      openBookmark(url)
-    },
-    [setSelectedId, openBookmark],
-  )
+  const handleRowClick = useCallback((id: BookmarkId) => {
+    setSelectedId(id)
+  }, [])
+
+  const handleDoubleClick = useCallback((id: BookmarkId, url: string) => {
+    setSelectedId(id)
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }, [])
 
   const handleUpdate = useCallback(
-    (title: string, url: string) => {
+    async (title: string, url: string) => {
       if (selectedBookmark) {
-        updateBookmark(selectedBookmark.id, { title, url })
+        await updateMutation.mutateAsync({
+          id: selectedBookmark.id,
+          updates: { title, url },
+        })
       }
     },
-    [selectedBookmark, updateBookmark],
+    [selectedBookmark, updateMutation],
   )
 
-  const handleDelete = useCallback(() => {
-    if (selectedBookmark) {
-      deleteBookmark(selectedBookmark.id)
+  const handleDelete = useCallback(async () => {
+    if (selectedBookmark && window.confirm(UI_MESSAGES.DELETE_CONFIRM)) {
+      await deleteMutation.mutateAsync(selectedBookmark.id)
+      setSelectedId(null)
     }
-  }, [selectedBookmark, deleteBookmark])
+  }, [selectedBookmark, deleteMutation])
 
   const handleOpen = useCallback(() => {
     if (selectedBookmark) {
-      openBookmark(selectedBookmark.url)
+      window.open(selectedBookmark.url, '_blank', 'noopener,noreferrer')
     }
-  }, [selectedBookmark, openBookmark])
+  }, [selectedBookmark])
 
   const handleClose = useCallback(() => {
-    closeDetail()
-  }, [closeDetail])
-
-  const handleSaveSettings = useCallback((newUrl: string) => {
-    const error = validateApiUrl(newUrl)
-    if (error) {
-      return error
-    }
-
-    try {
-      const sanitizedUrl = getOrigin(newUrl)
-      
-      // Context 経由で URL を更新（localStorage への保存も Context 内部で行われる）
-      updateApiUrl(sanitizedUrl)
-      
-      // キャッシュを完全にクリアして新しい接続先から強制的に再取得させる
-      queryClient.clear()
-      
-      // リロード前に設定パネルを閉じる
-      setShowSettings(false)
-      
-      return null
-    } catch (err) {
-      console.error('Failed to save settings:', err)
-      return err instanceof Error ? err.message : COMMON_MESSAGES.UNKNOWN_ERROR
-    }
-  }, [updateApiUrl, queryClient])
+    setSelectedId(null)
+  }, [])
 
   const toggleSettings = useCallback(() => {
     setShowSettings((prev) => !prev)
@@ -89,25 +71,42 @@ export const useApp = () => {
     setShowSettings(false)
   }, [])
 
+  const handleSaveSettings = useCallback(
+    (newUrl: string): string | null => {
+      try {
+        const error = validateApiUrl(newUrl)
+        if (error) return error
+
+        const sanitizedUrl = getOrigin(newUrl)
+        updateApiUrl(sanitizedUrl)
+        queryClient.clear()
+        setShowSettings(false)
+        return null
+      } catch (err) {
+        console.error(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, err)
+        return err instanceof Error ? err.message : COMMON_MESSAGES.UNKNOWN_ERROR
+      }
+    },
+    [updateApiUrl, queryClient],
+  )
+
   return {
-    // 状態
     bookmarks,
-    selectedBookmark,
-    selectedId,
     isLoading,
     error,
+    selectedId,
+    selectedBookmark,
     showSettings,
-    currentApiUrl: apiUrl,
-    // ハンドラ
+    currentApiUrl,
     handleRowClick,
     handleDoubleClick,
     handleUpdate,
     handleDelete,
     handleOpen,
     handleClose,
-    handleReorder,
-    handleSaveSettings,
     toggleSettings,
     closeSettings,
+    handleSaveSettings,
+    handleReorder,
   }
 }
