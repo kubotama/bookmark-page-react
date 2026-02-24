@@ -67,7 +67,7 @@ describe('Bookmarks API', () => {
         body: JSON.stringify(newData),
       })
 
-      expect(res.status).toBe(201)
+      expect(res.status).toBe(HTTP_STATUS.CREATED)
       const body = await res.json()
       expect(body.success).toBe(true)
       expect(body.data.title).toBe(newData.title)
@@ -87,7 +87,7 @@ describe('Bookmarks API', () => {
         body: JSON.stringify(newData),
       })
 
-      expect(res.status).toBe(409)
+      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
       const body = await res.json()
       expect(body.success).toBe(false)
       expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_URL)
@@ -127,7 +127,7 @@ describe('Bookmarks API', () => {
       const delRes = await app.request(`${API_PATHS.BOOKMARKS}/${targetId}`, {
         method: 'DELETE',
       })
-      expect(delRes.status).toBe(204)
+      expect(delRes.status).toBe(HTTP_STATUS.NO_CONTENT)
 
       const afterRes = await app.request(API_PATHS.BOOKMARKS)
       const afterBody = await afterRes.json()
@@ -138,7 +138,7 @@ describe('Bookmarks API', () => {
       const res = await app.request(`${API_PATHS.BOOKMARKS}/999`, {
         method: 'DELETE',
       })
-      expect(res.status).toBe(404)
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
     })
   })
 
@@ -194,7 +194,7 @@ describe('Bookmarks API', () => {
         body: JSON.stringify({ url: SEED_DATA_1.url }), // 重複するURL
       })
 
-      expect(res.status).toBe(409)
+      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
     })
 
     it('存在しない ID の更新時に 404 を返すこと', async () => {
@@ -203,7 +203,7 @@ describe('Bookmarks API', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Fail' }),
       })
-      expect(res.status).toBe(404)
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
     })
   })
 
@@ -325,7 +325,7 @@ describe('Bookmarks API', () => {
       })
       expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to reorder bookmarks:',
+        LOG_MESSAGES.REORDER_FAILED_CONSOLE,
         dbError,
       )
     })
