@@ -23,6 +23,7 @@ export const FIELD_LABELS = {
  * プロダクト全体で共有されるデフォルト設定
  */
 export const DEFAULT_API_URL = 'http://localhost:3030'
+export const DEFAULT_SERVER_PORT = 3030
 
 /**
  * プロダクト共通の UI メッセージ
@@ -216,6 +217,7 @@ export const LOG_MESSAGES = {
   DB_INIT_FAILED: 'Failed to initialize database:',
   DB_INIT_SUCCESS: 'Database initialized successfully',
   SERVER_START_FAILED: 'Failed to start server:',
+  SERVER_RUNNING: (port: number) => `Server is running on port ${port}`,
   BACKGROUND_LOADED: 'Background Service Worker loaded',
   EXTENSION_INSTALLED: 'Extension installed',
   FETCH_BOOKMARKS_FAILED: 'Failed to fetch bookmarks:',

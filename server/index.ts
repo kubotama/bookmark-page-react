@@ -1,19 +1,20 @@
 import { serve } from '@hono/node-server'
 import app from './app'
 import { initializeDatabase } from './db'
-import { LOG_MESSAGES } from '@shared/constants'
+import { LOG_MESSAGES, DEFAULT_SERVER_PORT } from '@shared/constants'
 
-const port = 3030
-
+// データベースの初期化
 try {
   initializeDatabase()
-  console.log('Database initialized successfully')
+  console.log(LOG_MESSAGES.DB_INIT_SUCCESS)
 } catch (error) {
-  console.error(LOG_MESSAGES.SERVER_START_FAILED, error)
+  console.error(LOG_MESSAGES.DB_INIT_FAILED, error)
   process.exit(1)
 }
 
-console.log(`Server is running on port ${port}`)
+const port = DEFAULT_SERVER_PORT
+
+console.log(LOG_MESSAGES.SERVER_RUNNING(port))
 
 serve({
   fetch: app.fetch,
