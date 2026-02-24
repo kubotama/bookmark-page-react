@@ -1,38 +1,22 @@
 import fs from 'fs';
 import path from 'path';
-
-const packageJsonPath = path.resolve(process.cwd(), 'package.json');
-const manifestJsonPath = path.resolve(process.cwd(), 'extension/public/manifest.json');
+import { LOG_MESSAGES } from '../shared/constants';
 
 function syncVersion() {
   try {
-    if (!fs.existsSync(packageJsonPath)) {
-      console.error(`[sync-version] package.json not found at: ${packageJsonPath}`);
-      process.exit(1);
-    }
-    if (!fs.existsSync(manifestJsonPath)) {
-      console.error(`[sync-version] manifest.json not found at: ${manifestJsonPath}`);
-      process.exit(1);
-    }
+    const rootPackagePath = path.resolve(__dirname, '../package.json');
+    const manifestPath = path.resolve(__dirname, './public/manifest.json');
 
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-    const manifestJson = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf-8'));
+    const rootPackage = JSON.parse(fs.readFileSync(rootPackagePath, 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
-    if (typeof packageJson.version !== 'string') {
-      console.error(`[sync-version] 'version' field in package.json is missing or not a string.`);
-      process.exit(1);
-    }
-
-    if (manifestJson.version !== packageJson.version) {
-      const oldVersion = manifestJson.version;
-      manifestJson.version = packageJson.version;
-      fs.writeFileSync(manifestJsonPath, JSON.stringify(manifestJson, null, 2) + '\n');
-      console.log(`[sync-version] Updated manifest.json version from ${oldVersion} to ${packageJson.version}`);
-    } else {
-      console.log(`[sync-version] Versions are already in sync (${packageJson.version})`);
+    if (manifest.version !== rootPackage.version) {
+      manifest.version = rootPackage.version;
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+      console.log(`[sync-version] Updated manifest.json version to ${rootPackage.version}`);
     }
   } catch (error) {
-    console.error('[sync-version] Error syncing versions:', error);
+    console.error(LOG_MESSAGES.VERSION_SYNC_ERROR, error);
     process.exit(1);
   }
 }
