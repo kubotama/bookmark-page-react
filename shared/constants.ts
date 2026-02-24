@@ -214,6 +214,7 @@ export const ENV_NAMES = {
  */
 export const LOG_MESSAGES = {
   DB_INIT_FAILED: 'Failed to initialize database:',
+  DB_INIT_SUCCESS: 'Database initialized successfully',
   SERVER_START_FAILED: 'Failed to start server:',
   BACKGROUND_LOADED: 'Background Service Worker loaded',
   EXTENSION_INSTALLED: 'Extension installed',
@@ -231,6 +232,20 @@ export const LOG_MESSAGES = {
   REORDER_FAILED_CONSOLE: 'Failed to reorder bookmarks:',
   RESET_DB_ENV_ERROR: 'resetDatabase can only be called in test environment',
   INSERT_FAILED: 'Failed to insert bookmark',
+  INVALID_STORAGE_URL_BACKGROUND: 'Invalid API URL in background:',
+  ICON_STATUS_UPDATE_FAILED: 'Failed to update icon status:',
+  UNAUTHORIZED_EXTENSION_MESSAGE: 'Blocked message from unauthorized extension:',
+  UNAUTHORIZED_ORIGIN_MESSAGE: 'Blocked unauthorized message from origin:',
+  VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
+} as const
+
+/**
+ * テスト用メッセージ (テストコード内でのみ使用)
+ */
+export const TEST_MESSAGES = {
+  UNEXPECTED_ERROR: 'Unexpected error',
+  MUTATION_FAILED: 'Mutation failed',
+  TEST_ERROR: 'Test Error',
 } as const
 
 /**
@@ -245,13 +260,4 @@ export const VALIDATION_MESSAGES = {
     'タイトルまたは URL の少なくとも一方は指定する必要があります',
   REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
-} as const
-
-/**
- * テスト用メッセージ (テストコード内でのみ使用)
- */
-export const TEST_MESSAGES = {
-  UNEXPECTED_ERROR: 'Unexpected error',
-  MUTATION_FAILED: 'Mutation failed',
-  TEST_ERROR: 'Test Error',
 } as const
