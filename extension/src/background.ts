@@ -5,6 +5,7 @@ import {
   EXTENSION_MESSAGE_TYPES,
   STORAGE_KEYS,
   LOG_MESSAGES,
+  ALLOWED_ORIGINS,
 } from '@shared/constants'
 import type { Bookmark, BookmarksResponse } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
@@ -55,7 +56,7 @@ const updateIconStatus = async (
     // 2. セキュリティバリデーション (Security fix)
     const urlError = validateApiUrl(apiUrl)
     if (urlError) {
-      console.warn('Invalid API URL in background:', urlError)
+      console.warn(LOG_MESSAGES.INVALID_STORAGE_URL_BACKGROUND, urlError)
       chrome.action.setIcon({
         tabId,
         path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
@@ -94,7 +95,7 @@ const updateIconStatus = async (
       path: EXTENSION_ICONS[BOOKMARK_STATUS[status]],
     })
   } catch (err) {
-    console.error('Failed to update icon status:', err)
+    console.error(LOG_MESSAGES.ICON_STATUS_UPDATE_FAILED, err)
     chrome.action.setIcon({
       tabId,
       path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
@@ -152,17 +153,17 @@ chrome.storage.onChanged.addListener((changes, area) => {
  */
 chrome.runtime.onMessageExternal.addListener(
   (message, sender, sendResponse) => {
-    // 許可されたオリジンリスト
-    const allowedOrigins = ['http://localhost:5173']
+    // 許可されたオリジンリストを定数から取得
+    const allowedOrigins: readonly string[] = ALLOWED_ORIGINS
 
-    // 他の拡張機能からのメッセージを拒否（sender.id がある場合は外部拡張）
+    // 他の拡張機能からのメッセージを拒否
     if (sender.id) {
-      console.warn('Blocked message from unauthorized extension:', sender.id)
+      console.warn(LOG_MESSAGES.UNAUTHORIZED_EXTENSION_MESSAGE, sender.id)
       return false
     }
 
     if (sender.origin && !allowedOrigins.includes(sender.origin)) {
-      console.warn('Blocked unauthorized message from origin:', sender.origin)
+      console.warn(LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE, sender.origin)
       return false
     }
 
@@ -183,7 +184,7 @@ chrome.runtime.onMessageExternal.addListener(
  * 内部メッセージ（キャッシュ無効化）を処理
  */
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'INVALIDATE_CACHE') {
+  if (message.type === EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE) {
     queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0]
