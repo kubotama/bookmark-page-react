@@ -26,6 +26,18 @@ export const DEFAULT_API_URL = 'http://localhost:3030'
 export const DEFAULT_SERVER_PORT = 3030
 
 /**
+ * UI の処理状態定義
+ */
+export const UI_STATUS = {
+  IDLE: 'idle',
+  LOADING: 'loading',
+  SUCCESS: 'success',
+  ERROR: 'error',
+} as const
+
+export type UIStatus = typeof UI_STATUS[keyof typeof UI_STATUS]
+
+/**
  * 許可されたオリジン (Web アプリ)
  */
 export const ALLOWED_ORIGINS = ['http://localhost:5173'] as const
