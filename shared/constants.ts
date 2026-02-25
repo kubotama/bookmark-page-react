@@ -35,7 +35,7 @@ export const UI_STATUS = {
   ERROR: 'error',
 } as const
 
-export type UIStatus = typeof UI_STATUS[keyof typeof UI_STATUS]
+export type UIStatus = (typeof UI_STATUS)[keyof typeof UI_STATUS]
 
 /**
  * 処理状態とメッセージを組み合わせた共通型
@@ -125,7 +125,8 @@ export const BOOKMARK_STATUS = {
   ERROR: 'error',
 } as const
 
-export type BookmarkStatus = typeof BOOKMARK_STATUS[keyof typeof BOOKMARK_STATUS]
+export type BookmarkStatus =
+  (typeof BOOKMARK_STATUS)[keyof typeof BOOKMARK_STATUS]
 
 /**
  * 拡張機能のアイコンパス定義
@@ -256,15 +257,19 @@ export const LOG_MESSAGES = {
   EXTENSION_SETTING_SAVE_FAILED: 'Failed to save settings:',
   EXTENSION_SETTING_LOAD_FAILED: 'Failed to load extension settings:',
   EXTENSION_CONNECTION_FAILED: 'Connection test failed:',
-  INVALID_STORAGE_URL: 'Invalid API URL found in localStorage, falling back to default:',
+  INVALID_STORAGE_URL:
+    'Invalid API URL found in localStorage, falling back to default:',
   REORDER_FAILED_CONSOLE: 'Failed to reorder bookmarks:',
   RESET_DB_ENV_ERROR: 'resetDatabase can only be called in test environment',
   INSERT_FAILED: 'Failed to insert bookmark',
   INVALID_STORAGE_URL_BACKGROUND: 'Invalid API URL in background:',
   ICON_STATUS_UPDATE_FAILED: 'Failed to update icon status:',
-  UNAUTHORIZED_EXTENSION_MESSAGE: 'Blocked message from unauthorized extension:',
+  UNAUTHORIZED_EXTENSION_MESSAGE:
+    'Blocked message from unauthorized extension:',
   UNAUTHORIZED_ORIGIN_MESSAGE: 'Blocked unauthorized message from origin:',
   VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
+  UPDATED_VERSION: (version: string) =>
+    `[sync-version] Updated manifest.json version to ${version}`,
 } as const
 
 /**
