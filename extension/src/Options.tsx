@@ -2,17 +2,19 @@ import {
   COMMON_MESSAGES,
   FIELD_LABELS,
   DEFAULT_API_URL,
+  UI_STATUS,
+  ARIA_ROLES,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
-import { type StatusType, useOptions } from './hooks/useOptions'
+import { useOptions } from './hooks/useOptions'
 
-const statusStyles: Record<StatusType, string> = {
-  idle: '',
-  loading: 'bg-blue-100 text-blue-800',
-  success: 'bg-green-100 text-green-800',
-  error: 'bg-red-100 text-red-800',
+const statusStyles: Record<string, string> = {
+  [UI_STATUS.IDLE]: '',
+  [UI_STATUS.LOADING]: 'bg-blue-100 text-blue-800',
+  [UI_STATUS.SUCCESS]: 'bg-green-100 text-green-800',
+  [UI_STATUS.ERROR]: 'bg-red-100 text-red-800',
 }
 
 export const Options = () => {
@@ -43,7 +45,7 @@ export const Options = () => {
           <Button
             onClick={handleSave}
             size="medium"
-            disabled={status.type === 'loading'}
+            disabled={status.type === UI_STATUS.LOADING}
           >
             {FIELD_LABELS.BUTTON_SAVE}
           </Button>
@@ -51,15 +53,15 @@ export const Options = () => {
             onClick={handleTestConnection}
             variant="secondary"
             size="medium"
-            disabled={status.type === 'loading'}
+            disabled={status.type === UI_STATUS.LOADING}
           >
             {FIELD_LABELS.BUTTON_TEST}
           </Button>
         </div>
 
-        {status.type !== 'idle' && (
+        {status.type !== UI_STATUS.IDLE && (
           <div
-            role={status.type === 'error' ? 'alert' : 'status'}
+            role={status.type === UI_STATUS.ERROR ? ARIA_ROLES.ALERT : ARIA_ROLES.STATUS}
             className={`ml-14 p-3 rounded-md text-sm ${statusStyles[status.type]}`}
           >
             {status.message}

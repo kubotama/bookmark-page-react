@@ -5,6 +5,7 @@ import { Options } from './Options'
 import {
   DEFAULT_API_URL,
   FIELD_LABELS,
+  UI_STATUS,
 } from '@shared/constants'
 import { useOptions } from './hooks/useOptions'
 
@@ -15,7 +16,7 @@ describe('Options Component', () => {
   const baseMockUseOptions = {
     apiUrl: DEFAULT_API_URL,
     setApiUrl: vi.fn(),
-    status: { type: 'idle' as const },
+    status: { type: UI_STATUS.IDLE, message: '' },
     handleSave: vi.fn(),
     handleTestConnection: vi.fn(),
   }
@@ -66,7 +67,7 @@ describe('Options Component', () => {
     const message = 'Test Status Message'
     vi.mocked(useOptions).mockReturnValue({
       ...baseMockUseOptions,
-      status: { type: 'success', message },
+      status: { type: UI_STATUS.SUCCESS, message },
     })
 
     render(<Options />)
@@ -79,7 +80,7 @@ describe('Options Component', () => {
     const message = 'Error Occurred'
     vi.mocked(useOptions).mockReturnValue({
       ...baseMockUseOptions,
-      status: { type: 'error', message },
+      status: { type: UI_STATUS.ERROR, message },
     })
 
     render(<Options />)
