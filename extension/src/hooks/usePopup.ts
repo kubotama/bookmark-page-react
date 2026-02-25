@@ -8,26 +8,23 @@ import {
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
+  UI_STATUS,
+  EXTENSION_MESSAGE_TYPES,
+  type StatusInfo,
 } from '@shared/constants'
 import { createBookmarkSchema } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
 import { storage } from '../lib/storage'
 
-export type PopupStatusType = 'idle' | 'loading' | 'success' | 'error'
-
-export interface PopupStatusState {
-  type: PopupStatusType
-  message?: string
-}
-
 const DEFAULT_SETTINGS = {
   [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
 }
+
 export const usePopup = () => {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
-  const [status, setStatus] = useState<PopupStatusState>({ type: 'idle' })
+  const [status, setStatus] = useState<StatusInfo>({ type: UI_STATUS.IDLE, message: '' })
 
   // 現在のタブ情報を取得 (Async/Await 形式)
   useEffect(() => {
@@ -54,13 +51,13 @@ export const usePopup = () => {
   }, [])
 
   const handleSave = useCallback(async () => {
-    setStatus({ type: 'loading', message: COMMON_MESSAGES.SAVING })
+    setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
 
     // 1. 入力バリデーション
     const validation = createBookmarkSchema.safeParse({ title, url })
     if (!validation.success) {
       setStatus({
-        type: 'error',
+        type: UI_STATUS.ERROR,
         message: validation.error.issues[0].message,
       })
       return
@@ -105,16 +102,16 @@ export const usePopup = () => {
 
       // 成功時
       setStatus({
-        type: 'success',
+        type: UI_STATUS.SUCCESS,
         message: EXTENSION_MESSAGES.POPUP_SAVED,
       })
       // background.ts にキャッシュ無効化を通知
-      chrome.runtime.sendMessage({ type: 'INVALIDATE_CACHE' })
+      chrome.runtime.sendMessage({ type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE })
       setTimeout(() => window.close(), EXTENSION_CONSTANTS.POPUP_CLOSE_DELAY_MS)
     } catch (err) {
       console.error(LOG_MESSAGES.CREATE_BOOKMARK_FAILED, err)
       setStatus({
-        type: 'error',
+        type: UI_STATUS.ERROR,
         message:
           err instanceof Error
             ? err.message

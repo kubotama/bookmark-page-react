@@ -38,6 +38,14 @@ export const UI_STATUS = {
 export type UIStatus = typeof UI_STATUS[keyof typeof UI_STATUS]
 
 /**
+ * 処理状態とメッセージを組み合わせた共通型
+ */
+export type StatusInfo = {
+  type: UIStatus
+  message: string
+}
+
+/**
  * 許可されたオリジン (Web アプリ)
  */
 export const ALLOWED_ORIGINS = ['http://localhost:5173'] as const
