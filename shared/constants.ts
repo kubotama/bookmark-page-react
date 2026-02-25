@@ -26,6 +26,11 @@ export const DEFAULT_API_URL = 'http://localhost:3030'
 export const DEFAULT_SERVER_PORT = 3030
 
 /**
+ * 許可されたオリジン (Web アプリ)
+ */
+export const ALLOWED_ORIGINS = ['http://localhost:5173'] as const
+
+/**
  * プロダクト共通の UI メッセージ
  */
 export const COMMON_MESSAGES = {
@@ -142,6 +147,7 @@ export const EXTENSION_CONSTANTS = {
  */
 export const EXTENSION_MESSAGE_TYPES = {
   GET_API_CONFIG: 'GET_API_CONFIG',
+  INVALIDATE_CACHE: 'INVALIDATE_CACHE',
 } as const
 
 /**
