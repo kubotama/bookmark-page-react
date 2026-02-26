@@ -3,6 +3,7 @@ import {
   COMMON_MESSAGES,
   EXTENSION_CONSTANTS,
   FIELD_LABELS,
+  PLACEHOLDERS,
   STATUS_STYLES,
   UI_STATUS,
 } from '@shared/constants'
@@ -26,7 +27,7 @@ export const Popup = () => {
           label={FIELD_LABELS.TITLE}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="タイトルを入力"
+          placeholder={PLACEHOLDERS.TITLE}
         />
 
         <InputField
@@ -34,7 +35,7 @@ export const Popup = () => {
           label={FIELD_LABELS.URL}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
+          placeholder={PLACEHOLDERS.URL}
           className="font-mono"
         />
 

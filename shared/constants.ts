@@ -19,6 +19,11 @@ export const FIELD_LABELS = {
   SETTING_TITLE: '設定',
 } as const
 
+export const PLACEHOLDERS = {
+  TITLE: 'タイトルを入力',
+  URL: 'https://...',
+} as const
+
 /**
  * プロダクト全体で共有されるデフォルト設定
  */
