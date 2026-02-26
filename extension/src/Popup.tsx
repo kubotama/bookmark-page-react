@@ -1,21 +1,15 @@
 import {
+  ARIA_ROLES,
   COMMON_MESSAGES,
   EXTENSION_CONSTANTS,
   FIELD_LABELS,
+  STATUS_STYLES,
   UI_STATUS,
-  ARIA_ROLES,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
 import { usePopup } from './hooks/usePopup'
-
-const statusStyles: Record<string, string> = {
-  [UI_STATUS.IDLE]: '',
-  [UI_STATUS.LOADING]: 'bg-blue-50 text-blue-700 border-blue-200',
-  [UI_STATUS.SUCCESS]: 'bg-green-50 text-green-700 border-green-200',
-  [UI_STATUS.ERROR]: 'bg-red-50 text-red-700 border-red-200',
-}
 
 export const Popup = () => {
   const { title, setTitle, url, setUrl, status, handleSave } = usePopup()
@@ -48,7 +42,10 @@ export const Popup = () => {
           <Button
             onClick={handleSave}
             size="medium"
-            disabled={status.type === UI_STATUS.LOADING || status.type === UI_STATUS.SUCCESS}
+            disabled={
+              status.type === UI_STATUS.LOADING ||
+              status.type === UI_STATUS.SUCCESS
+            }
           >
             {status.type === UI_STATUS.LOADING
               ? COMMON_MESSAGES.SAVING
@@ -58,8 +55,12 @@ export const Popup = () => {
 
         {status.type !== UI_STATUS.IDLE && (
           <div
-            role={status.type === UI_STATUS.ERROR ? ARIA_ROLES.ALERT : ARIA_ROLES.STATUS}
-            className={`p-3 rounded-md text-sm border ${statusStyles[status.type]}`}
+            role={
+              status.type === UI_STATUS.ERROR
+                ? ARIA_ROLES.ALERT
+                : ARIA_ROLES.STATUS
+            }
+            className={`p-3 rounded-md text-sm border ${STATUS_STYLES[status.type]}`}
           >
             {status.message}
           </div>

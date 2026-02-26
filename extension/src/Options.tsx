@@ -1,21 +1,15 @@
 import {
-  COMMON_MESSAGES,
-  FIELD_LABELS,
-  DEFAULT_API_URL,
-  UI_STATUS,
   ARIA_ROLES,
+  COMMON_MESSAGES,
+  DEFAULT_API_URL,
+  FIELD_LABELS,
+  STATUS_STYLES,
+  UI_STATUS,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
 import { useOptions } from './hooks/useOptions'
-
-const statusStyles: Record<string, string> = {
-  [UI_STATUS.IDLE]: '',
-  [UI_STATUS.LOADING]: 'bg-blue-100 text-blue-800',
-  [UI_STATUS.SUCCESS]: 'bg-green-100 text-green-800',
-  [UI_STATUS.ERROR]: 'bg-red-100 text-red-800',
-}
 
 export const Options = () => {
   const { apiUrl, setApiUrl, status, handleSave, handleTestConnection } =
@@ -61,8 +55,12 @@ export const Options = () => {
 
         {status.type !== UI_STATUS.IDLE && (
           <div
-            role={status.type === UI_STATUS.ERROR ? ARIA_ROLES.ALERT : ARIA_ROLES.STATUS}
-            className={`ml-14 p-3 rounded-md text-sm ${statusStyles[status.type]}`}
+            role={
+              status.type === UI_STATUS.ERROR
+                ? ARIA_ROLES.ALERT
+                : ARIA_ROLES.STATUS
+            }
+            className={`ml-14 p-3 rounded-md text-sm ${STATUS_STYLES[status.type]}`}
           >
             {status.message}
           </div>

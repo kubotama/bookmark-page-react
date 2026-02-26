@@ -46,6 +46,16 @@ export type StatusInfo = {
 }
 
 /**
+ * UI 状態に応じた共通の CSS クラス定義
+ */
+export const STATUS_STYLES: Record<UIStatus, string> = {
+  [UI_STATUS.IDLE]: '',
+  [UI_STATUS.LOADING]: 'bg-blue-50 text-blue-700 border-blue-200',
+  [UI_STATUS.SUCCESS]: 'bg-green-50 text-green-700 border-green-200',
+  [UI_STATUS.ERROR]: 'bg-red-50 text-red-700 border-red-200',
+} as const
+
+/**
  * 許可されたオリジン (Web アプリ)
  */
 export const ALLOWED_ORIGINS = ['http://localhost:5173'] as const
