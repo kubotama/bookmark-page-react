@@ -1,10 +1,15 @@
 import { useState, useCallback } from 'react'
-import { useBookmarks, useUpdateBookmark, useDeleteBookmark } from './useBookmarks'
+import {
+  useBookmarks,
+  useUpdateBookmark,
+  useDeleteBookmark,
+} from './useBookmarks'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 import {
   LOG_MESSAGES,
   UI_MESSAGES,
   COMMON_MESSAGES,
+  HTML_ATTRIBUTES,
 } from '@shared/constants'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApi } from '../contexts/ApiContext'
@@ -31,7 +36,11 @@ export const useApp = () => {
 
   const handleDoubleClick = useCallback((id: BookmarkId, url: string) => {
     setSelectedId(id)
-    window.open(url, '_blank', 'noopener,noreferrer')
+    window.open(
+      url,
+      HTML_ATTRIBUTES.TARGET_BLANK,
+      HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
+    )
   }, [])
 
   const handleUpdate = useCallback(
@@ -55,7 +64,11 @@ export const useApp = () => {
 
   const handleOpen = useCallback(() => {
     if (selectedBookmark) {
-      window.open(selectedBookmark.url, '_blank', 'noopener,noreferrer')
+      window.open(
+        selectedBookmark.url,
+        HTML_ATTRIBUTES.TARGET_BLANK,
+        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
+      )
     }
   }, [selectedBookmark])
 
@@ -84,7 +97,9 @@ export const useApp = () => {
         return null
       } catch (err) {
         console.error(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, err)
-        return err instanceof Error ? err.message : COMMON_MESSAGES.UNKNOWN_ERROR
+        return err instanceof Error
+          ? err.message
+          : COMMON_MESSAGES.UNKNOWN_ERROR
       }
     },
     [updateApiUrl, queryClient],

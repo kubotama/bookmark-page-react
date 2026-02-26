@@ -1,18 +1,27 @@
-import { act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useApp } from './useApp'
-import { STORAGE_KEYS, VALIDATION_MESSAGES, COMMON_MESSAGES, LOG_MESSAGES, TEST_MESSAGES } from '@shared/constants'
 import { http, HttpResponse } from 'msw'
-import { server } from '../test/setup'
-import { renderHook } from '../test/utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  COMMON_MESSAGES,
+  HTML_ATTRIBUTES,
+  LOG_MESSAGES,
+  STORAGE_KEYS,
+  TEST_MESSAGES,
+  VALIDATION_MESSAGES,
+} from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
+import { act } from '@testing-library/react'
+
+import { server } from '../test/setup'
+import { renderHook } from '../test/utils'
+import { useApp } from './useApp'
 
 describe('useApp Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    
+
     // location.reload をモック
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -23,14 +32,17 @@ describe('useApp Hook', () => {
     // MSW のデフォルトハンドラを設定
     server.use(
       http.get('*/api/bookmarks', () => {
-        return HttpResponse.json({ success: true, data: { bookmarks: [MOCK_BOOKMARK_1] } })
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [MOCK_BOOKMARK_1] },
+        })
       }),
       http.patch('*/api/bookmarks/:id', () => {
         return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
       }),
       http.delete('*/api/bookmarks/:id', () => {
         return new HttpResponse(null, { status: 204 })
-      })
+      }),
     )
   })
 
@@ -39,7 +51,7 @@ describe('useApp Hook', () => {
    */
   const renderAppHook = async (initialUrl?: string) => {
     const renderResult = renderHook(() => useApp(), { initialUrl })
-    
+
     // isLoading が false になるまで待機 (act 内で実行)
     await act(async () => {
       await vi.waitFor(() => {
@@ -48,7 +60,7 @@ describe('useApp Hook', () => {
         }
       })
     })
-    
+
     return renderResult
   }
 
@@ -123,14 +135,17 @@ describe('useApp Hook', () => {
       })
 
       const { result } = await renderAppHook()
-      
+
       let error: string | null = null
       act(() => {
         error = result.current.handleSaveSettings('http://localhost:3030')
       })
 
       expect(error).toBe(TEST_MESSAGES.UNEXPECTED_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, expect.any(Error))
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
+        expect.any(Error),
+      )
     })
 
     it('Error 以外の例外が発生した場合、共通エラーメッセージを返すこと', async () => {
@@ -140,7 +155,7 @@ describe('useApp Hook', () => {
       })
 
       const { result } = await renderAppHook()
-      
+
       let error: string | null = null
       act(() => {
         error = result.current.handleSaveSettings('http://localhost:3030')
@@ -153,7 +168,7 @@ describe('useApp Hook', () => {
   describe('ブックマーク操作の検証', () => {
     it('handleRowClick でブックマークが選択されること', async () => {
       const { result } = await renderAppHook()
-      
+
       act(() => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
@@ -168,11 +183,11 @@ describe('useApp Hook', () => {
         http.patch('*/api/bookmarks/:id', () => {
           patchCalled = true
           return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-        })
+        }),
       )
 
       const { result } = await renderAppHook()
-      
+
       act(() => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
@@ -200,8 +215,8 @@ describe('useApp Hook', () => {
       expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
       expect(openSpy).toHaveBeenCalledWith(
         MOCK_BOOKMARK_1.url,
-        '_blank',
-        'noopener,noreferrer',
+        HTML_ATTRIBUTES.TARGET_BLANK,
+        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
       )
     })
 
@@ -209,17 +224,19 @@ describe('useApp Hook', () => {
       let deleteCalled = false
       vi.spyOn(window, 'confirm').mockReturnValue(true)
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-      
+
       server.use(
         http.delete('*/api/bookmarks/:id', () => {
           deleteCalled = true
           return new HttpResponse(null, { status: 204 })
-        })
+        }),
       )
 
       const { result } = await renderAppHook()
-      
-      act(() => { result.current.handleRowClick(MOCK_BOOKMARK_1.id) })
+
+      act(() => {
+        result.current.handleRowClick(MOCK_BOOKMARK_1.id)
+      })
 
       await act(async () => {
         result.current.handleOpen()

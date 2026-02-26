@@ -1,10 +1,14 @@
 import { useCallback } from 'react'
 
-import { UI_MESSAGES } from '@shared/constants'
+import { HTML_ATTRIBUTES, UI_MESSAGES } from '@shared/constants'
 import { isHttpUrl } from '@shared/utils/url'
+
 import { useDeleteBookmark, useUpdateBookmark } from './useBookmarks'
 
-import type { BookmarkId, UpdateBookmarkRequest } from '@shared/schemas/bookmark'
+import type {
+  BookmarkId,
+  UpdateBookmarkRequest,
+} from '@shared/schemas/bookmark'
 
 export const useBookmarkActions = (
   setSelectedId: (id: BookmarkId | null) => void,
@@ -41,7 +45,11 @@ export const useBookmarkActions = (
    */
   const openBookmark = useCallback((url: string) => {
     if (isHttpUrl(url)) {
-      window.open(url, '_blank', 'noopener,noreferrer')
+      window.open(
+        url,
+        HTML_ATTRIBUTES.TARGET_BLANK,
+        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
+      )
     }
   }, [])
 

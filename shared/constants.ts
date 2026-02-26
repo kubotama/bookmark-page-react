@@ -191,6 +191,8 @@ export const ARIA_ATTRIBUTES = {
 export const HTML_ATTRIBUTES = {
   TAB_INDEX: 'tabIndex',
   ROLE: 'role',
+  TARGET_BLANK: '_blank',
+  REL_NOOPENER_NOREFERRER: 'noopener,noreferrer',
 } as const
 
 /**

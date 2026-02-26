@@ -1,8 +1,11 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useBookmarkActions } from './useBookmarkActions'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { HTML_ATTRIBUTES } from '@shared/constants'
 import { MOCK_BOOKMARK_1, VALID_URLS } from '@shared/test/fixtures'
-import { useUpdateBookmark, useDeleteBookmark } from './useBookmarks'
+import { act, renderHook } from '@testing-library/react'
+
+import { useBookmarkActions } from './useBookmarkActions'
+import { useDeleteBookmark, useUpdateBookmark } from './useBookmarks'
 
 // Mutations をモック化
 vi.mock('./useBookmarks', () => ({
@@ -52,8 +55,8 @@ describe('useBookmarkActions Hook', () => {
       if (expected) {
         expect(window.open).toHaveBeenCalledWith(
           url,
-          '_blank',
-          'noopener,noreferrer',
+          HTML_ATTRIBUTES.TARGET_BLANK,
+          HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
         )
       } else {
         expect(window.open).not.toHaveBeenCalled()
