@@ -4,7 +4,7 @@ import { useBookmarkReorder } from './useBookmarkReorder'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 import { renderHook } from '../test/utils'
 import { useReorderBookmarks, useBookmarks } from './useBookmarks'
-import { LOG_MESSAGES } from '@shared/constants'
+import { LOG_MESSAGES, TEST_MESSAGES } from '@shared/constants'
 
 describe('useBookmarkReorder Hook (DI Pattern)', () => {
   const mockMutate = vi.fn()
@@ -57,7 +57,7 @@ describe('useBookmarkReorder Hook (DI Pattern)', () => {
 
   it('例外が発生した場合にキャッチしてログを出力すること', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    mockMutate.mockImplementationOnce(() => { throw new Error('Mutation failed') })
+    mockMutate.mockImplementationOnce(() => { throw new Error(TEST_MESSAGES.MUTATION_FAILED) })
 
     const { result } = renderReorderHook()
     act(() => { result.current.handleReorder(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id) })

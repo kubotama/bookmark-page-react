@@ -19,10 +19,51 @@ export const FIELD_LABELS = {
   SETTING_TITLE: '設定',
 } as const
 
+export const PLACEHOLDERS = {
+  TITLE: 'タイトルを入力',
+  URL: 'https://...',
+} as const
+
 /**
  * プロダクト全体で共有されるデフォルト設定
  */
 export const DEFAULT_API_URL = 'http://localhost:3030'
+export const DEFAULT_SERVER_PORT = 3030
+
+/**
+ * UI の処理状態定義
+ */
+export const UI_STATUS = {
+  IDLE: 'idle',
+  LOADING: 'loading',
+  SUCCESS: 'success',
+  ERROR: 'error',
+} as const
+
+export type UIStatus = (typeof UI_STATUS)[keyof typeof UI_STATUS]
+
+/**
+ * 処理状態とメッセージを組み合わせた共通型
+ */
+export type StatusInfo = {
+  type: UIStatus
+  message: string
+}
+
+/**
+ * UI 状態に応じた共通の CSS クラス定義
+ */
+export const STATUS_STYLES: Record<UIStatus, string> = {
+  [UI_STATUS.IDLE]: '',
+  [UI_STATUS.LOADING]: 'bg-blue-50 text-blue-700 border-blue-200',
+  [UI_STATUS.SUCCESS]: 'bg-green-50 text-green-700 border-green-200',
+  [UI_STATUS.ERROR]: 'bg-red-50 text-red-700 border-red-200',
+} as const
+
+/**
+ * 許可されたオリジン (Web アプリ)
+ */
+export const ALLOWED_ORIGINS = ['http://localhost:5173'] as const
 
 /**
  * プロダクト共通の UI メッセージ
@@ -99,7 +140,8 @@ export const BOOKMARK_STATUS = {
   ERROR: 'error',
 } as const
 
-export type BookmarkStatus = typeof BOOKMARK_STATUS[keyof typeof BOOKMARK_STATUS]
+export type BookmarkStatus =
+  (typeof BOOKMARK_STATUS)[keyof typeof BOOKMARK_STATUS]
 
 /**
  * 拡張機能のアイコンパス定義
@@ -141,6 +183,7 @@ export const EXTENSION_CONSTANTS = {
  */
 export const EXTENSION_MESSAGE_TYPES = {
   GET_API_CONFIG: 'GET_API_CONFIG',
+  INVALIDATE_CACHE: 'INVALIDATE_CACHE',
 } as const
 
 /**
@@ -163,6 +206,8 @@ export const ARIA_ATTRIBUTES = {
 export const HTML_ATTRIBUTES = {
   TAB_INDEX: 'tabIndex',
   ROLE: 'role',
+  TARGET_BLANK: '_blank',
+  REL_NOOPENER_NOREFERRER: 'noopener,noreferrer',
 } as const
 
 /**
@@ -190,11 +235,33 @@ export const STORAGE_KEYS = {
 } as const
 
 /**
+ * データベース関連の定数
+ */
+export const DB_CONSTANTS = {
+  FILENAME: 'bookmarks.sqlite',
+  MIGRATIONS_DIR: 'server/db/migrations',
+  PRAGMA_FOREIGN_KEYS_ON: 'foreign_keys = ON',
+  PRAGMA_FOREIGN_KEYS_OFF: 'foreign_keys = OFF',
+  PRAGMA_JOURNAL_MODE_WAL: 'journal_mode = WAL',
+} as const
+
+/**
+ * 環境変数名の定数
+ */
+export const ENV_NAMES = {
+  TEST: 'test',
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production',
+} as const
+
+/**
  * ログメッセージ (開発者向け)
  */
 export const LOG_MESSAGES = {
   DB_INIT_FAILED: 'Failed to initialize database:',
+  DB_INIT_SUCCESS: 'Database initialized successfully',
   SERVER_START_FAILED: 'Failed to start server:',
+  SERVER_RUNNING: (port: number) => `Server is running on port ${port}`,
   BACKGROUND_LOADED: 'Background Service Worker loaded',
   EXTENSION_INSTALLED: 'Extension installed',
   FETCH_BOOKMARKS_FAILED: 'Failed to fetch bookmarks:',
@@ -207,8 +274,28 @@ export const LOG_MESSAGES = {
   EXTENSION_SETTING_SAVE_FAILED: 'Failed to save settings:',
   EXTENSION_SETTING_LOAD_FAILED: 'Failed to load extension settings:',
   EXTENSION_CONNECTION_FAILED: 'Connection test failed:',
-  INVALID_STORAGE_URL: 'Invalid API URL found in localStorage, falling back to default:',
+  INVALID_STORAGE_URL:
+    'Invalid API URL found in localStorage, falling back to default:',
   REORDER_FAILED_CONSOLE: 'Failed to reorder bookmarks:',
+  RESET_DB_ENV_ERROR: 'resetDatabase can only be called in test environment',
+  INSERT_FAILED: 'Failed to insert bookmark',
+  INVALID_STORAGE_URL_BACKGROUND: 'Invalid API URL in background:',
+  ICON_STATUS_UPDATE_FAILED: 'Failed to update icon status:',
+  UNAUTHORIZED_EXTENSION_MESSAGE:
+    'Blocked message from unauthorized extension:',
+  UNAUTHORIZED_ORIGIN_MESSAGE: 'Blocked unauthorized message from origin:',
+  VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
+  UPDATED_VERSION: (version: string) =>
+    `[sync-version] Updated manifest.json version to ${version}`,
+} as const
+
+/**
+ * テスト用メッセージ (テストコード内でのみ使用)
+ */
+export const TEST_MESSAGES = {
+  UNEXPECTED_ERROR: 'Unexpected error',
+  MUTATION_FAILED: 'Mutation failed',
+  TEST_ERROR: 'Test Error',
 } as const
 
 /**

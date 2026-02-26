@@ -8,16 +8,11 @@ import {
   STORAGE_KEYS,
   DEFAULT_API_URL,
   EXTENSION_CONSTANTS,
+  UI_STATUS,
+  type StatusInfo,
 } from '@shared/constants'
 import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, getOrigin } from '@shared/utils/url'
-
-export type StatusType = 'idle' | 'loading' | 'success' | 'error'
-
-export interface StatusState {
-  type: StatusType
-  message?: string
-}
 
 const DEFAULT_SETTINGS = {
   [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
@@ -28,7 +23,7 @@ const apiResponseSchema = bookmarksResponseSchema
 
 export const useOptions = () => {
   const [apiUrl, setApiUrl] = useState('')
-  const [status, setStatus] = useState<StatusState>({ type: 'idle' })
+  const [status, setStatus] = useState<StatusInfo>({ type: UI_STATUS.IDLE, message: '' })
 
   // 初期値の読み込み
   useEffect(() => {
@@ -48,7 +43,7 @@ export const useOptions = () => {
         console.error(LOG_MESSAGES.EXTENSION_SETTING_LOAD_FAILED, err)
         if (isMounted) {
           setStatus({
-            type: 'error',
+            type: UI_STATUS.ERROR,
             message: EXTENSION_MESSAGES.SETTINGS_LOAD_FAILED,
           })
         }
@@ -63,7 +58,7 @@ export const useOptions = () => {
   const runValidation = useCallback((): boolean => {
     const errorMessage = validateApiUrl(apiUrl)
     if (errorMessage) {
-      setStatus({ type: 'error', message: errorMessage })
+      setStatus({ type: UI_STATUS.ERROR, message: errorMessage })
       return false
     }
     return true
@@ -72,16 +67,16 @@ export const useOptions = () => {
   const handleSave = useCallback(async () => {
     if (!runValidation()) return
 
-    setStatus({ type: 'loading', message: COMMON_MESSAGES.SAVING })
+    setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
     try {
       const sanitizedUrl = getOrigin(apiUrl)
       await storage.set({ [STORAGE_KEYS.API_URL]: sanitizedUrl })
       setApiUrl(sanitizedUrl)
-      setStatus({ type: 'success', message: EXTENSION_MESSAGES.SETTINGS_SAVED })
+      setStatus({ type: UI_STATUS.SUCCESS, message: EXTENSION_MESSAGES.SETTINGS_SAVED })
     } catch (err) {
       console.error(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, err)
       setStatus({
-        type: 'error',
+        type: UI_STATUS.ERROR,
         message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
       })
     }
@@ -91,7 +86,7 @@ export const useOptions = () => {
     if (!runValidation()) return
 
     setStatus({
-      type: 'loading',
+      type: UI_STATUS.LOADING,
       message: EXTENSION_MESSAGES.CONNECTION_TESTING,
     })
 
@@ -123,7 +118,7 @@ export const useOptions = () => {
       const validation = apiResponseSchema.safeParse(result.data)
       if (validation.success) {
         setStatus({
-          type: 'success',
+          type: UI_STATUS.SUCCESS,
           message: EXTENSION_MESSAGES.CONNECTION_SUCCESS(
             validation.data.bookmarks.length,
           ),
@@ -144,7 +139,7 @@ export const useOptions = () => {
         detail = COMMON_MESSAGES.UNKNOWN_ERROR
       }
       setStatus({
-        type: 'error',
+        type: UI_STATUS.ERROR,
         message: EXTENSION_MESSAGES.CONNECTION_FAILED(detail),
       })
     } finally {

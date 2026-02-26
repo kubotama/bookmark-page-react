@@ -1,19 +1,16 @@
 import {
+  ARIA_ROLES,
   COMMON_MESSAGES,
   EXTENSION_CONSTANTS,
   FIELD_LABELS,
+  PLACEHOLDERS,
+  STATUS_STYLES,
+  UI_STATUS,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
-import { type PopupStatusType, usePopup } from './hooks/usePopup'
-
-const statusStyles: Record<PopupStatusType, string> = {
-  idle: '',
-  loading: 'bg-blue-50 text-blue-700 border-blue-200',
-  success: 'bg-green-50 text-green-700 border-green-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-}
+import { usePopup } from './hooks/usePopup'
 
 export const Popup = () => {
   const { title, setTitle, url, setUrl, status, handleSave } = usePopup()
@@ -30,7 +27,7 @@ export const Popup = () => {
           label={FIELD_LABELS.TITLE}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="タイトルを入力"
+          placeholder={PLACEHOLDERS.TITLE}
         />
 
         <InputField
@@ -38,7 +35,7 @@ export const Popup = () => {
           label={FIELD_LABELS.URL}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
+          placeholder={PLACEHOLDERS.URL}
           className="font-mono"
         />
 
@@ -46,18 +43,25 @@ export const Popup = () => {
           <Button
             onClick={handleSave}
             size="medium"
-            disabled={status.type === 'loading' || status.type === 'success'}
+            disabled={
+              status.type === UI_STATUS.LOADING ||
+              status.type === UI_STATUS.SUCCESS
+            }
           >
-            {status.type === 'loading'
+            {status.type === UI_STATUS.LOADING
               ? COMMON_MESSAGES.SAVING
               : FIELD_LABELS.BUTTON_SAVE}
           </Button>
         </div>
 
-        {status.type !== 'idle' && (
+        {status.type !== UI_STATUS.IDLE && (
           <div
-            role={status.type === 'error' ? 'alert' : 'status'}
-            className={`p-3 rounded-md text-sm border ${statusStyles[status.type]}`}
+            role={
+              status.type === UI_STATUS.ERROR
+                ? ARIA_ROLES.ALERT
+                : ARIA_ROLES.STATUS
+            }
+            className={`p-3 rounded-md text-sm border ${STATUS_STYLES[status.type]}`}
           >
             {status.message}
           </div>

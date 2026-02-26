@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { FIELD_LABELS } from '@shared/constants'
+import { FIELD_LABELS, PLACEHOLDERS } from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { render, screen } from '@testing-library/react'
@@ -31,8 +31,8 @@ describe('BookmarkDetail', () => {
     const user = userEvent.setup()
     render(<BookmarkDetail {...defaultProps} />)
 
-    const titleInput = screen.getByPlaceholderText('Bookmark Title')
-    const urlInput = screen.getByPlaceholderText('https://...')
+    const titleInput = screen.getByPlaceholderText(PLACEHOLDERS.TITLE)
+    const urlInput = screen.getByPlaceholderText(PLACEHOLDERS.URL)
 
     await user.clear(titleInput)
     await user.type(titleInput, UPDATED_TITLE)
@@ -94,7 +94,7 @@ describe('BookmarkDetail', () => {
     render(<BookmarkDetail {...defaultProps} onClose={onClose} />)
 
     // 入力欄にフォーカスを当ててから Escape キーを押す
-    const titleInput = screen.getByPlaceholderText('Bookmark Title')
+    const titleInput = screen.getByPlaceholderText(PLACEHOLDERS.TITLE)
     await user.click(titleInput)
     await user.keyboard('{Escape}')
 

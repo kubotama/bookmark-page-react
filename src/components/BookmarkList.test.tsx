@@ -7,6 +7,7 @@ import {
   COMMON_MESSAGES,
   HTML_ATTRIBUTES,
   UI_MESSAGES,
+  TEST_MESSAGES,
 } from '@shared/constants'
 import {
   MOCK_BOOKMARK_1,
@@ -115,12 +116,12 @@ describe('BookmarkList', () => {
       name: 'Errorインスタンス発生時にエラーメッセージが表示されること',
       props: {
         bookmarks: [],
-        error: new Error('Test Error'),
+        error: new Error(TEST_MESSAGES.TEST_ERROR),
       },
       assert: () => {
         const alert = screen.getByRole(ARIA_ROLES.ALERT)
         expect(alert).toHaveTextContent(COMMON_MESSAGES.ERROR_PREFIX)
-        expect(alert).toHaveTextContent('Test Error')
+        expect(alert).toHaveTextContent(TEST_MESSAGES.TEST_ERROR)
       },
     },
     {

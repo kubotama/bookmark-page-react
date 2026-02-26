@@ -6,6 +6,7 @@ import { usePopup } from './hooks/usePopup'
 import {
   COMMON_MESSAGES,
   FIELD_LABELS,
+  UI_STATUS,
 } from '@shared/constants'
 import { VALID_URLS } from '@shared/test/fixtures'
 
@@ -18,7 +19,7 @@ describe('Popup Component', () => {
     setTitle: vi.fn(),
     url: VALID_URLS.HTTPS,
     setUrl: vi.fn(),
-    status: { type: 'idle' as const },
+    status: { type: UI_STATUS.IDLE, message: '' },
     handleSave: vi.fn(),
   }
 
@@ -69,7 +70,7 @@ describe('Popup Component', () => {
     const loadingMessage = COMMON_MESSAGES.SAVING
     vi.mocked(usePopup).mockReturnValue({
       ...baseMockUsePopup,
-      status: { type: 'loading', message: loadingMessage },
+      status: { type: UI_STATUS.LOADING, message: loadingMessage },
     })
 
     render(<Popup />)
@@ -84,7 +85,7 @@ describe('Popup Component', () => {
     const errorMessage = 'Test Error Message'
     vi.mocked(usePopup).mockReturnValue({
       ...baseMockUsePopup,
-      status: { type: 'error', message: errorMessage },
+      status: { type: UI_STATUS.ERROR, message: errorMessage },
     })
 
     render(<Popup />)
@@ -97,7 +98,7 @@ describe('Popup Component', () => {
     const successMessage = 'Test Success Message'
     vi.mocked(usePopup).mockReturnValue({
       ...baseMockUsePopup,
-      status: { type: 'success', message: successMessage },
+      status: { type: UI_STATUS.SUCCESS, message: successMessage },
     })
 
     render(<Popup />)

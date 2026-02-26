@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-import { FIELD_LABELS } from '@shared/constants'
+import { FIELD_LABELS, PLACEHOLDERS } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
@@ -52,14 +52,14 @@ export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
             label={FIELD_LABELS.TITLE}
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
-            placeholder="Bookmark Title"
+            placeholder={PLACEHOLDERS.TITLE}
           />
           <InputField
             id="detail-url"
             label={FIELD_LABELS.URL}
             value={editUrl}
             onChange={(e) => setEditUrl(e.target.value)}
-            placeholder="https://..."
+            placeholder={PLACEHOLDERS.URL}
             className="font-mono"
           />
         </div>

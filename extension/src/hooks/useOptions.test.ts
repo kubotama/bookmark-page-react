@@ -8,6 +8,7 @@ import {
   LOG_MESSAGES,
   STORAGE_KEYS,
   VALIDATION_MESSAGES,
+  UI_STATUS,
 } from '@shared/constants'
 import {
   MOCK_BOOKMARK_1,
@@ -66,7 +67,7 @@ describe('useOptions Hook', () => {
     const { result } = renderHook(() => useOptions())
 
     await waitFor(() => {
-      expect(result.current.status.type).toBe('error')
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(
         EXTENSION_MESSAGES.SETTINGS_LOAD_FAILED,
       )
@@ -93,7 +94,7 @@ describe('useOptions Hook', () => {
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
         [STORAGE_KEYS.API_URL]: newUrl,
       })
-      expect(result.current.status.type).toBe('success')
+      expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
       expect(result.current.status.message).toBe(
         EXTENSION_MESSAGES.SETTINGS_SAVED,
       )
@@ -114,7 +115,7 @@ describe('useOptions Hook', () => {
       })
 
       expect(chrome.storage.sync.set).not.toHaveBeenCalled()
-      expect(result.current.status.type).toBe('error')
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(
         VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
       )
@@ -131,7 +132,7 @@ describe('useOptions Hook', () => {
         await result.current.handleSave()
       })
 
-      expect(result.current.status.type).toBe('error')
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(
         EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
       )
@@ -164,7 +165,7 @@ describe('useOptions Hook', () => {
         await result.current.handleTestConnection()
       })
 
-      expect(result.current.status.type).toBe('success')
+      expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
       expect(result.current.status.message).toContain('2 件')
       expect(consoleSpy).not.toHaveBeenCalled()
     })
@@ -184,7 +185,7 @@ describe('useOptions Hook', () => {
       })
 
       expect(fetch).not.toHaveBeenCalled()
-      expect(result.current.status.type).toBe('error')
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(
         VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
       )
@@ -267,7 +268,7 @@ describe('useOptions Hook', () => {
           await result.current.handleTestConnection()
         })
 
-        expect(result.current.status.type).toBe('error')
+        expect(result.current.status.type).toBe(UI_STATUS.ERROR)
         if (expectedMessage) {
           expect(result.current.status.message).toBe(
             EXTENSION_MESSAGES.CONNECTION_FAILED(expectedMessage as string),

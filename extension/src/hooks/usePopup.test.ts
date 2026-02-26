@@ -8,6 +8,8 @@ import {
   API_PATHS,
   LOG_MESSAGES,
   VALIDATION_MESSAGES,
+  UI_STATUS,
+  EXTENSION_MESSAGE_TYPES,
 } from '@shared/constants'
 import { storage } from '../lib/storage'
 
@@ -111,12 +113,12 @@ describe('usePopup Hook', () => {
         body: JSON.stringify({ title: 'Test', url: 'https://example.com' }),
       }),
     )
-    expect(result.current.status.type).toBe('success')
+    expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
     expect(result.current.status.message).toBe(EXTENSION_MESSAGES.POPUP_SAVED)
     
     // キャッシュ無効化メッセージが送信されたことを検証
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith({
-      type: 'INVALIDATE_CACHE',
+      type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE,
     })
     
     // 時間を進めて window.close の呼び出しを確認
@@ -138,7 +140,7 @@ describe('usePopup Hook', () => {
         await result.current.handleSave()
       })
 
-      expect(result.current.status.type).toBe('error')
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(VALIDATION_MESSAGES.TITLE_REQUIRED)
     })
 
@@ -192,7 +194,7 @@ describe('usePopup Hook', () => {
           await result.current.handleSave()
         })
 
-        expect(result.current.status.type).toBe('error')
+        expect(result.current.status.type).toBe(UI_STATUS.ERROR)
         expect(result.current.status.message).toContain(expectedMessage)
         
         if (checkLog) {

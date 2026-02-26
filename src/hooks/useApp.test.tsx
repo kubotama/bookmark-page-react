@@ -3,14 +3,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   COMMON_MESSAGES,
+  HTML_ATTRIBUTES,
+  LOG_MESSAGES,
   STORAGE_KEYS,
+  TEST_MESSAGES,
   VALIDATION_MESSAGES,
 } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
+import { act } from '@testing-library/react'
 
 import { server } from '../test/setup'
-import { act, renderHook, waitFor } from '../test/utils'
+import { renderHook } from '../test/utils'
 import { useApp } from './useApp'
 
 describe('useApp Hook', () => {
@@ -49,9 +53,14 @@ describe('useApp Hook', () => {
     const renderResult = renderHook(() => useApp(), { initialUrl })
 
     // isLoading が false になるまで待機 (act 内で実行)
-    await waitFor(() => {
-      expect(renderResult.result.current.isLoading).toBe(false)
+    await act(async () => {
+      await vi.waitFor(() => {
+        if (renderResult.result.current.isLoading) {
+          throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
+        }
+      })
     })
+
     return renderResult
   }
 
@@ -122,7 +131,7 @@ describe('useApp Hook', () => {
     it('予期せぬ例外が発生した場合、エラーメッセージを返し、ログを出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.spyOn(urlUtils, 'getOrigin').mockImplementation(() => {
-        throw new Error('Unexpected error')
+        throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
       })
 
       const { result } = await renderAppHook()
@@ -132,9 +141,9 @@ describe('useApp Hook', () => {
         error = result.current.handleSaveSettings('http://localhost:3030')
       })
 
-      expect(error).toBe('Unexpected error')
+      expect(error).toBe(TEST_MESSAGES.UNEXPECTED_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to save settings:',
+        LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
         expect.any(Error),
       )
     })
@@ -179,7 +188,7 @@ describe('useApp Hook', () => {
 
       const { result } = await renderAppHook()
 
-      await act(async () => {
+      act(() => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
 
@@ -206,8 +215,8 @@ describe('useApp Hook', () => {
       expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
       expect(openSpy).toHaveBeenCalledWith(
         MOCK_BOOKMARK_1.url,
-        '_blank',
-        'noopener,noreferrer',
+        HTML_ATTRIBUTES.TARGET_BLANK,
+        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
       )
     })
 

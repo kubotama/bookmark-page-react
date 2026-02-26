@@ -14,7 +14,7 @@ import {
 
 import { db } from '../db'
 import { bookmarks as bookmarksTable } from '../db/schema'
-import { isSqliteError, API_ERROR_CODES } from '../utils/error'
+import { isUniqueConstraintError, API_ERROR_CODES } from '../utils/error'
 
 const bookmarksRoute = new Hono()
   .get('/', async (c) => {
@@ -60,7 +60,7 @@ const bookmarksRoute = new Hono()
           sortOrder: bookmarksTable.sortOrder,
         })
 
-      if (!row) throw new Error('Failed to insert bookmark')
+      if (!row) throw new Error(LOG_MESSAGES.INSERT_FAILED)
 
       return c.json(
         {
@@ -75,7 +75,7 @@ const bookmarksRoute = new Hono()
         HTTP_STATUS.CREATED,
       )
     } catch (error) {
-      if (isSqliteError(error) && error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (isUniqueConstraintError(error)) {
         return c.json(
           {
             success: false,
@@ -169,7 +169,7 @@ const bookmarksRoute = new Hono()
           },
         })
       } catch (error) {
-        if (isSqliteError(error) && error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        if (isUniqueConstraintError(error)) {
           return c.json(
             {
               success: false,
@@ -198,7 +198,6 @@ const bookmarksRoute = new Hono()
       const numericIds = ids.map((id) => parseInt(id, 10))
 
       // CASE WHEN 構文を組み立てて一括更新
-      // 各 ID に対して、配列内のインデックスを新しい sort_order として割り当てる
       const cases = numericIds.map(
         (id, index) =>
           sql`WHEN ${bookmarksTable.bookmarkId} = ${id} THEN ${index}`,
@@ -216,7 +215,7 @@ const bookmarksRoute = new Hono()
         data: null,
       })
     } catch (error) {
-      console.error('Failed to reorder bookmarks:', error)
+      console.error(LOG_MESSAGES.REORDER_FAILED_CONSOLE, error)
       throw error
     }
   })
