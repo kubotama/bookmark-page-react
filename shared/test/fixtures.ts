@@ -28,11 +28,14 @@ export const VALID_URLS = {
   TEST_API: 'http://localhost:4000',
 } as const
 
+/**
+ * テスト用の不正な URL フィクスチャ
+ */
 export const INVALID_URLS = {
+  FTP: 'ftp://invalid',
   JAVASCRIPT: 'javascript:alert(1)',
-  NO_PROTOCOL: 'example.com',
+  NO_PROTOCOL: 'localhost:3030',
   MALFORMED: 'not-a-url',
-  FTP: 'ftp://example.com',
 } as const
 
 export const TEST_MESSAGES = {

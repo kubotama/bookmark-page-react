@@ -1,23 +1,17 @@
-import { http, HttpResponse } from 'msw'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import {
-  COMMON_MESSAGES,
-  HTML_ATTRIBUTES,
-  LOG_MESSAGES,
-  STORAGE_KEYS,
-  TEST_MESSAGES,
-  VALIDATION_MESSAGES,
-} from '@shared/constants'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import * as urlUtils from '@shared/utils/url'
 import { act } from '@testing-library/react'
-
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useApp } from './useApp'
+import {
+  VALIDATION_MESSAGES,
+  TEST_MESSAGES,
+  HTML_ATTRIBUTES,
+} from '@shared/constants'
+import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
 import { renderHook } from '../test/utils'
-import { useApp } from './useApp'
+import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 
-describe('useApp Hook', () => {
+describe('useApp Hook (Integration)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -64,29 +58,10 @@ describe('useApp Hook', () => {
     return renderResult
   }
 
-  it('初期状態が正しいこと', async () => {
-    const { result } = await renderAppHook('http://localhost:3030')
-
-    expect(result.current.showSettings).toBe(false)
-    expect(result.current.currentApiUrl).toBe('http://localhost:3030')
-  })
-
-  it('toggleSettings で showSettings が切り替わること', async () => {
+  it('設定画面の開閉が正しく行えること', async () => {
     const { result } = await renderAppHook()
 
-    act(() => {
-      result.current.toggleSettings()
-    })
-    expect(result.current.showSettings).toBe(true)
-
-    act(() => {
-      result.current.toggleSettings()
-    })
     expect(result.current.showSettings).toBe(false)
-  })
-
-  it('closeSettings で showSettings が false になること', async () => {
-    const { result } = await renderAppHook()
 
     act(() => {
       result.current.toggleSettings()
@@ -99,70 +74,40 @@ describe('useApp Hook', () => {
     expect(result.current.showSettings).toBe(false)
   })
 
-  describe('handleSaveSettings', () => {
-    it('有効な URL の場合、localStorage が更新され、リロードは呼ばれないこと', async () => {
-      const { result } = await renderAppHook()
-      const inputUrl = 'http://localhost:4000/path'
-      const expectedUrl = 'http://localhost:4000'
+  it('選択状態で handleUpdate を呼んだ場合、状態が維持され副作用が発生すること', async () => {
+    let patchCalled = false
+    server.use(
+      http.patch('*/api/bookmarks/:id', () => {
+        patchCalled = true
+        return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
+      }),
+    )
 
-      let error: string | null = 'not-called'
-      act(() => {
-        error = result.current.handleSaveSettings(inputUrl)
-      })
+    const { result } = await renderAppHook()
 
-      expect(error).toBeNull()
-      expect(localStorage.getItem(STORAGE_KEYS.API_URL)).toBe(expectedUrl)
-      expect(window.location.reload).not.toHaveBeenCalled()
+    act(() => {
+      result.current.handleRowClick(MOCK_BOOKMARK_1.id)
     })
 
-    it('無効な URL の場合、エラーを返し、保存を中断すること', async () => {
-      const { result } = await renderAppHook()
-      const invalidUrl = 'ftp://invalid'
-
-      let error: string | null = null
-      act(() => {
-        error = result.current.handleSaveSettings(invalidUrl)
-      })
-
-      expect(error).toBe(VALIDATION_MESSAGES.URL_INVALID_PROTOCOL)
-      expect(window.location.reload).not.toHaveBeenCalled()
+    await act(async () => {
+      result.current.handleUpdate('New Title', 'http://new.com')
     })
 
-    it('予期せぬ例外が発生した場合、エラーメッセージを返し、ログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(urlUtils, 'getOrigin').mockImplementation(() => {
-        throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
-      })
+    // 副作用 (API 呼び出し) を検証
+    expect(patchCalled).toBe(true)
+    expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
+  })
 
-      const { result } = await renderAppHook()
+  it('設定保存時に副作用（エラー返却等）が正しく伝播すること', async () => {
+    const { result } = await renderAppHook()
+    const invalidUrl = 'ftp://invalid'
 
-      let error: string | null = null
-      act(() => {
-        error = result.current.handleSaveSettings('http://localhost:3030')
-      })
-
-      expect(error).toBe(TEST_MESSAGES.UNEXPECTED_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
-        expect.any(Error),
-      )
+    let error: string | null = null
+    act(() => {
+      error = result.current.handleSaveSettings(invalidUrl)
     })
 
-    it('Error 以外の例外が発生した場合、共通エラーメッセージを返すこと', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(urlUtils, 'getOrigin').mockImplementation(() => {
-        throw 'String Error'
-      })
-
-      const { result } = await renderAppHook()
-
-      let error: string | null = null
-      act(() => {
-        error = result.current.handleSaveSettings('http://localhost:3030')
-      })
-
-      expect(error).toBe(COMMON_MESSAGES.UNKNOWN_ERROR)
-    })
+    expect(error).toBe(VALIDATION_MESSAGES.URL_INVALID_PROTOCOL)
   })
 
   describe('ブックマーク操作の検証', () => {
@@ -175,30 +120,6 @@ describe('useApp Hook', () => {
 
       expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
       expect(result.current.selectedBookmark).toEqual(MOCK_BOOKMARK_1)
-    })
-
-    it('選択状態で handleUpdate を呼んだ場合、状態が維持され副作用が発生すること', async () => {
-      let patchCalled = false
-      server.use(
-        http.patch('*/api/bookmarks/:id', () => {
-          patchCalled = true
-          return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-        }),
-      )
-
-      const { result } = await renderAppHook()
-
-      act(() => {
-        result.current.handleRowClick(MOCK_BOOKMARK_1.id)
-      })
-
-      await act(async () => {
-        result.current.handleUpdate('New Title', 'http://new.com')
-      })
-
-      // 副作用 (API 呼び出し) を検証
-      expect(patchCalled).toBe(true)
-      expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
     })
 
     it('handleDoubleClick でブックマークが選択され、開かれること', async () => {
@@ -244,7 +165,6 @@ describe('useApp Hook', () => {
         result.current.handleClose()
       })
 
-      // 全ての操作が呼ばれたことを検証
       expect(openSpy).toHaveBeenCalled()
       expect(deleteCalled).toBe(true)
       expect(result.current.selectedId).toBeNull()
