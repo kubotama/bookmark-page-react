@@ -1,10 +1,30 @@
-import { ERROR_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
+import {
+  ERROR_MESSAGES,
+  VALIDATION_MESSAGES,
+  HTML_ATTRIBUTES,
+  LOG_MESSAGES,
+} from '@shared/constants'
 
 /**
  * URL が http:// または https:// で始まっているかを確認する
  */
 export const isHttpUrl = (url: string): boolean => {
   return /^https?:\/\//.test(url)
+}
+
+/**
+ * セキュリティチェックを行った上で URL を新しいタブで開く
+ */
+export const openUrlInNewTab = (url: string) => {
+  if (isHttpUrl(url)) {
+    window.open(
+      url,
+      HTML_ATTRIBUTES.TARGET_BLANK,
+      HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
+    )
+  } else {
+    console.warn(LOG_MESSAGES.BLOCKED_NON_HTTP_URL(url))
+  }
 }
 
 /**

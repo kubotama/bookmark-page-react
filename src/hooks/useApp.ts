@@ -6,11 +6,11 @@ import {
 } from './useBookmarks'
 import {
   UI_MESSAGES,
-  HTML_ATTRIBUTES,
 } from '@shared/constants'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
 import { useBookmarkReorder } from './useBookmarkReorder'
+import { openUrlInNewTab } from '@shared/utils/url'
 import type { BookmarkId } from '@shared/schemas/bookmark'
 
 export const useApp = () => {
@@ -38,11 +38,7 @@ export const useApp = () => {
 
   const handleDoubleClick = useCallback((id: BookmarkId, url: string) => {
     setSelectedId(id)
-    window.open(
-      url,
-      HTML_ATTRIBUTES.TARGET_BLANK,
-      HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
-    )
+    openUrlInNewTab(url)
   }, [setSelectedId])
 
   const handleUpdate = useCallback(
@@ -66,11 +62,7 @@ export const useApp = () => {
 
   const handleOpen = useCallback(() => {
     if (selectedBookmark) {
-      window.open(
-        selectedBookmark.url,
-        HTML_ATTRIBUTES.TARGET_BLANK,
-        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
-      )
+      openUrlInNewTab(selectedBookmark.url)
     }
   }, [selectedBookmark])
 

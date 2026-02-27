@@ -1,6 +1,11 @@
-import { describe, it, expect } from 'vitest'
-import { isHttpUrl, getOrigin, validateApiUrl } from './url'
-import { ERROR_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { isHttpUrl, getOrigin, validateApiUrl, openUrlInNewTab } from './url'
+import {
+  ERROR_MESSAGES,
+  VALIDATION_MESSAGES,
+  HTML_ATTRIBUTES,
+  LOG_MESSAGES,
+} from '@shared/constants'
 import { VALID_URLS, INVALID_URLS } from '@shared/test/fixtures'
 
 describe('url utilities', () => {
@@ -98,5 +103,58 @@ describe('url utilities', () => {
     it.each(validateTestData)('$name', ({ url, message }) => {
       expect(validateApiUrl(url)).toBe(message)
     })
+  })
+
+  describe('openUrlInNewTab', () => {
+    beforeEach(() => {
+      vi.stubGlobal('window', { open: vi.fn() })
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    it.each([
+      {
+        name: 'http',
+        url: VALID_URLS.HTTP,
+      },
+      {
+        name: 'https',
+        url: VALID_URLS.HTTPS,
+      },
+    ])('有効な $name URL の場合に window.open を呼び出すこと', ({ url }) => {
+      openUrlInNewTab(url)
+      expect(window.open).toHaveBeenCalledWith(
+        url,
+        HTML_ATTRIBUTES.TARGET_BLANK,
+        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
+      )
+    })
+
+    it.each([
+      {
+        name: 'FTP',
+        url: INVALID_URLS.FTP,
+      },
+      {
+        name: 'JAVASCRIPT',
+        url: INVALID_URLS.JAVASCRIPT,
+      },
+      {
+        name: 'NO_PROTOCOL',
+        url: INVALID_URLS.NO_PROTOCOL,
+      },
+      {
+        name: 'MALFORMED',
+        url: INVALID_URLS.MALFORMED,
+      },
+    ])(
+      '不適切な URL ($name) の場合にブロックし、警告を出力すること',
+      ({ url }) => {
+        openUrlInNewTab(url)
+        expect(window.open).not.toHaveBeenCalled()
+        expect(console.warn).toHaveBeenCalledWith(
+          LOG_MESSAGES.BLOCKED_NON_HTTP_URL(url),
+        )
+      },
+    )
   })
 })
