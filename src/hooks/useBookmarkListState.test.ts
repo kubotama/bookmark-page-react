@@ -4,13 +4,6 @@ import { useBookmarkListState } from './useBookmarkListState'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { renderHook } from '../test/utils'
 
-// useBookmarkReorder をモック化して、余計なフェッチが発生しないようにする
-vi.mock('./useBookmarkReorder', () => ({
-  useBookmarkReorder: vi.fn(() => ({
-    handleReorder: vi.fn(),
-  })),
-}))
-
 describe('useBookmarkListState Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()

@@ -10,6 +10,7 @@ import {
 } from '@shared/constants'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
+import { useBookmarkReorder } from './useBookmarkReorder'
 import type { BookmarkId } from '@shared/schemas/bookmark'
 
 export const useApp = () => {
@@ -25,12 +26,12 @@ export const useApp = () => {
     selectedId,
     setSelectedId,
     handleRowClick,
-    handleReorder,
   } = useBookmarkListState()
 
   const { data, isLoading, error } = useBookmarks()
   const updateMutation = useUpdateBookmark()
   const deleteMutation = useDeleteBookmark()
+  const { handleReorder } = useBookmarkReorder()
 
   const bookmarks = data?.bookmarks || []
   const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
