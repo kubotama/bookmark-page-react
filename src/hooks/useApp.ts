@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import {
   useBookmarks,
   useUpdateBookmark,
@@ -8,12 +8,11 @@ import {
   UI_MESSAGES,
   HTML_ATTRIBUTES,
 } from '@shared/constants'
-import { useBookmarkReorder } from './useBookmarkReorder'
 import { useSettings } from './useSettings'
+import { useBookmarkListState } from './useBookmarkListState'
 import type { BookmarkId } from '@shared/schemas/bookmark'
 
 export const useApp = () => {
-  const [selectedId, setSelectedId] = useState<BookmarkId | null>(null)
   const {
     showSettings,
     currentApiUrl,
@@ -22,17 +21,19 @@ export const useApp = () => {
     handleSaveSettings,
   } = useSettings()
 
+  const {
+    selectedId,
+    setSelectedId,
+    handleRowClick,
+    handleReorder,
+  } = useBookmarkListState()
+
   const { data, isLoading, error } = useBookmarks()
   const updateMutation = useUpdateBookmark()
   const deleteMutation = useDeleteBookmark()
-  const { handleReorder } = useBookmarkReorder()
 
   const bookmarks = data?.bookmarks || []
   const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
-
-  const handleRowClick = useCallback((id: BookmarkId) => {
-    setSelectedId(id)
-  }, [])
 
   const handleDoubleClick = useCallback((id: BookmarkId, url: string) => {
     setSelectedId(id)
@@ -41,7 +42,7 @@ export const useApp = () => {
       HTML_ATTRIBUTES.TARGET_BLANK,
       HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
     )
-  }, [])
+  }, [setSelectedId])
 
   const handleUpdate = useCallback(
     async (title: string, url: string) => {
@@ -60,7 +61,7 @@ export const useApp = () => {
       await deleteMutation.mutateAsync(selectedBookmark.id)
       setSelectedId(null)
     }
-  }, [selectedBookmark, deleteMutation])
+  }, [selectedBookmark, deleteMutation, setSelectedId])
 
   const handleOpen = useCallback(() => {
     if (selectedBookmark) {
@@ -74,7 +75,7 @@ export const useApp = () => {
 
   const handleClose = useCallback(() => {
     setSelectedId(null)
-  }, [])
+  }, [setSelectedId])
 
   return {
     bookmarks,
