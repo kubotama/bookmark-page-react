@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { ApiProvider, useApi } from './ApiContext'
 import { STORAGE_KEYS, DEFAULT_API_URL, LOG_MESSAGES, ERROR_MESSAGES } from '@shared/constants'
-import React from 'react'
+import { type ReactNode } from 'react'
 
 describe('ApiContext', () => {
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('ApiContext', () => {
   })
 
   it('デフォルトの API URL で初期化されること', () => {
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <ApiProvider>{children}</ApiProvider>
     )
     const { result } = renderHook(() => useApi(), { wrapper })
@@ -26,7 +26,7 @@ describe('ApiContext', () => {
     const savedUrl = 'http://localhost:4000'
     localStorage.setItem(STORAGE_KEYS.API_URL, savedUrl)
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <ApiProvider>{children}</ApiProvider>
     )
     const { result } = renderHook(() => useApi(), { wrapper })
@@ -38,7 +38,7 @@ describe('ApiContext', () => {
     const invalidUrl = 'ftp://invalid-protocol'
     localStorage.setItem(STORAGE_KEYS.API_URL, invalidUrl)
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <ApiProvider>{children}</ApiProvider>
     )
     const { result } = renderHook(() => useApi(), { wrapper })
@@ -54,7 +54,7 @@ describe('ApiContext', () => {
     const initialUrl = 'http://localhost:5000'
     localStorage.setItem(STORAGE_KEYS.API_URL, 'http://localhost:4000')
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <ApiProvider initialUrl={initialUrl}>{children}</ApiProvider>
     )
     const { result } = renderHook(() => useApi(), { wrapper })
@@ -63,7 +63,7 @@ describe('ApiContext', () => {
   })
 
   it('updateApiUrl で URL が更新され、localStorage に保存されること', () => {
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <ApiProvider>{children}</ApiProvider>
     )
     const { result } = renderHook(() => useApi(), { wrapper })
@@ -79,7 +79,7 @@ describe('ApiContext', () => {
 
   it('updateApiUrl に不正な URL を渡した場合、更新を中断しエラーをログ出力すること', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: ReactNode }) => (
       <ApiProvider>{children}</ApiProvider>
     )
     const { result } = renderHook(() => useApi(), { wrapper })
