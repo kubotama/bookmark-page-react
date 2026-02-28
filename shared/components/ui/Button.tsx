@@ -9,13 +9,13 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button = ({
   variant = 'primary',
   size = 'small',
   children,
   className = '',
   ...props
-}) => {
+}: ButtonProps) => {
   const sizeStyles: Record<ButtonSize, string> = {
     small: 'h-5 px-1 text-[10px] transform scale-90 origin-right',
     medium: 'h-10 px-4 text-xs',
