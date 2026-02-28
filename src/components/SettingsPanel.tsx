@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useExtensionSync } from '../hooks/useExtensionSync'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
@@ -10,11 +10,11 @@ interface SettingsPanelProps {
   currentApiUrl: string
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+export const SettingsPanel = ({
   onClose,
   onSave,
   currentApiUrl,
-}) => {
+}: SettingsPanelProps) => {
   const [url, setUrl] = useState(currentApiUrl)
   const { syncFromExtension, isSyncing, syncError } = useExtensionSync()
   const [localMessage, setLocalMessage] = useState<string | null>(null)

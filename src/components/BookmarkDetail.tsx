@@ -14,13 +14,13 @@ interface BookmarkDetailProps {
   onClose: () => void
 }
 
-export const BookmarkDetail: React.FC<BookmarkDetailProps> = ({
+export const BookmarkDetail = ({
   bookmark,
   onUpdate,
   onDelete,
   onOpen,
   onClose,
-}) => {
+}: BookmarkDetailProps) => {
   const [editTitle, setEditTitle] = useState(bookmark.title)
   const [editUrl, setEditUrl] = useState(bookmark.url)
 

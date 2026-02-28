@@ -5,12 +5,12 @@ interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string
 }
 
-export const InputField: React.FC<InputFieldProps> = ({
+export const InputField = ({
   label,
   id,
   className = '',
   ...props
-}) => {
+}: InputFieldProps) => {
   return (
     <div className="flex items-center gap-4">
       <label
