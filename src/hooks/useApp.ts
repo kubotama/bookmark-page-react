@@ -1,19 +1,12 @@
-import { useCallback } from 'react'
 import {
   useBookmarks,
-  useUpdateBookmark,
-  useDeleteBookmark,
 } from './useBookmarks'
-import {
-  UI_MESSAGES,
-} from '@shared/constants'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
-import { useBookmarkReorder } from './useBookmarkReorder'
-import { openUrlInNewTab } from '@shared/utils/url'
-import type { BookmarkId } from '@shared/schemas/bookmark'
+import { useBookmarkCommands } from './useBookmarkCommands'
 
 export const useApp = () => {
+  // 1. 設定管理
   const {
     showSettings,
     currentApiUrl,
@@ -22,53 +15,27 @@ export const useApp = () => {
     handleSaveSettings,
   } = useSettings()
 
+  // 2. 一覧の状態管理
   const {
     selectedId,
     setSelectedId,
     handleRowClick,
   } = useBookmarkListState()
 
+  // 3. データの取得
   const { data, isLoading, error } = useBookmarks()
-  const updateMutation = useUpdateBookmark()
-  const deleteMutation = useDeleteBookmark()
-  const { handleReorder } = useBookmarkReorder()
-
   const bookmarks = data?.bookmarks || []
   const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
 
-  const handleDoubleClick = useCallback((id: BookmarkId, url: string) => {
-    setSelectedId(id)
-    openUrlInNewTab(url)
-  }, [setSelectedId])
-
-  const handleUpdate = useCallback(
-    async (title: string, url: string) => {
-      if (selectedBookmark) {
-        await updateMutation.mutateAsync({
-          id: selectedBookmark.id,
-          updates: { title, url },
-        })
-      }
-    },
-    [selectedBookmark, updateMutation],
-  )
-
-  const handleDelete = useCallback(async () => {
-    if (selectedBookmark && window.confirm(UI_MESSAGES.DELETE_CONFIRM)) {
-      await deleteMutation.mutateAsync(selectedBookmark.id)
-      setSelectedId(null)
-    }
-  }, [selectedBookmark, deleteMutation, setSelectedId])
-
-  const handleOpen = useCallback(() => {
-    if (selectedBookmark) {
-      openUrlInNewTab(selectedBookmark.url)
-    }
-  }, [selectedBookmark])
-
-  const handleClose = useCallback(() => {
-    setSelectedId(null)
-  }, [setSelectedId])
+  // 4. 操作（コマンド）ロジック
+  const {
+    handleUpdate,
+    handleDelete,
+    handleOpen,
+    handleClose,
+    handleDoubleClick,
+    handleReorder,
+  } = useBookmarkCommands(selectedBookmark, setSelectedId)
 
   return {
     bookmarks,
