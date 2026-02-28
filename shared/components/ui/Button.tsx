@@ -1,12 +1,12 @@
-import React from 'react'
+import { type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
 type ButtonSize = 'small' | 'medium'
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
   size?: ButtonSize
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export const Button = ({
