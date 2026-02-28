@@ -1,11 +1,9 @@
 import { http, HttpResponse } from 'msw'
-import { type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '../test/utils'
 
 import { server } from '../test/setup'
 import {
@@ -15,25 +13,7 @@ import {
   useReorderBookmarks,
   useUpdateBookmark,
 } from './useBookmarks'
-import { ApiProvider } from '../contexts/ApiContext'
 import type { BookmarkId } from '@shared/schemas/bookmark'
-
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  })
-
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <ApiProvider>
-    <QueryClientProvider client={createTestQueryClient()}>
-      {children}
-    </QueryClientProvider>
-  </ApiProvider>
-)
 
 describe('useBookmarks Hook', () => {
   it('useBookmarks が正常にデータを取得すること', async () => {
@@ -46,7 +26,7 @@ describe('useBookmarks Hook', () => {
       }),
     )
 
-    const { result } = renderHook(() => useBookmarks(), { wrapper })
+    const { result } = renderHook(() => useBookmarks())
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data?.bookmarks).toHaveLength(1)
@@ -66,7 +46,7 @@ describe('useBookmarks Hook', () => {
       }),
     )
 
-    const { result } = renderHook(() => useBookmarks(), { wrapper })
+    const { result } = renderHook(() => useBookmarks())
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.error).toBeInstanceOf(BookmarkApiError)
@@ -82,7 +62,7 @@ describe('useBookmarks Hook', () => {
       }),
     )
 
-    const { result } = renderHook(() => useBookmarks(), { wrapper })
+    const { result } = renderHook(() => useBookmarks())
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.error?.message).toContain('失敗')
@@ -97,7 +77,7 @@ describe('useBookmarks Hook', () => {
       }),
     )
 
-    const { result } = renderHook(() => useUpdateBookmark(), { wrapper })
+    const { result } = renderHook(() => useUpdateBookmark())
 
     result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates: { title: 'New' } })
 
@@ -113,7 +93,7 @@ describe('useBookmarks Hook', () => {
       }),
     )
 
-    const { result } = renderHook(() => useDeleteBookmark(), { wrapper })
+    const { result } = renderHook(() => useDeleteBookmark())
 
     result.current.mutate(MOCK_BOOKMARK_1.id)
 
@@ -130,7 +110,7 @@ describe('useBookmarks Hook', () => {
       }),
     )
 
-    const { result } = renderHook(() => useDeleteBookmark(), { wrapper })
+    const { result } = renderHook(() => useDeleteBookmark())
 
     result.current.mutate(MOCK_BOOKMARK_1.id)
 
@@ -152,7 +132,7 @@ describe('useBookmarks Hook', () => {
         }),
       )
 
-      const { result } = renderHook(() => useReorderBookmarks(), { wrapper })
+      const { result } = renderHook(() => useReorderBookmarks())
 
       result.current.mutate({ ids: ['2' as BookmarkId, '1' as BookmarkId] })
 
