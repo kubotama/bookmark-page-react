@@ -287,6 +287,7 @@ export const LOG_MESSAGES = {
   VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
   UPDATED_VERSION: (version: string) =>
     `[sync-version] Updated manifest.json version to ${version}`,
+  BLOCKED_NON_HTTP_URL: (url: string) => `Blocked opening non-HTTP URL: ${url}`,
 } as const
 
 /**
