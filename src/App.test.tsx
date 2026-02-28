@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -29,7 +30,7 @@ vi.mock('@dnd-kit/core', async () => {
       children,
       onDragEnd,
     }: {
-      children: React.ReactNode
+      children: ReactNode
       onDragEnd: (event: DragEndEvent) => void
     }) => (
       <div
@@ -68,7 +69,7 @@ const createTestQueryClient = () =>
     },
   })
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
+const wrapper = ({ children }: { children: ReactNode }) => (
   <ApiProvider initialUrl={DEFAULT_API_URL}>
     <QueryClientProvider client={createTestQueryClient()}>
       {children}

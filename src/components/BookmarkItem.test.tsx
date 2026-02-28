@@ -1,4 +1,4 @@
-import React from 'react'
+import { type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { DndContext } from '@dnd-kit/core'
@@ -20,7 +20,7 @@ describe('BookmarkItem', () => {
     onClose: vi.fn(),
   }
 
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
+  const wrapper = ({ children }: { children: ReactNode }) => (
     <DndContext>
       <SortableContext items={[MOCK_BOOKMARK_1.id]}>{children}</SortableContext>
     </DndContext>
