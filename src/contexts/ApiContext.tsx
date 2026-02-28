@@ -1,10 +1,11 @@
 import { hc } from 'hono/client'
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
   useMemo,
   useState,
+  type ReactNode,
 } from 'react'
 
 import { DEFAULT_API_URL, STORAGE_KEYS, LOG_MESSAGES, ERROR_MESSAGES } from '@shared/constants'
@@ -22,7 +23,7 @@ interface ApiContextType {
  * ApiProvider の Props 定義
  */
 interface ApiProviderProps {
-  children: React.ReactNode
+  children: ReactNode
   initialUrl?: string // テスト用に初期値を注入可能にする
 }
 
