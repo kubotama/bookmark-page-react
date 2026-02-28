@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
@@ -13,7 +13,7 @@ interface BookmarkItemProps {
   onClose: () => void
 }
 
-export const BookmarkItem: React.FC<BookmarkItemProps> = memo(
+export const BookmarkItem = memo(
   ({
     bookmark,
     isSelected,
@@ -21,7 +21,7 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = memo(
     onRowClick,
     onDoubleClick,
     onClose,
-  }) => {
+  }: BookmarkItemProps) => {
     const {
       attributes,
       listeners,
