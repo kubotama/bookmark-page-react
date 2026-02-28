@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FIELD_LABELS, PLACEHOLDERS } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
@@ -30,8 +30,7 @@ export const BookmarkDetail = ({
     setEditUrl(bookmark.url)
   }, [bookmark])
 
-  const handleUpdate = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleUpdate = () => {
     onUpdate(editTitle, editUrl)
   }
 
