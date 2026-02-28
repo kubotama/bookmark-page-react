@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import React from 'react'
+import { type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
@@ -27,7 +27,7 @@ const createTestQueryClient = () =>
     },
   })
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
+const wrapper = ({ children }: { children: ReactNode }) => (
   <ApiProvider>
     <QueryClientProvider client={createTestQueryClient()}>
       {children}

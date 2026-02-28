@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo, type ReactNode, type ReactElement } from 'react'
 import { render, renderHook } from '@testing-library/react'
 import type { RenderOptions, RenderHookOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -27,7 +27,7 @@ export const AllTheProviders = ({
   children, 
   initialUrl 
 }: { 
-  children: React.ReactNode, 
+  children: ReactNode, 
   initialUrl?: string 
 }) => {
   // QueryClient をメモ化して再生成を防ぐ
@@ -46,10 +46,10 @@ export const AllTheProviders = ({
  * カスタム render 関数
  */
 const customRender = (
-  ui: React.ReactElement,
+  ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'> & { initialUrl?: string }
 ) => {
-  const wrapper = (props: { children: React.ReactNode }) => (
+  const wrapper = (props: { children: ReactNode }) => (
     <AllTheProviders {...props} initialUrl={options?.initialUrl} />
   )
   return render(ui, { wrapper, ...options })
@@ -62,7 +62,7 @@ const customRenderHook = <Result, Props>(
   hookRender: (initialProps: Props) => Result,
   options?: Omit<RenderHookOptions<Props>, 'wrapper'> & { initialUrl?: string }
 ) => {
-  const wrapper = (props: { children: React.ReactNode }) => (
+  const wrapper = (props: { children: ReactNode }) => (
     <AllTheProviders {...props} initialUrl={options?.initialUrl} />
   )
   return renderHook(hookRender, { wrapper, ...options })

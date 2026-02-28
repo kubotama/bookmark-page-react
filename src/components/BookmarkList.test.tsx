@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import React from 'react'
+import { type ReactNode } from 'react'
 
 import {
   ARIA_ATTRIBUTES,
@@ -31,7 +31,7 @@ vi.mock('@dnd-kit/core', async () => {
       children,
       onDragEnd,
     }: {
-      children: React.ReactNode
+      children: ReactNode
       onDragEnd: (event: DragEndEvent) => void
     }) => (
       <div
