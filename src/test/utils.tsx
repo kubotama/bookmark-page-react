@@ -47,12 +47,16 @@ export const AllTheProviders = ({
  */
 const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'> & { initialUrl?: string }
+  options?: RenderOptions & { initialUrl?: string }
 ) => {
-  const wrapper = (props: { children: ReactNode }) => (
-    <AllTheProviders {...props} initialUrl={options?.initialUrl} />
+  const { wrapper: Wrapper, initialUrl, ...rest } = options || {}
+
+  const CombinedWrapper = ({ children }: { children: ReactNode }) => (
+    <AllTheProviders initialUrl={initialUrl}>
+      {Wrapper ? <Wrapper>{children}</Wrapper> : children}
+    </AllTheProviders>
   )
-  return render(ui, { wrapper, ...options })
+  return render(ui, { wrapper: CombinedWrapper, ...rest })
 }
 
 /**
@@ -60,12 +64,16 @@ const customRender = (
  */
 const customRenderHook = <Result, Props>(
   hookRender: (initialProps: Props) => Result,
-  options?: Omit<RenderHookOptions<Props>, 'wrapper'> & { initialUrl?: string }
+  options?: RenderHookOptions<Props> & { initialUrl?: string }
 ) => {
-  const wrapper = (props: { children: ReactNode }) => (
-    <AllTheProviders {...props} initialUrl={options?.initialUrl} />
+  const { wrapper: Wrapper, initialUrl, ...rest } = options || {}
+
+  const CombinedWrapper = ({ children }: { children: ReactNode }) => (
+    <AllTheProviders initialUrl={initialUrl}>
+      {Wrapper ? <Wrapper>{children}</Wrapper> : children}
+    </AllTheProviders>
   )
-  return renderHook(hookRender, { wrapper, ...options })
+  return renderHook(hookRender, { wrapper: CombinedWrapper, ...rest })
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
