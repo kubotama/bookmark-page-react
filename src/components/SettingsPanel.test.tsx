@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '../test/utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsPanel } from './SettingsPanel'
 import { FIELD_LABELS, COMMON_MESSAGES } from '@shared/constants'
