@@ -11,9 +11,3 @@ export const QUERY_KEYS = {
       [...QUERY_KEYS.BOOKMARKS.DETAILS(), String(id)] as const,
   },
 } as const
-
-// Step 2 での移行完了後に削除予定
-export const bookmarkKeys = {
-  all: ['bookmarks'] as const,
-  lists: () => [...bookmarkKeys.all, 'list'] as const,
-}
