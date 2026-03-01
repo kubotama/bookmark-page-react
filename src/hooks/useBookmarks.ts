@@ -2,7 +2,7 @@ import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useApi } from '../contexts/ApiContext'
-import { bookmarkKeys } from '../lib/queryKeys'
+import { QUERY_KEYS } from '../lib/queryKeys'
 
 import type {
   BookmarkId,
@@ -57,7 +57,7 @@ export const useBookmarks = () => {
   const { client } = useApi()
   
   return useQuery({
-    queryKey: bookmarkKeys.lists(),
+    queryKey: QUERY_KEYS.BOOKMARKS.LIST(),
     queryFn: async () => {
       const res = await client.api.bookmarks.$get()
       return await parseResponse<BookmarksResponse>(res, UI_MESSAGES.FETCH_FAILED)
@@ -88,7 +88,7 @@ export const useUpdateBookmark = () => {
       )
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
     },
   })
 }
@@ -110,7 +110,7 @@ export const useDeleteBookmark = () => {
       return await parseResponse<void>(res, UI_MESSAGES.DELETE_FAILED)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
     },
   })
 }
@@ -129,11 +129,11 @@ export const useReorderBookmarks = () => {
     },
     onMutate: async (variables) => {
       // 1. 進行中のクエリを確実にキャンセル（競合防止）
-      await queryClient.cancelQueries({ queryKey: bookmarkKeys.lists() })
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
 
       // 2. 現在の状態を保存
       const previousData = queryClient.getQueryData<BookmarksResponse>(
-        bookmarkKeys.lists(),
+        QUERY_KEYS.BOOKMARKS.LIST(),
       )
 
       // 3. 楽観的に更新
@@ -143,7 +143,7 @@ export const useReorderBookmarks = () => {
           .map((id) => bookmarkMap.get(id))
           .filter((b): b is import('@shared/schemas/bookmark').Bookmark => !!b)
 
-        queryClient.setQueryData<BookmarksResponse>(bookmarkKeys.lists(), {
+        queryClient.setQueryData<BookmarksResponse>(QUERY_KEYS.BOOKMARKS.LIST(), {
           ...previousData,
           bookmarks: newBookmarks,
         })
@@ -159,12 +159,12 @@ export const useReorderBookmarks = () => {
 
       // 5. ロールバック
       if (context?.previousData) {
-        queryClient.setQueryData(bookmarkKeys.lists(), context.previousData)
+        queryClient.setQueryData(QUERY_KEYS.BOOKMARKS.LIST(), context.previousData)
       }
     },
     onSettled: () => {
       // 6. 成功・失敗に関わらず最終的な整合性をサーバーと同期
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
     },
   })
 }

@@ -9,6 +9,7 @@ import {
 } from '@shared/constants'
 import type { Bookmark, BookmarksResponse } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
+import { QUERY_KEYS } from '../../src/lib/queryKeys'
 
 /**
  * 拡張機能のバックグラウンドプロセス
@@ -68,7 +69,7 @@ const updateIconStatus = async (
 
     // 3. ブックマーク一覧を取得
     const data = await queryClient.fetchQuery<BookmarksResponse>({
-      queryKey: ['bookmarks', sanitizedBaseUrl],
+      queryKey: [...QUERY_KEYS.BOOKMARKS.ALL, sanitizedBaseUrl],
       queryFn: async () => {
         const res = await fetch(`${sanitizedBaseUrl}/api/bookmarks`)
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
@@ -185,7 +186,7 @@ chrome.runtime.onMessageExternal.addListener(
  */
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE) {
-    queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.ALL })
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0]
       if (tab?.id) updateIconStatus(tab.id, tab.url, tab.title)
