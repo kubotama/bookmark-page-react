@@ -85,20 +85,38 @@ describe('db.ts', () => {
     it.each([
       {
         filename: '.',
+        expected: DB_CONSTANTS.FILENAME,
       },
       {
         filename: '..',
+        expected: DB_CONSTANTS.FILENAME,
       },
       {
         filename: '',
+        expected: DB_CONSTANTS.FILENAME,
       },
+      {
+        filename: '/',
+        expected: DB_CONSTANTS.FILENAME,
+      },
+      {
+        filename: '\\',
+        expected: DB_CONSTANTS.FILENAME,
+      },
+      {
+        filename: ' ../../custom.sqlite ',
+        expected: 'custom.sqlite',
+      },
+      { filename: ' custom.sqlite', expected: 'custom.sqlite' },
+      { filename: 'custom.sqlite ', expected: 'custom.sqlite' },
+      { filename: ' custom.sqlite ', expected: 'custom.sqlite' },
     ])(
-      '開発環境で環境変数に$filenameが指定された場合、デフォルトのファイル名にフォールバックすること',
-      ({ filename }) => {
+      '開発環境で環境変数に$filenameが指定された場合、$expectedを返すこと',
+      ({ filename, expected }) => {
         vi.stubEnv('NODE_ENV', ENV_NAMES.DEVELOPMENT)
 
         vi.stubEnv('DB_FILENAME', filename)
-        expect(getDbPath()).toContain(DB_CONSTANTS.FILENAME)
+        expect(getDbPath()).toContain(expected)
       },
     )
   })

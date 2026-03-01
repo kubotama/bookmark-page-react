@@ -14,10 +14,10 @@ export const getDbPath = () => {
   }
   /* v8 ignore next 5 */
   // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
-  const rawFilename = process.env.DB_FILENAME || DB_CONSTANTS.FILENAME
+  const rawFilename = (process.env.DB_FILENAME || DB_CONSTANTS.FILENAME).trim()
   const filename = path.basename(rawFilename)
   const finalFilename =
-    filename && filename !== '.' && filename !== '..'
+    filename && !['.', '..', '/', '\\'].includes(filename)
       ? filename
       : DB_CONSTANTS.FILENAME
   return path.resolve(process.cwd(), finalFilename)
