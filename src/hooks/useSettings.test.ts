@@ -6,6 +6,7 @@ import {
   LOG_MESSAGES,
   STORAGE_KEYS,
   VALIDATION_MESSAGES,
+  TEST_MESSAGES,
 } from '@shared/constants'
 import { INVALID_URLS } from '@shared/test/fixtures'
 import { act } from '@testing-library/react'
@@ -58,11 +59,13 @@ describe('useSettings Hook', () => {
   })
 
   describe('handleSaveSettings', () => {
-    const setupUseApiMock = (updateApiUrlImpl: () => never) => {
+    const setupUseApiMock = (
+      updateApiUrlImpl: (newUrl: string) => string | null,
+    ) => {
       vi.spyOn(apiContext, 'useApi').mockReturnValue({
         apiUrl: DEFAULT_API_URL,
         client: {} as never,
-        updateApiUrl: vi.fn(updateApiUrlImpl),
+        updateApiUrl: vi.fn().mockImplementation(updateApiUrlImpl),
       })
     }
 
@@ -94,10 +97,9 @@ describe('useSettings Hook', () => {
 
     it('例外が発生した場合、エラーメッセージを返し、ログを出力すること', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const TEST_ERROR = 'Unexpected Error'
 
       setupUseApiMock(() => {
-        throw new Error(TEST_ERROR)
+        throw new Error(TEST_MESSAGES.TEST_ERROR)
       })
 
       const { result } = renderHook(() => useSettings())
@@ -107,7 +109,7 @@ describe('useSettings Hook', () => {
         error = result.current.handleSaveSettings(DEFAULT_API_URL)
       })
 
-      expect(error).toBe(TEST_ERROR)
+      expect(error).toBe(TEST_MESSAGES.TEST_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
         expect.any(Error),
