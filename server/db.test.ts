@@ -61,6 +61,15 @@ describe('db.ts', () => {
       const dbPath = getDbPath()
       expect(dbPath).toContain(customFile)
     })
+
+    it('開発環境でパストラバーサルを試みる環境変数が指定された場合、ファイル名部分のみが使われること', () => {
+      vi.stubEnv('NODE_ENV', ENV_NAMES.DEVELOPMENT)
+      const customFileWithTraversal = '../../custom.sqlite'
+      vi.stubEnv('DB_FILENAME', customFileWithTraversal)
+      const dbPath = getDbPath()
+      expect(dbPath).not.toContain('..')
+      expect(dbPath).toContain('custom.sqlite')
+    })
   })
 
   describe('resetDatabase', () => {

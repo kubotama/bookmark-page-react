@@ -14,8 +14,8 @@ export const getDbPath = () => {
   }
   /* v8 ignore next 3 */
   // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
-  const filename = process.env.DB_FILENAME || DB_CONSTANTS.FILENAME
-  return path.resolve(process.cwd(), filename)
+  const rawFilename = process.env.DB_FILENAME || DB_CONSTANTS.FILENAME
+  return path.resolve(process.cwd(), path.basename(rawFilename))
 }
 
 export const sqlite = new Database(getDbPath())
