@@ -8,12 +8,14 @@ import * as schema from './db/schema'
 
 const isTestEnvironment = () => process.env.NODE_ENV === ENV_NAMES.TEST
 
-const getDbPath = () => {
-  return isTestEnvironment()
-    ? ':memory:'
-    : /* v8 ignore next 2 */
-      // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
-      path.resolve(process.cwd(), DB_CONSTANTS.FILENAME)
+export const getDbPath = () => {
+  if (isTestEnvironment()) {
+    return ':memory:'
+  }
+  /* v8 ignore next 3 */
+  // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
+  const filename = process.env.DB_FILENAME || DB_CONSTANTS.FILENAME
+  return path.resolve(process.cwd(), filename)
 }
 
 export const sqlite = new Database(getDbPath())

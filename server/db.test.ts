@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { z } from 'zod'
-import { sqlite, db, initializeDatabase, resetDatabase } from './db'
+import { sqlite, db, initializeDatabase, resetDatabase, getDbPath } from './db'
 import { bookmarks, keywords, bookmarkKeywords, bookmarksRelations, keywordsRelations, bookmarkKeywordsRelations } from './db/schema'
 import { LOG_MESSAGES, DB_CONSTANTS, ENV_NAMES } from '@shared/constants'
 import { TEST_MESSAGES, VALID_URLS } from '@shared/test/fixtures'
@@ -39,6 +39,27 @@ describe('db.ts', () => {
         LOG_MESSAGES.DB_INIT_FAILED,
         dbError,
       )
+    })
+  })
+
+  describe('getDbPath', () => {
+    it('テスト環境では常に :memory: を返すこと', () => {
+      vi.stubEnv('NODE_ENV', ENV_NAMES.TEST)
+      expect(getDbPath()).toBe(':memory:')
+    })
+
+    it('開発環境で環境変数が指定されていない場合、デフォルトのファイル名を返すこと', () => {
+      vi.stubEnv('NODE_ENV', ENV_NAMES.DEVELOPMENT)
+      const dbPath = getDbPath()
+      expect(dbPath).toContain(DB_CONSTANTS.FILENAME)
+    })
+
+    it('開発環境で環境変数が指定されている場合、そのファイル名を返すこと', () => {
+      vi.stubEnv('NODE_ENV', ENV_NAMES.DEVELOPMENT)
+      const customFile = 'custom.sqlite'
+      vi.stubEnv('DB_FILENAME', customFile)
+      const dbPath = getDbPath()
+      expect(dbPath).toContain(customFile)
     })
   })
 
