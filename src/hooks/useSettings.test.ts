@@ -5,15 +5,15 @@ import {
   DEFAULT_API_URL,
   LOG_MESSAGES,
   STORAGE_KEYS,
-  TEST_MESSAGES,
   VALIDATION_MESSAGES,
+  TEST_MESSAGES,
 } from '@shared/constants'
 import { INVALID_URLS } from '@shared/test/fixtures'
-import * as urlUtils from '@shared/utils/url'
 import { act } from '@testing-library/react'
 
 import { renderHook } from '../test/utils'
 import { useSettings } from './useSettings'
+import * as apiContext from '../contexts/ApiContext'
 
 describe('useSettings Hook', () => {
   beforeEach(() => {
@@ -59,6 +59,16 @@ describe('useSettings Hook', () => {
   })
 
   describe('handleSaveSettings', () => {
+    const setupUseApiMock = (
+      updateApiUrlImpl: (newUrl: string) => string | null,
+    ) => {
+      vi.spyOn(apiContext, 'useApi').mockReturnValue({
+        apiUrl: DEFAULT_API_URL,
+        client: {} as never,
+        updateApiUrl: vi.fn().mockImplementation(updateApiUrlImpl),
+      })
+    }
+
     it('有効な URL の場合、localStorage が更新されること', async () => {
       const { result } = renderHook(() => useSettings())
       const inputUrl = 'http://localhost:4000/path'
@@ -87,8 +97,9 @@ describe('useSettings Hook', () => {
 
     it('例外が発生した場合、エラーメッセージを返し、ログを出力すること', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(urlUtils, 'getOrigin').mockImplementation(() => {
-        throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
+
+      setupUseApiMock(() => {
+        throw new Error(TEST_MESSAGES.TEST_ERROR)
       })
 
       const { result } = renderHook(() => useSettings())
@@ -98,7 +109,7 @@ describe('useSettings Hook', () => {
         error = result.current.handleSaveSettings(DEFAULT_API_URL)
       })
 
-      expect(error).toBe(TEST_MESSAGES.UNEXPECTED_ERROR)
+      expect(error).toBe(TEST_MESSAGES.TEST_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
         expect.any(Error),
@@ -107,7 +118,8 @@ describe('useSettings Hook', () => {
 
     it('Error 以外の例外が発生した場合、共通エラーメッセージを返すこと', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(urlUtils, 'getOrigin').mockImplementation(() => {
+
+      setupUseApiMock(() => {
         throw 'String Error'
       })
 
