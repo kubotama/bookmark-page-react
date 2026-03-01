@@ -12,10 +12,15 @@ export const getDbPath = () => {
   if (isTestEnvironment()) {
     return ':memory:'
   }
-  /* v8 ignore next 3 */
+  /* v8 ignore next 5 */
   // テスト実行時は常に :memory: を使用するため、物理パスの生成は計測から除外する
   const rawFilename = process.env.DB_FILENAME || DB_CONSTANTS.FILENAME
-  return path.resolve(process.cwd(), path.basename(rawFilename))
+  const filename = path.basename(rawFilename)
+  const finalFilename =
+    filename && filename !== '.' && filename !== '..'
+      ? filename
+      : DB_CONSTANTS.FILENAME
+  return path.resolve(process.cwd(), finalFilename)
 }
 
 export const sqlite = new Database(getDbPath())
