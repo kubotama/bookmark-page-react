@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { FIELD_LABELS, PLACEHOLDERS } from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
 
 import { BookmarkDetail } from './BookmarkDetail'

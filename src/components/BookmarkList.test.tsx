@@ -15,7 +15,7 @@ import {
   MOCK_BOOKMARKS,
   MOCK_BOOKMARK_TITLE_PREFIX,
 } from '@shared/test/fixtures'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'

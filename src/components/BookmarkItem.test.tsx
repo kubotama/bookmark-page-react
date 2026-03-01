@@ -5,7 +5,7 @@ import { DndContext } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
 import { ARIA_ATTRIBUTES, ARIA_ROLES, HTML_ATTRIBUTES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
 
 import { BookmarkItem } from './BookmarkItem'
