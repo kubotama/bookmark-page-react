@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react'
 
 import { COMMON_MESSAGES, LOG_MESSAGES } from '@shared/constants'
-import { getOrigin, validateApiUrl } from '@shared/utils/url'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { useApi } from '../contexts/ApiContext'
@@ -25,11 +24,8 @@ export const useSettings = () => {
   const handleSaveSettings = useCallback(
     (newUrl: string): string | null => {
       try {
-        const error = validateApiUrl(newUrl)
+        const error = updateApiUrl(newUrl)
         if (error) return error
-
-        const sanitizedUrl = getOrigin(newUrl)
-        updateApiUrl(sanitizedUrl)
 
         // 設定変更時はキャッシュをクリアして再取得を促す
         queryClient.clear()
