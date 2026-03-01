@@ -5,9 +5,10 @@
 export const QUERY_KEYS = {
   BOOKMARKS: {
     ALL: ['bookmarks'] as const,
-    LISTS: () => [...QUERY_KEYS.BOOKMARKS.ALL, 'list'] as const,
+    LIST: () => [...QUERY_KEYS.BOOKMARKS.ALL, 'list'] as const,
     DETAILS: () => [...QUERY_KEYS.BOOKMARKS.ALL, 'detail'] as const,
-    DETAIL: (id: string | number) => [...QUERY_KEYS.BOOKMARKS.DETAILS(), String(id)] as const,
+    DETAIL: (id: string | number) =>
+      [...QUERY_KEYS.BOOKMARKS.DETAILS(), String(id)] as const,
   },
 } as const
 
