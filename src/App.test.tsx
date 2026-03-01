@@ -10,12 +10,10 @@ import {
   DEFAULT_API_URL,
 } from '@shared/constants'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from './test/utils'
 import userEvent from '@testing-library/user-event'
 
 import App from './App'
-import { ApiProvider } from './contexts/ApiContext'
 import { server } from './test/setup'
 
 import type { UpdateBookmarkRequest } from '@shared/schemas/bookmark'
@@ -60,23 +58,6 @@ vi.mock('@dnd-kit/core', async () => {
   }
 })
 
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  })
-
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <ApiProvider initialUrl={DEFAULT_API_URL}>
-    <QueryClientProvider client={createTestQueryClient()}>
-      {children}
-    </QueryClientProvider>
-  </ApiProvider>
-)
-
 describe('App Integration', () => {
   beforeEach(() => {
     vi.stubGlobal('open', vi.fn())
@@ -110,7 +91,7 @@ describe('App Integration', () => {
         })
       }),
     )
-    render(<App />, { wrapper })
+    render(<App />, { initialUrl: DEFAULT_API_URL })
     return { user }
   }
 
@@ -134,7 +115,7 @@ describe('App Integration', () => {
         )
       }),
     )
-    render(<App />, { wrapper })
+    render(<App />, { initialUrl: DEFAULT_API_URL })
 
     expect(await screen.findByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
   })
