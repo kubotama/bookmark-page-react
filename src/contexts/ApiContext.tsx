@@ -16,7 +16,7 @@ import type { AppType } from '../../server/app'
 interface ApiContextType {
   client: ReturnType<typeof hc<AppType>>
   apiUrl: string
-  updateApiUrl: (newUrl: string) => void
+  updateApiUrl: (newUrl: string) => string | null
 }
 
 /**
@@ -68,7 +68,7 @@ export const ApiProvider = ({ children, initialUrl }: ApiProviderProps) => {
     const error = validateApiUrl(newUrl)
     if (error) {
       console.error(ERROR_MESSAGES.UPDATE_API_URL_FAILED, error)
-      return
+      return error
     }
 
     const sanitizedUrl = getOrigin(newUrl)
@@ -76,6 +76,7 @@ export const ApiProvider = ({ children, initialUrl }: ApiProviderProps) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEYS.API_URL, sanitizedUrl)
     }
+    return null
   }, [])
 
   return (
