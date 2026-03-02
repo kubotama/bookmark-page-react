@@ -40,6 +40,25 @@ export const getOrigin = (url: string): string => {
 }
 
 /**
+ * ポート番号の妥当性を検証する (SSRF対策を含む)
+ * 1024-65535 の範囲内であることを確認（特権ポートを制限）
+ */
+export const validatePort = (port: number | string): string | null => {
+  const portNumber = Number(port)
+
+  if (
+    isNaN(portNumber) ||
+    !Number.isInteger(portNumber) ||
+    portNumber < 1024 ||
+    portNumber > 65535
+  ) {
+    return ERROR_MESSAGES.INVALID_PORT
+  }
+
+  return null
+}
+
+/**
  * API URL の妥当性を検証する (SSRF対策を含む)
  */
 export const validateApiUrl = (apiUrl: string): string | null => {
@@ -61,13 +80,8 @@ export const validateApiUrl = (apiUrl: string): string | null => {
     // ポート番号の取得 (明示的な指定がない場合はプロトコルから推測)
     const portString =
       parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
-    const port = Number(portString)
 
-    if (isNaN(port) || port < 1024 || port > 65535) {
-      return ERROR_MESSAGES.INVALID_PORT
-    }
-
-    return null
+    return validatePort(portString)
   } catch {
     return ERROR_MESSAGES.INVALID_URL
   }

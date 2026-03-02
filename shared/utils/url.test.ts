@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { isHttpUrl, getOrigin, validateApiUrl, openUrlInNewTab } from './url'
+import { isHttpUrl, getOrigin, validateApiUrl, openUrlInNewTab, validatePort } from './url'
 import {
   ERROR_MESSAGES,
   VALIDATION_MESSAGES,
@@ -39,6 +39,28 @@ describe('url utilities', () => {
         ERROR_MESSAGES.INVALID_URL,
       )
     })
+  })
+
+  describe('validatePort', () => {
+    const portTestData = [
+      { port: 1024, expected: null },
+      { port: 3000, expected: null },
+      { port: 65535, expected: null },
+      { port: '3030', expected: null },
+      { port: 80, expected: ERROR_MESSAGES.INVALID_PORT },
+      { port: 1023, expected: ERROR_MESSAGES.INVALID_PORT },
+      { port: 65536, expected: ERROR_MESSAGES.INVALID_PORT },
+      { port: 'invalid', expected: ERROR_MESSAGES.INVALID_PORT },
+      { port: NaN, expected: ERROR_MESSAGES.INVALID_PORT },
+      { port: 3000.5, expected: ERROR_MESSAGES.INVALID_PORT },
+    ]
+
+    it.each(portTestData)(
+      'ポート "$port" の場合に $expected を返すこと',
+      ({ port, expected }) => {
+        expect(validatePort(port)).toBe(expected)
+      },
+    )
   })
 
   describe('validateApiUrl', () => {
