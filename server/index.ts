@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import app from './app'
 import { initializeDatabase } from './db'
 import { LOG_MESSAGES, DEFAULT_SERVER_PORT } from '@shared/constants'
+import { validatePort } from '@shared/utils/url'
 
 // データベースの初期化
 try {
@@ -12,7 +13,20 @@ try {
   process.exit(1)
 }
 
-const port = DEFAULT_SERVER_PORT
+/**
+ * 起動ポート番号の取得
+ * 環境変数 SERVER_PORT が有効な場合はそれを使用し、
+ * そうでない場合は DEFAULT_SERVER_PORT にフォールバックする。
+ */
+const getPort = (): number => {
+  const envPort = process.env.SERVER_PORT
+  if (envPort && validatePort(envPort) === null) {
+    return Number(envPort)
+  }
+  return DEFAULT_SERVER_PORT
+}
+
+const port = getPort()
 
 console.log(LOG_MESSAGES.SERVER_RUNNING(port))
 

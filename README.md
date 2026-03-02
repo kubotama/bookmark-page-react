@@ -77,6 +77,7 @@ cp .env.example .env
 | `BOOKMARK_PAGE_FRONTEND_URL` | CORS許可オリジン設定用 | `http://localhost:5173` |
 | `VITE_EXTENSION_ID`          | 連携する拡張機能の ID  | (なし)                  |
 | `DB_FILENAME`                | データベースファイル名 | `bookmarks.sqlite`      |
+| `SERVER_PORT`                | サーバー起動ポート番号 | `3030`                  |
 
 補足: この環境変数が設定されていない場合、バックエンドはデフォルト値を使用します。
 
@@ -89,10 +90,16 @@ Frontend (Vite) と Backend (Hono) を同時に起動します。
 npm run dev
 ```
 
-起動後、以下のURLでアクセスできます：
+起動後、以下のURLでアクセスできます（デフォルト設定の場合）：
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:3030`
+
+ポート番号を変更して起動することも可能です：
+
+```bash
+SERVER_PORT=4000 npm run dev
+```
 
 #### ブラウザ拡張機能
 拡張機能のビルドとウォッチを開始します。
