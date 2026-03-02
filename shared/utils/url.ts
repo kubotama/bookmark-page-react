@@ -44,7 +44,7 @@ export const getOrigin = (url: string): string => {
  * 1024-65535 の範囲内であることを確認（特権ポートを制限）
  */
 export const validatePort = (port: number | string): string | null => {
-  const portNumber = typeof port === 'string' ? Number(port) : port
+  const portNumber = Number(port)
 
   if (
     isNaN(portNumber) ||
