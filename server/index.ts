@@ -20,12 +20,14 @@ try {
  */
 const getPort = (): number => {
   const envPort = process.env.SERVER_PORT
-  if (envPort) {
-    const portNumber = Number(envPort)
-    const validationError = validatePort(portNumber)
-    if (validationError === null) {
-      return portNumber
-    }
+  if (!envPort) {
+    return DEFAULT_SERVER_PORT
+  }
+
+  const portNumber = Number(envPort)
+  const validationError = validatePort(portNumber)
+
+  if (validationError) {
     // 無効なポートが指定された場合に警告を出力
     console.warn(
       LOG_MESSAGES.INVALID_SERVER_PORT(
@@ -34,8 +36,10 @@ const getPort = (): number => {
         DEFAULT_SERVER_PORT,
       ),
     )
+    return DEFAULT_SERVER_PORT
   }
-  return DEFAULT_SERVER_PORT
+
+  return portNumber
 }
 
 const port = getPort()
