@@ -46,7 +46,12 @@ export const getOrigin = (url: string): string => {
 export const validatePort = (port: number | string): string | null => {
   const portNumber = typeof port === 'string' ? Number(port) : port
 
-  if (isNaN(portNumber) || portNumber < 1024 || portNumber > 65535) {
+  if (
+    isNaN(portNumber) ||
+    !Number.isInteger(portNumber) ||
+    portNumber < 1024 ||
+    portNumber > 65535
+  ) {
     return ERROR_MESSAGES.INVALID_PORT
   }
 

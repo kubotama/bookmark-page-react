@@ -52,6 +52,7 @@ describe('url utilities', () => {
       { port: 65536, expected: ERROR_MESSAGES.INVALID_PORT },
       { port: 'invalid', expected: ERROR_MESSAGES.INVALID_PORT },
       { port: NaN, expected: ERROR_MESSAGES.INVALID_PORT },
+      { port: 3000.5, expected: ERROR_MESSAGES.INVALID_PORT },
     ]
 
     it.each(portTestData)(
