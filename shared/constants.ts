@@ -276,6 +276,8 @@ export const LOG_MESSAGES = {
   EXTENSION_CONNECTION_FAILED: 'Connection test failed:',
   INVALID_STORAGE_URL:
     'Invalid API URL found in localStorage, falling back to default:',
+  INVALID_SERVER_PORT: (val: string, error: string, defaultPort: number) =>
+    `[Server] Invalid SERVER_PORT value: "${val}". ${error} Falling back to default port ${defaultPort}.`,
   REORDER_FAILED_CONSOLE: 'Failed to reorder bookmarks:',
   RESET_DB_ENV_ERROR: 'resetDatabase can only be called in test environment',
   INSERT_FAILED: 'Failed to insert bookmark',
