@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { isHttpUrl, getOrigin, validateApiUrl, openUrlInNewTab, validatePort } from './url'
+import {
+  isHttpUrl,
+  getOrigin,
+  validateApiUrl,
+  openUrlInNewTab,
+  validatePort,
+  getPortFromUrl,
+} from './url'
 import {
   ERROR_MESSAGES,
   VALIDATION_MESSAGES,
   HTML_ATTRIBUTES,
   LOG_MESSAGES,
+  DEFAULT_PORTS,
 } from '@shared/constants'
 import { VALID_URLS, INVALID_URLS } from '@shared/test/fixtures'
 
@@ -59,6 +67,80 @@ describe('url utilities', () => {
       'ポート "$port" の場合に $expected を返すこと',
       ({ port, expected }) => {
         expect(validatePort(port)).toBe(expected)
+      },
+    )
+  })
+
+  describe('getPortFromUrl', () => {
+    it.each([
+      { url: 'http://localhost:4000', port: 4000 },
+      {
+        url: `http://localhost:${DEFAULT_PORTS.FRONTEND}`,
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+    ])('URL からポート番号($port)を正しく抽出できること', ({ url, port }) => {
+      expect(getPortFromUrl(url)).toBe(port)
+    })
+
+    it.each([
+      {
+        protocol: 'http/80',
+        url: 'http://localhost',
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+      {
+        protocol: 'https/443',
+        url: 'https://localhost',
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+    ])(
+      'ポートが明示されていない場合、特権ポート（$protocol）を拒否してデフォルトを返すこと',
+      ({ url, port }) => {
+        expect(getPortFromUrl(url, port)).toBe(port)
+      },
+    )
+
+    it.each([
+      {
+        privilegedPort: 'http/80',
+        url: 'http://localhost:80',
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+      {
+        privilegedPort: 'http/1023',
+        url: 'http://localhost:1023',
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+    ])(
+      '1024 未満の明示的な特権ポート ( $privilegedPort ) を拒否してデフォルトを返すこと',
+      ({ url, port }) => {
+        expect(getPortFromUrl(url, port)).toBe(port)
+      },
+    )
+
+    it.each([
+      { name: '空白', url: '', port: DEFAULT_PORTS.FRONTEND },
+      {
+        name: '未定義',
+        url: undefined,
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+      {
+        name: 'not-a-url',
+        url: 'not-a-url',
+        port: DEFAULT_PORTS.FRONTEND,
+      },
+    ])('$name の場合、デフォルトを返すこと', ({ url, port }) => {
+      expect(getPortFromUrl(url)).toBe(port)
+    })
+
+    it.each([
+      { name: '特権ポート', url: 'http://localhost:80', port: 3000 },
+      { name: '空白', url: '', port: 3030 },
+    ])(
+      '$nameの場合、カスタムのデフォルトポートが正しく機能すること',
+      ({ url, port }) => {
+        expect(getPortFromUrl(url, port)).toBe(port)
       },
     )
   })

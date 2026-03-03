@@ -3,6 +3,7 @@ import {
   VALIDATION_MESSAGES,
   HTML_ATTRIBUTES,
   LOG_MESSAGES,
+  DEFAULT_PORTS,
 } from '@shared/constants'
 
 /**
@@ -84,5 +85,27 @@ export const validateApiUrl = (apiUrl: string): string | null => {
     return validatePort(portString)
   } catch {
     return ERROR_MESSAGES.INVALID_URL
+  }
+}
+
+/**
+ * URL 文字列からポート番号を抽出する (Vite 起動ポート決定用)
+ * 指定がない場合や、1024 未満の特権ポートである場合は、
+ * セキュリティと安全性の観点から引数の defaultPort を返す。
+ */
+export const getPortFromUrl = (
+  url?: string,
+  defaultPort: number = DEFAULT_PORTS.FRONTEND,
+): number => {
+  if (!url) return defaultPort
+  try {
+    const portString = new URL(url).port
+    // ポートが明示的に指定されており、かつ妥当な（特権ポートでない）場合にのみそのポートを返す
+    if (portString && validatePort(portString) === null) {
+      return Number(portString)
+    }
+    return defaultPort
+  } catch {
+    return defaultPort
   }
 }
