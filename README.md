@@ -74,12 +74,12 @@ cp .env.example .env
 
 | 変数名                       | 説明                   | デフォルト値            |
 | ---------------------------- | ---------------------- | ----------------------- |
-| `BOOKMARK_PAGE_FRONTEND_URL` | CORS許可オリジン設定用 | `http://localhost:5173` |
-| `VITE_EXTENSION_ID`          | 連携する拡張機能の ID  | (なし)                  |
-| `DB_FILENAME`                | データベースファイル名 | `bookmarks.sqlite`      |
-| `SERVER_PORT`                | サーバー起動ポート番号 | `3030`                  |
+| `BOOKMARK_PAGE_FRONTEND_URL` | CORS許可オリジン設定用 / Webアプリの起動ポート決定用 | `http://localhost:5173` |
+| `VITE_EXTENSION_ID`          | 連携する拡張機能의 ID                                | (なし)                  |
+| `DB_FILENAME`                | データベースファイル名                               | `bookmarks.sqlite`      |
+| `SERVER_PORT`                | サーバー起動ポート番号                               | `3030`                  |
 
-補足: この環境変数が設定されていない場合、バックエンドはデフォルト値を使用します。
+補足: `BOOKMARK_PAGE_FRONTEND_URL` にポート番号を指定すると、Web アプリ (Vite) の起動ポートに自動的に反映されます。1024 未満の特権ポートが指定された場合などは、デフォルト値が使用されます。
 
 ### 開発サーバー起動 (Development)
 
