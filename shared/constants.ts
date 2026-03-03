@@ -25,10 +25,18 @@ export const PLACEHOLDERS = {
 } as const
 
 /**
+ * デフォルトのポート番号
+ */
+export const DEFAULT_PORTS = {
+  FRONTEND: 5173,
+  BACKEND: 3030,
+} as const
+
+/**
  * プロダクト全体で共有されるデフォルト設定
  */
-export const DEFAULT_API_URL = 'http://localhost:3030'
-export const DEFAULT_SERVER_PORT = 3030
+export const DEFAULT_API_URL = `http://localhost:${DEFAULT_PORTS.BACKEND}`
+export const DEFAULT_SERVER_PORT = DEFAULT_PORTS.BACKEND
 
 /**
  * UI の処理状態定義
@@ -63,7 +71,9 @@ export const STATUS_STYLES: Record<UIStatus, string> = {
 /**
  * 許可されたオリジン (Web アプリ)
  */
-export const ALLOWED_ORIGINS = ['http://localhost:5173'] as const
+export const ALLOWED_ORIGINS = [
+  `http://localhost:${DEFAULT_PORTS.FRONTEND}`,
+] as const
 
 /**
  * プロダクト共通の UI メッセージ

@@ -12,6 +12,7 @@ import {
   VALIDATION_MESSAGES,
   HTML_ATTRIBUTES,
   LOG_MESSAGES,
+  DEFAULT_PORTS,
 } from '@shared/constants'
 import { VALID_URLS, INVALID_URLS } from '@shared/test/fixtures'
 
@@ -73,25 +74,29 @@ describe('url utilities', () => {
   describe('getPortFromUrl', () => {
     it('URL からポート番号を正しく抽出できること', () => {
       expect(getPortFromUrl('http://localhost:4000')).toBe(4000)
-      expect(getPortFromUrl('http://localhost:5173')).toBe(5173)
+      expect(getPortFromUrl(`http://localhost:${DEFAULT_PORTS.FRONTEND}`)).toBe(
+        DEFAULT_PORTS.FRONTEND,
+      )
     })
 
     it('ポートが明示されていない場合、特権ポート（80/443）を拒否してデフォルトを返すこと', () => {
-      const defaultPort = 5173
+      const defaultPort = DEFAULT_PORTS.FRONTEND
       expect(getPortFromUrl('http://localhost', defaultPort)).toBe(defaultPort)
       expect(getPortFromUrl('https://localhost', defaultPort)).toBe(defaultPort)
     })
 
     it('1024 未満の明示的な特権ポートを拒否してデフォルトを返すこと', () => {
-      const defaultPort = 5173
-      expect(getPortFromUrl('http://localhost:80', defaultPort)).toBe(defaultPort)
+      const defaultPort = DEFAULT_PORTS.FRONTEND
+      expect(getPortFromUrl('http://localhost:80', defaultPort)).toBe(
+        defaultPort,
+      )
       expect(getPortFromUrl('http://localhost:1023', defaultPort)).toBe(
         defaultPort,
       )
     })
 
     it('無効な URL や空文字の場合、デフォルトを返すこと', () => {
-      const defaultPort = 5173
+      const defaultPort = DEFAULT_PORTS.FRONTEND
       expect(getPortFromUrl('', defaultPort)).toBe(defaultPort)
       expect(getPortFromUrl(undefined, defaultPort)).toBe(defaultPort)
       expect(getPortFromUrl('not-a-url', defaultPort)).toBe(defaultPort)
