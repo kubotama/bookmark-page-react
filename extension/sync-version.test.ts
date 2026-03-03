@@ -8,7 +8,9 @@ describe('syncVersion', () => {
     vi.clearAllMocks()
     // fs のメソッドをデフォルトで成功するようにスパイ
     vi.spyOn(fs, 'existsSync').mockReturnValue(true)
-    vi.spyOn(fs, 'readFileSync').mockImplementation(() => '')
+    vi.spyOn(fs, 'readFileSync').mockImplementation(() =>
+      JSON.stringify({ version: '1.2.3' }),
+    )
     vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {})
   })
 
@@ -39,10 +41,6 @@ describe('syncVersion', () => {
   })
 
   it('バージョンがすでに一致している場合、書き込みを行わないこと', () => {
-    vi.spyOn(fs, 'readFileSync').mockImplementation(() => {
-      return JSON.stringify({ version: '1.2.3' })
-    })
-
     const result = syncVersion()
 
     expect(result).toBe(false)
