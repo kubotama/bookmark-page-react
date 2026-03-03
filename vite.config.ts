@@ -18,7 +18,8 @@ const getFrontendPort = (url: string | undefined): number => {
     const portString = parsed.port
     if (portString) {
       const p = Number(portString)
-      // 1024 未満の特権ポートはセキュリティ上の理由により除外しデフォルトを使用
+      // 1024 未満の特権ポートはセキュリティ上の理由により除外し、
+      // 65535 (TCP ポートの最大値) を超える値も無効としてデフォルトを使用。
       if (p >= 1024 && p <= 65535) return p
     }
   } catch {
@@ -30,7 +31,7 @@ const getFrontendPort = (url: string | undefined): number => {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const frontendUrl = env.BOOKMARK_PAGE_FRONTEND_URL
+  const frontendUrl = env.BOOKMARK_PAGE_FRONTEND_URL || ''
   const port = getFrontendPort(frontendUrl)
 
   return {
