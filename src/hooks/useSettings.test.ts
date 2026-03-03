@@ -7,6 +7,7 @@ import {
   STORAGE_KEYS,
   VALIDATION_MESSAGES,
   TEST_MESSAGES,
+  ERROR_MESSAGES,
 } from '@shared/constants'
 import { INVALID_URLS } from '@shared/test/fixtures'
 import { act } from '@testing-library/react'
@@ -84,6 +85,7 @@ describe('useSettings Hook', () => {
     })
 
     it('無効な URL の場合、エラーを返し、保存を中断すること', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const { result } = renderHook(() => useSettings())
       const invalidUrl = INVALID_URLS.FTP
 
@@ -93,6 +95,10 @@ describe('useSettings Hook', () => {
       })
 
       expect(error).toBe(VALIDATION_MESSAGES.URL_INVALID_PROTOCOL)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        ERROR_MESSAGES.UPDATE_API_URL_FAILED,
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      )
     })
 
     it('例外が発生した場合、エラーメッセージを返し、ログを出力すること', () => {
