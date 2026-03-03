@@ -99,16 +99,12 @@ export const getPortFromUrl = (
 ): number => {
   if (!url) return defaultPort
   try {
-    const parsed = new URL(url)
-    const portString =
-      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
-
-    // 1024 未満のポートや無効なポートは拒否してデフォルトへ
-    if (validatePort(portString) !== null) {
-      return defaultPort
+    const portString = new URL(url).port
+    // ポートが明示的に指定されており、かつ妥当な（特権ポートでない）場合にのみそのポートを返す
+    if (portString && validatePort(portString) === null) {
+      return Number(portString)
     }
-
-    return Number(portString)
+    return defaultPort
   } catch {
     return defaultPort
   }
