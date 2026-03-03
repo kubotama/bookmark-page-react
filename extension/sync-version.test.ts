@@ -6,17 +6,16 @@ import { LOG_MESSAGES } from '../shared/constants'
 describe('syncVersion', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(console, 'log').mockImplementation(() => {})
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    // fs のメソッドをスパイ
-    vi.spyOn(fs, 'existsSync').mockImplementation(() => true)
+    // fs のメソッドをデフォルトで成功するようにスパイ
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
     vi.spyOn(fs, 'readFileSync').mockImplementation(() => '')
     vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {})
   })
 
   it('package.json のバージョンが manifest.json に同期されること', () => {
-    // 1. fs の挙動をモック
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    // コンソール出力のアサートが必要なテストケースでのみスパイを定義
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
     vi.spyOn(fs, 'readFileSync').mockImplementation((path) => {
       if (typeof path === 'string' && path.endsWith('package.json')) {
         return JSON.stringify({ version: '1.2.3' })
@@ -27,25 +26,21 @@ describe('syncVersion', () => {
       return ''
     })
 
-    // 2. 実行
     const result = syncVersion()
 
-    // 3. 検証
     expect(result).toBe(true)
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       expect.stringContaining('manifest.json'),
       expect.stringContaining('"version": "1.2.3"'),
     )
-    expect(console.log).toHaveBeenCalledWith(
+    expect(consoleSpy).toHaveBeenCalledWith(
       LOG_MESSAGES.UPDATED_VERSION('1.2.3'),
     )
   })
 
   it('バージョンがすでに一致している場合、書き込みを行わないこと', () => {
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
     vi.spyOn(fs, 'readFileSync').mockImplementation(() => {
-      const content = { version: '1.2.3' }
-      return JSON.stringify(content)
+      return JSON.stringify({ version: '1.2.3' })
     })
 
     const result = syncVersion()
@@ -71,7 +66,6 @@ describe('syncVersion', () => {
   })
 
   it('package.json にバージョンが含まれていない場合にエラーを投げること', () => {
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
     vi.spyOn(fs, 'readFileSync').mockImplementation((path) => {
       if (typeof path === 'string' && path.endsWith('package.json')) {
         return JSON.stringify({ name: 'test' }) // version なし
@@ -83,7 +77,6 @@ describe('syncVersion', () => {
   })
 
   it('JSON が不正な場合に JSON.parse エラーを投げること', () => {
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
     vi.spyOn(fs, 'readFileSync').mockReturnValue('invalid-json')
 
     expect(() => syncVersion()).toThrow(SyntaxError)
