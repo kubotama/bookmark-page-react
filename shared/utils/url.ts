@@ -86,3 +86,26 @@ export const validateApiUrl = (apiUrl: string): string | null => {
     return ERROR_MESSAGES.INVALID_URL
   }
 }
+
+/**
+ * URL 文字列からポート番号を抽出する (Vite 起動ポート決定用)
+ * 指定がない場合や、1024 未満の特権ポートである場合は、
+ * セキュリティと安全性の観点から引数の defaultPort を返す。
+ */
+export const getPortFromUrl = (url?: string, defaultPort = 5173): number => {
+  if (!url) return defaultPort
+  try {
+    const parsed = new URL(url)
+    const portString =
+      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
+
+    // 1024 未満のポートや無効なポートは拒否してデフォルトへ
+    if (validatePort(portString) !== null) {
+      return defaultPort
+    }
+
+    return Number(portString)
+  } catch {
+    return defaultPort
+  }
+}

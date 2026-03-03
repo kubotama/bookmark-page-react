@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { isHttpUrl, getOrigin, validateApiUrl, openUrlInNewTab, validatePort } from './url'
+import {
+  isHttpUrl,
+  getOrigin,
+  validateApiUrl,
+  openUrlInNewTab,
+  validatePort,
+  getPortFromUrl,
+} from './url'
 import {
   ERROR_MESSAGES,
   VALIDATION_MESSAGES,
@@ -61,6 +68,39 @@ describe('url utilities', () => {
         expect(validatePort(port)).toBe(expected)
       },
     )
+  })
+
+  describe('getPortFromUrl', () => {
+    it('URL からポート番号を正しく抽出できること', () => {
+      expect(getPortFromUrl('http://localhost:4000')).toBe(4000)
+      expect(getPortFromUrl('http://localhost:5173')).toBe(5173)
+    })
+
+    it('ポートが明示されていない場合、特権ポート（80/443）を拒否してデフォルトを返すこと', () => {
+      const defaultPort = 5173
+      expect(getPortFromUrl('http://localhost', defaultPort)).toBe(defaultPort)
+      expect(getPortFromUrl('https://localhost', defaultPort)).toBe(defaultPort)
+    })
+
+    it('1024 未満の明示的な特権ポートを拒否してデフォルトを返すこと', () => {
+      const defaultPort = 5173
+      expect(getPortFromUrl('http://localhost:80', defaultPort)).toBe(defaultPort)
+      expect(getPortFromUrl('http://localhost:1023', defaultPort)).toBe(
+        defaultPort,
+      )
+    })
+
+    it('無効な URL や空文字の場合、デフォルトを返すこと', () => {
+      const defaultPort = 5173
+      expect(getPortFromUrl('', defaultPort)).toBe(defaultPort)
+      expect(getPortFromUrl(undefined, defaultPort)).toBe(defaultPort)
+      expect(getPortFromUrl('not-a-url', defaultPort)).toBe(defaultPort)
+    })
+
+    it('カスタムのデフォルトポートが正しく機能すること', () => {
+      expect(getPortFromUrl('http://localhost:80', 3000)).toBe(3000)
+      expect(getPortFromUrl('', 3030)).toBe(3030)
+    })
   })
 
   describe('validateApiUrl', () => {
