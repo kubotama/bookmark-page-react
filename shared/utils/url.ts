@@ -3,8 +3,9 @@ import {
   VALIDATION_MESSAGES,
   HTML_ATTRIBUTES,
   LOG_MESSAGES,
-  DEFAULT_PORTS,
 } from '@shared/constants'
+
+export * from './port'
 
 /**
  * URL が http:// または https:// で始まっているかを確認する
@@ -41,25 +42,6 @@ export const getOrigin = (url: string): string => {
 }
 
 /**
- * ポート番号の妥当性を検証する (SSRF対策を含む)
- * 1024-65535 の範囲内であることを確認（特権ポートを制限）
- */
-export const validatePort = (port: number | string): string | null => {
-  const portNumber = Number(port)
-
-  if (
-    isNaN(portNumber) ||
-    !Number.isInteger(portNumber) ||
-    portNumber < 1024 ||
-    portNumber > 65535
-  ) {
-    return ERROR_MESSAGES.INVALID_PORT
-  }
-
-  return null
-}
-
-/**
  * API URL の妥当性を検証する (SSRF対策を含む)
  */
 export const validateApiUrl = (apiUrl: string): string | null => {
@@ -82,30 +64,14 @@ export const validateApiUrl = (apiUrl: string): string | null => {
     const portString =
       parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
 
+    // validatePort は './port' から re-export されているためそのまま使用可能
+    // ただし内部的に利用するため、このファイル内では validatePort を定義するかインポートが必要
+    // re-export しているので、同じディレクトリ内の port.ts からインポートする
     return validatePort(portString)
   } catch {
     return ERROR_MESSAGES.INVALID_URL
   }
 }
 
-/**
- * URL 文字列からポート番号を抽出する (Vite 起動ポート決定用)
- * 指定がない場合や、1024 未満の特権ポートである場合は、
- * セキュリティと安全性の観点から引数の defaultPort を返す。
- */
-export const getPortFromUrl = (
-  url?: string,
-  defaultPort: number = DEFAULT_PORTS.FRONTEND,
-): number => {
-  if (!url) return defaultPort
-  try {
-    const portString = new URL(url).port
-    // ポートが明示的に指定されており、かつ妥当な（特権ポートでない）場合にのみそのポートを返す
-    if (portString && validatePort(portString) === null) {
-      return Number(portString)
-    }
-    return defaultPort
-  } catch {
-    return defaultPort
-  }
-}
+// 内部利用のためにインポート (循環参照を避ける)
+import { validatePort } from './port'
