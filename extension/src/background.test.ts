@@ -173,6 +173,24 @@ describe('background service worker', () => {
         })
       })
     })
+
+    it('API URL が未設定（undefined）の場合に NONE アイコンをセットすること', async () => {
+      vi.mocked(chrome.storage.sync.get).mockImplementation(() => {
+        return Promise.resolve({ [STORAGE_KEYS.API_URL]: undefined })
+      })
+      const onUpdatedMock = vi.mocked(chrome.tabs.onUpdated.addListener)
+      await import('./background')
+
+      const handler = onUpdatedMock.mock.calls[0][0]
+      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+
+      await vi.waitFor(() => {
+        expect(chrome.action.setIcon).toHaveBeenCalledWith({
+          tabId: 1,
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE]
+        })
+      })
+    })
   })
 
   describe('イベントリスナーとメッセージ', () => {
@@ -205,6 +223,61 @@ describe('background service worker', () => {
       await vi.waitFor(() => {
         expect(chrome.tabs.query).toHaveBeenCalled()
       })
+    })
+
+    it('タブのアクティブ化 (onActivated) 時にアイコンを更新すること', async () => {
+      const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
+      const tabData = { id: 1, url: 'https://example.com', title: 'Example' }
+      vi.mocked(chrome.tabs.get).mockImplementation((_id, callback) => {
+        if (callback) (callback as unknown as (tab: unknown) => void)(tabData)
+        return Promise.resolve(tabData as unknown as chrome.tabs.Tab)
+      })
+      
+      const mockApiUrl = 'http://localhost:3030'
+      const mockBookmarks = {
+        bookmarks: [
+          { id: '1', title: 'Example', url: 'https://example.com' }
+        ]
+      }
+
+      // storage.sync.get のモック
+      vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
+        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+        if (callback) (callback as unknown as (data: unknown) => void)(data)
+        return Promise.resolve(data)
+      })
+
+      // fetch のモック
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, data: mockBookmarks })
+      }))
+
+      await import('./background')
+
+      const handler = onActivatedMock.mock.calls[0][0]
+      await handler({ tabId: 1, windowId: 1 })
+
+      expect(chrome.tabs.get).toHaveBeenCalledWith(1)
+      
+      // updateIconStatus が呼び出され、適切なアイコンがセットされたことを検証
+      await vi.waitFor(() => {
+        expect(chrome.action.setIcon).toHaveBeenCalledWith({
+          tabId: 1,
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.REGISTERED]
+        })
+      })
+    })
+
+    it('タブのアクティブ化時に tabs.get が失敗してもエラーを投げないこと', async () => {
+      const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
+      vi.mocked(chrome.tabs.get).mockRejectedValue(new Error('Tab not found'))
+      
+      await import('./background')
+
+      const handler = onActivatedMock.mock.calls[0][0]
+      // 例外が catch されて正常に終了することを期待
+      await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
     })
 
     it('不許可拡張機能 (sender.id あり) をブロックすること', async () => {
@@ -241,6 +314,33 @@ describe('background service worker', () => {
 
       expect(result).toBe(false)
       expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE, 'http://malicious.com')
+    })
+
+    it('GET_API_CONFIG メッセージを受信した際に設定値を返すこと', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+      const mockApiUrl = 'http://localhost:3030'
+      vi.mocked(chrome.storage.sync.get).mockImplementation((_key, callback) => {
+        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+        if (callback) (callback as unknown as (data: unknown) => void)(data)
+        return Promise.resolve(data)
+      })
+
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const result = messageHandler(
+        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
+        { origin: ALLOWED_ORIGINS[0] },
+        sendResponse
+      )
+
+      expect(result).toBe(true)
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        apiUrl: mockApiUrl
+      })
     })
   })
 })
