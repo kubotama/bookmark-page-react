@@ -85,7 +85,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'https://new-site.com', title: 'New' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'https://new-site.com', title: 'New' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -100,7 +100,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -115,7 +115,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Modified' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Modified' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -133,7 +133,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -149,7 +149,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -164,7 +164,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'chrome://settings', title: 'Settings' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'chrome://settings', title: 'Settings' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -182,7 +182,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
@@ -256,7 +256,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onActivatedMock.mock.calls[0][0]
-      await handler({ tabId: 1, windowId: 1 })
+      handler({ tabId: 1, windowId: 1 })
 
       expect(chrome.tabs.get).toHaveBeenCalledWith(1)
       
