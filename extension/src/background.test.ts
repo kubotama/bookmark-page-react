@@ -339,7 +339,7 @@ describe('background service worker', () => {
       const addListenerMock = vi.mocked(
         chrome.runtime.onMessageExternal.addListener,
       )
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const consoleSpy = vi.mocked(console.warn)
       await import('./background')
 
       const messageHandler = addListenerMock.mock.calls[0][0]
