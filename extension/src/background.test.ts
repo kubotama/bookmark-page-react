@@ -230,12 +230,40 @@ describe('background service worker', () => {
       const tabData = { id: 1, url: 'https://example.com', title: 'Example' }
       vi.mocked(chrome.tabs.get).mockResolvedValue(tabData as chrome.tabs.Tab)
       
+      const mockApiUrl = 'http://localhost:3030'
+      const mockBookmarks = {
+        bookmarks: [
+          { id: '1', title: 'Example', url: 'https://example.com' }
+        ]
+      }
+
+      // storage.sync.get のモック
+      vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
+        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+        if (callback) (callback as any)(data)
+        return Promise.resolve(data)
+      })
+
+      // fetch のモック
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, data: mockBookmarks })
+      }))
+
       await import('./background')
 
       const handler = onActivatedMock.mock.calls[0][0]
       await handler({ tabId: 1, windowId: 1 })
 
       expect(chrome.tabs.get).toHaveBeenCalledWith(1)
+      
+      // updateIconStatus が呼び出され、適切なアイコンがセットされたことを検証
+      await vi.waitFor(() => {
+        expect(chrome.action.setIcon).toHaveBeenCalledWith({
+          tabId: 1,
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.REGISTERED]
+        })
+      })
     })
 
     it('タブのアクティブ化時に tabs.get が失敗してもエラーを投げないこと', async () => {
