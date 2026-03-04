@@ -235,9 +235,7 @@ describe('background service worker', () => {
       const handler = onActivatedMock.mock.calls[0][0]
       await handler({ tabId: 1, windowId: 1 })
 
-      await vi.waitFor(() => {
-        expect(chrome.tabs.get).toHaveBeenCalledWith(1)
-      })
+      expect(chrome.tabs.get).toHaveBeenCalledWith(1)
     })
 
     it('タブのアクティブ化時に tabs.get が失敗してもエラーを投げないこと', async () => {
