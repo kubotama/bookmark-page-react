@@ -286,5 +286,32 @@ describe('background service worker', () => {
       expect(result).toBe(false)
       expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE, 'http://malicious.com')
     })
+
+    it('GET_API_CONFIG メッセージを受信した際に設定値を返すこと', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+      const mockApiUrl = 'http://localhost:3030'
+      vi.mocked(chrome.storage.sync.get).mockImplementation((_key, callback) => {
+        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+        if (callback) (callback as unknown as (data: unknown) => void)(data)
+        return Promise.resolve(data)
+      })
+
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const result = messageHandler(
+        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
+        { origin: ALLOWED_ORIGINS[0] },
+        sendResponse
+      )
+
+      expect(result).toBe(true)
+      expect(sendResponse).toHaveBeenCalledWith({
+        success: true,
+        apiUrl: mockApiUrl
+      })
+    })
   })
 })
