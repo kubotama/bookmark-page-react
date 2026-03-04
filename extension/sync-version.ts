@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 import { LOG_MESSAGES } from '../shared/constants'
 
@@ -11,47 +12,53 @@ const manifestJsonPath = path.resolve(
 
 /**
  * package.json と manifest.json のバージョンを同期するスクリプト
+ * 成功した場合は true、変更が不要な場合は false を返す。
+ * エラーが発生した場合は例外を投げる。
  */
-function syncVersion() {
+export function syncVersion(): boolean {
+  // 1. ファイルの存在確認 (防御的チェック)
+  if (!fs.existsSync(packageJsonPath)) {
+    throw new Error(
+      `${LOG_MESSAGES.VERSION_SYNC_ERROR} package.json not found at: ${packageJsonPath}`,
+    )
+  }
+  if (!fs.existsSync(manifestJsonPath)) {
+    throw new Error(
+      `${LOG_MESSAGES.VERSION_SYNC_ERROR} manifest.json not found at: ${manifestJsonPath}`,
+    )
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+  const manifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'))
+
+  // 2. バージョンフィールドの型チェック (防御的チェック)
+  if (typeof packageJson.version !== 'string') {
+    throw new Error(
+      `${LOG_MESSAGES.VERSION_SYNC_ERROR} 'version' field in package.json is missing or not a string.`,
+    )
+  }
+
+  // 3. バージョンの同期
+  if (manifest.version !== packageJson.version) {
+    manifest.version = packageJson.version
+    fs.writeFileSync(
+      manifestJsonPath,
+      JSON.stringify(manifest, null, 2) + '\n',
+    )
+    console.log(LOG_MESSAGES.UPDATED_VERSION(packageJson.version))
+    return true
+  }
+
+  return false
+}
+
+// 直接実行された場合のみ実行 (CLI としての挙動)
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+if (isMain) {
   try {
-    // 1. ファイルの存在確認 (防御的チェック)
-    if (!fs.existsSync(packageJsonPath)) {
-      console.error(
-        `${LOG_MESSAGES.VERSION_SYNC_ERROR} package.json not found at: ${packageJsonPath}`,
-      )
-      process.exit(1)
-    }
-    if (!fs.existsSync(manifestJsonPath)) {
-      console.error(
-        `${LOG_MESSAGES.VERSION_SYNC_ERROR} manifest.json not found at: ${manifestJsonPath}`,
-      )
-      process.exit(1)
-    }
-
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
-    const manifest = JSON.parse(fs.readFileSync(manifestJsonPath, 'utf8'))
-
-    // 2. バージョンフィールドの型チェック (防御的チェック)
-    if (typeof packageJson.version !== 'string') {
-      console.error(
-        `${LOG_MESSAGES.VERSION_SYNC_ERROR} 'version' field in package.json is missing or not a string.`,
-      )
-      process.exit(1)
-    }
-
-    // 3. バージョンの同期
-    if (manifest.version !== packageJson.version) {
-      manifest.version = packageJson.version
-      fs.writeFileSync(
-        manifestJsonPath,
-        JSON.stringify(manifest, null, 2) + '\n',
-      )
-      console.log(LOG_MESSAGES.UPDATED_VERSION(packageJson.version))
-    }
+    syncVersion()
   } catch (error) {
-    console.error(LOG_MESSAGES.VERSION_SYNC_ERROR, error)
+    console.error(error instanceof Error ? error.message : error)
     process.exit(1)
   }
 }
-
-syncVersion()
