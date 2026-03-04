@@ -280,40 +280,35 @@ describe('background service worker', () => {
       await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
     })
 
-    it('不許可拡張機能 (sender.id あり) をブロックすること', async () => {
-      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+    it.each([
+      {
+        name: '不許可拡張機能 (sender.id あり) をブロックすること',
+        sender: { id: 'other-extension-id', origin: ALLOWED_ORIGINS[0] },
+        expectedWarn: LOG_MESSAGES.UNAUTHORIZED_EXTENSION_MESSAGE,
+        expectedArg: 'other-extension-id',
+      },
+      {
+        name: '不許可オリジンをブロックすること',
+        sender: { origin: 'http://malicious.com' },
+        expectedWarn: LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE,
+        expectedArg: 'http://malicious.com',
+      },
+    ])('$name', async ({ sender, expectedWarn, expectedArg }) => {
+      const addListenerMock = vi.mocked(
+        chrome.runtime.onMessageExternal.addListener,
+      )
       const consoleSpy = vi.mocked(console.warn)
       await import('./background')
 
       const messageHandler = addListenerMock.mock.calls[0][0]
-      const sendResponse = vi.fn()
-
       const result = messageHandler(
         { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
-        { id: 'other-extension-id', origin: ALLOWED_ORIGINS[0] },
-        sendResponse
+        sender,
+        vi.fn(),
       )
 
       expect(result).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.UNAUTHORIZED_EXTENSION_MESSAGE, 'other-extension-id')
-    })
-
-    it('不許可オリジンをブロックすること', async () => {
-      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
-      const consoleSpy = vi.mocked(console.warn)
-      await import('./background')
-
-      const messageHandler = addListenerMock.mock.calls[0][0]
-      const sendResponse = vi.fn()
-
-      const result = messageHandler(
-        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
-        { origin: 'http://malicious.com' },
-        sendResponse
-      )
-
-      expect(result).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith(LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE, 'http://malicious.com')
+      expect(consoleSpy).toHaveBeenCalledWith(expectedWarn, expectedArg)
     })
 
     it('GET_API_CONFIG メッセージを受信した際に設定値を返すこと', async () => {
