@@ -1,10 +1,9 @@
-import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useApp } from './useApp'
 import { TEST_MESSAGES, HTML_ATTRIBUTES } from '@shared/constants'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
-import { renderHook } from '../test/utils'
+import { renderHook, waitFor, act } from '../test/utils'
 import { MOCK_BOOKMARK_1, VALID_URLS } from '@shared/test/fixtures'
 
 describe('useApp Hook (Integration)', () => {
@@ -42,13 +41,11 @@ describe('useApp Hook (Integration)', () => {
   const renderAppHook = async (initialUrl?: string) => {
     const renderResult = renderHook(() => useApp(), { initialUrl })
 
-    // isLoading が false になるまで待機 (act 内で実行)
-    await act(async () => {
-      await vi.waitFor(() => {
-        if (renderResult.result.current.isLoading) {
-          throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
-        }
-      })
+    // isLoading が false になるまで待機
+    await waitFor(() => {
+      if (renderResult.result.current.isLoading) {
+        throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
+      }
     })
 
     return renderResult
