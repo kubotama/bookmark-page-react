@@ -225,6 +225,32 @@ describe('background service worker', () => {
       })
     })
 
+    it('タブのアクティブ化 (onActivated) 時にアイコンを更新すること', async () => {
+      const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
+      const tabData = { id: 1, url: 'https://example.com', title: 'Example' }
+      vi.mocked(chrome.tabs.get).mockResolvedValue(tabData as chrome.tabs.Tab)
+      
+      await import('./background')
+
+      const handler = onActivatedMock.mock.calls[0][0]
+      await handler({ tabId: 1, windowId: 1 })
+
+      await vi.waitFor(() => {
+        expect(chrome.tabs.get).toHaveBeenCalledWith(1)
+      })
+    })
+
+    it('タブのアクティブ化時に tabs.get が失敗してもエラーを投げないこと', async () => {
+      const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
+      vi.mocked(chrome.tabs.get).mockRejectedValue(new Error('Tab not found'))
+      
+      await import('./background')
+
+      const handler = onActivatedMock.mock.calls[0][0]
+      // 例外が catch されて正常に終了することを期待
+      await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
+    })
+
     it('不許可拡張機能 (sender.id あり) をブロックすること', async () => {
       const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
       const consoleSpy = vi.mocked(console.warn)
