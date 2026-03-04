@@ -173,6 +173,24 @@ describe('background service worker', () => {
         })
       })
     })
+
+    it('API URL が未設定（undefined）の場合に NONE アイコンをセットすること', async () => {
+      vi.mocked(chrome.storage.sync.get).mockImplementation(() => {
+        return Promise.resolve({ [STORAGE_KEYS.API_URL]: undefined })
+      })
+      const onUpdatedMock = vi.mocked(chrome.tabs.onUpdated.addListener)
+      await import('./background')
+
+      const handler = onUpdatedMock.mock.calls[0][0]
+      await handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+
+      await vi.waitFor(() => {
+        expect(chrome.action.setIcon).toHaveBeenCalledWith({
+          tabId: 1,
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE]
+        })
+      })
+    })
   })
 
   describe('イベントリスナーとメッセージ', () => {
