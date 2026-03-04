@@ -228,7 +228,10 @@ describe('background service worker', () => {
     it('タブのアクティブ化 (onActivated) 時にアイコンを更新すること', async () => {
       const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
       const tabData = { id: 1, url: 'https://example.com', title: 'Example' }
-      vi.mocked(chrome.tabs.get).mockResolvedValue(tabData as chrome.tabs.Tab)
+      vi.mocked(chrome.tabs.get).mockImplementation((_id, callback) => {
+        if (callback) (callback as unknown as (tab: unknown) => void)(tabData)
+        return Promise.resolve(tabData as unknown as chrome.tabs.Tab)
+      })
       
       const mockApiUrl = 'http://localhost:3030'
       const mockBookmarks = {
@@ -240,7 +243,7 @@ describe('background service worker', () => {
       // storage.sync.get のモック
       vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
         const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-        if (callback) (callback as any)(data)
+        if (callback) (callback as unknown as (data: unknown) => void)(data)
         return Promise.resolve(data)
       })
 
