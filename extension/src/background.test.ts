@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
+  ALLOWED_ORIGINS,
   BOOKMARK_STATUS,
   EXTENSION_ICONS,
   EXTENSION_MESSAGE_TYPES,
-  STORAGE_KEYS,
   LOG_MESSAGES,
-  ALLOWED_ORIGINS,
+  STORAGE_KEYS,
 } from '@shared/constants'
 
 describe('background service worker', () => {
@@ -60,24 +61,27 @@ describe('background service worker', () => {
   describe('アイコン状態更新 (updateIconStatus)', () => {
     const mockApiUrl = 'http://localhost:3030'
     const mockBookmarks = {
-      bookmarks: [
-        { id: '1', title: 'Example', url: 'https://example.com' }
-      ]
+      bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
     }
 
     beforeEach(() => {
       // chrome.storage.sync.get のモック
-      vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
-        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-        if (callback) (callback as unknown as (data: unknown) => void)(data)
-        return Promise.resolve(data)
-      })
+      vi.mocked(chrome.storage.sync.get).mockImplementation(
+        (_keys, callback) => {
+          const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+          if (callback) (callback as unknown as (data: unknown) => void)(data)
+          return Promise.resolve(data)
+        },
+      )
 
       // fetch のグローバルモック
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: true, data: mockBookmarks })
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockBookmarks }),
+        }),
+      )
     })
 
     it('未登録の URL の場合にデフォルトアイコンをセットすること', async () => {
@@ -85,12 +89,15 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'https://new-site.com', title: 'New' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'https://new-site.com',
+        title: 'New',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE],
         })
       })
     })
@@ -100,12 +107,15 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'https://example.com',
+        title: 'Example',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.REGISTERED]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.REGISTERED],
         })
       })
     })
@@ -115,12 +125,15 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Modified' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'https://example.com',
+        title: 'Modified',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.MODIFIED]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.MODIFIED],
         })
       })
     })
@@ -133,28 +146,37 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'https://example.com',
+        title: 'Example',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
         })
       })
     })
 
     it('API エラー（接続不可）の場合に ERROR アイコンをセットすること', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network Error')))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('Network Error')),
+      )
       const onUpdatedMock = vi.mocked(chrome.tabs.onUpdated.addListener)
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'https://example.com',
+        title: 'Example',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
         })
       })
     })
@@ -164,12 +186,15 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'chrome://settings', title: 'Settings' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'chrome://settings',
+        title: 'Settings',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE],
         })
       })
     })
@@ -182,12 +207,15 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onUpdatedMock.mock.calls[0][0]
-      handler(1, { status: 'complete' }, { url: 'https://example.com', title: 'Example' } as chrome.tabs.Tab)
+      handler(1, { status: 'complete' }, {
+        url: 'https://example.com',
+        title: 'Example',
+      } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE],
         })
       })
     })
@@ -197,12 +225,17 @@ describe('background service worker', () => {
     it('API URL 設定変更時にキャッシュをクリアし全タブのアイコンを更新すること', async () => {
       const onChangedMock = vi.mocked(chrome.storage.onChanged.addListener)
       vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
-        (callback as unknown as (tabs: unknown[]) => void)([{ id: 1, url: 'https://example.com', title: 'Example' }])
+        ;(callback as unknown as (tabs: unknown[]) => void)([
+          { id: 1, url: 'https://example.com', title: 'Example' },
+        ])
       })
       await import('./background')
 
       const handler = onChangedMock.mock.calls[0][0]
-      handler({ [STORAGE_KEYS.API_URL]: { newValue: 'http://new-api.com' } }, 'sync')
+      handler(
+        { [STORAGE_KEYS.API_URL]: { newValue: 'http://new-api.com' } },
+        'sync',
+      )
 
       await vi.waitFor(() => {
         expect(chrome.tabs.query).toHaveBeenCalled()
@@ -213,12 +246,18 @@ describe('background service worker', () => {
       const onMessageMock = vi.mocked(chrome.runtime.onMessage.addListener)
       // query の戻り値を空にしないことで内部パスをカバー
       vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
-        (callback as unknown as (tabs: unknown[]) => void)([{ id: 1, url: 'https://example.com', title: 'Example' }])
+        ;(callback as unknown as (tabs: unknown[]) => void)([
+          { id: 1, url: 'https://example.com', title: 'Example' },
+        ])
       })
       await import('./background')
 
       const handler = onMessageMock.mock.calls[0][0]
-      handler({ type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE }, { origin: ALLOWED_ORIGINS[0] }, vi.fn())
+      handler(
+        { type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE },
+        { origin: ALLOWED_ORIGINS[0] },
+        vi.fn(),
+      )
 
       await vi.waitFor(() => {
         expect(chrome.tabs.query).toHaveBeenCalled()
@@ -232,26 +271,29 @@ describe('background service worker', () => {
         if (callback) (callback as unknown as (tab: unknown) => void)(tabData)
         return Promise.resolve(tabData as unknown as chrome.tabs.Tab)
       })
-      
+
       const mockApiUrl = 'http://localhost:3030'
       const mockBookmarks = {
-        bookmarks: [
-          { id: '1', title: 'Example', url: 'https://example.com' }
-        ]
+        bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
       }
 
       // storage.sync.get のモック
-      vi.mocked(chrome.storage.sync.get).mockImplementation((_keys, callback) => {
-        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-        if (callback) (callback as unknown as (data: unknown) => void)(data)
-        return Promise.resolve(data)
-      })
+      vi.mocked(chrome.storage.sync.get).mockImplementation(
+        (_keys, callback) => {
+          const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+          if (callback) (callback as unknown as (data: unknown) => void)(data)
+          return Promise.resolve(data)
+        },
+      )
 
       // fetch のモック
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: true, data: mockBookmarks })
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockBookmarks }),
+        }),
+      )
 
       await import('./background')
 
@@ -259,12 +301,12 @@ describe('background service worker', () => {
       handler({ tabId: 1, windowId: 1 })
 
       expect(chrome.tabs.get).toHaveBeenCalledWith(1)
-      
+
       // updateIconStatus が呼び出され、適切なアイコンがセットされたことを検証
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
-          path: EXTENSION_ICONS[BOOKMARK_STATUS.REGISTERED]
+          path: EXTENSION_ICONS[BOOKMARK_STATUS.REGISTERED],
         })
       })
     })
@@ -272,7 +314,7 @@ describe('background service worker', () => {
     it('タブのアクティブ化時に tabs.get が失敗してもエラーを投げないこと', async () => {
       const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
       vi.mocked(chrome.tabs.get).mockRejectedValue(new Error('Tab not found'))
-      
+
       await import('./background')
 
       const handler = onActivatedMock.mock.calls[0][0]
@@ -297,7 +339,7 @@ describe('background service worker', () => {
       const addListenerMock = vi.mocked(
         chrome.runtime.onMessageExternal.addListener,
       )
-      const consoleSpy = vi.mocked(console.warn)
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await import('./background')
 
       const messageHandler = addListenerMock.mock.calls[0][0]
@@ -312,13 +354,17 @@ describe('background service worker', () => {
     })
 
     it('GET_API_CONFIG メッセージを受信した際に設定値を返すこと', async () => {
-      const addListenerMock = vi.mocked(chrome.runtime.onMessageExternal.addListener)
+      const addListenerMock = vi.mocked(
+        chrome.runtime.onMessageExternal.addListener,
+      )
       const mockApiUrl = 'http://localhost:3030'
-      vi.mocked(chrome.storage.sync.get).mockImplementation((_key, callback) => {
-        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-        if (callback) (callback as unknown as (data: unknown) => void)(data)
-        return Promise.resolve(data)
-      })
+      vi.mocked(chrome.storage.sync.get).mockImplementation(
+        (_key, callback) => {
+          const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+          if (callback) (callback as unknown as (data: unknown) => void)(data)
+          return Promise.resolve(data)
+        },
+      )
 
       await import('./background')
 
@@ -328,13 +374,13 @@ describe('background service worker', () => {
       const result = messageHandler(
         { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
         { origin: ALLOWED_ORIGINS[0] },
-        sendResponse
+        sendResponse,
       )
 
       expect(result).toBe(true)
       expect(sendResponse).toHaveBeenCalledWith({
         success: true,
-        apiUrl: mockApiUrl
+        apiUrl: mockApiUrl,
       })
     })
   })
