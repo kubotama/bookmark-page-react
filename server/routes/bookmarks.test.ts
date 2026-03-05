@@ -35,6 +35,36 @@ describe('Bookmarks API', () => {
       .run(SEED_DATA_2.title, SEED_DATA_2.url, 1)
   }
 
+  const seedWithKeywords = () => {
+    const b1 = sqlite
+      .prepare(
+        'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?) RETURNING bookmark_id',
+      )
+      .get(SEED_DATA_1.title, SEED_DATA_1.url, 0) as { bookmark_id: number }
+
+    const k1 = sqlite
+      .prepare(
+        'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
+      )
+      .get('Tag1') as { keyword_id: number }
+    const k2 = sqlite
+      .prepare(
+        'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
+      )
+      .get('Tag2') as { keyword_id: number }
+
+    sqlite
+      .prepare(
+        'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
+      )
+      .run(b1.bookmark_id, k1.keyword_id)
+    sqlite
+      .prepare(
+        'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
+      )
+      .run(b1.bookmark_id, k2.keyword_id)
+  }
+
   describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
     it('空のリストを返すこと', async () => {
       const res = await app.request(API_PATHS.BOOKMARKS)
@@ -52,6 +82,23 @@ describe('Bookmarks API', () => {
       expect(body.data.bookmarks).toHaveLength(2)
       expect(body.data.bookmarks[0].title).toBe(SEED_DATA_1.title)
       expect(body.data.bookmarks[1].title).toBe(SEED_DATA_2.title)
+    })
+
+    it('関連付けられたキーワードを含めて返却されること', async () => {
+      seedWithKeywords()
+      const res = await app.request(API_PATHS.BOOKMARKS)
+      expect(res.status).toBe(HTTP_STATUS.OK)
+      const body = await res.json()
+
+      const bookmark = body.data.bookmarks[0]
+      expect(bookmark.keywords).toBeDefined()
+      expect(bookmark.keywords).toHaveLength(2)
+      expect(bookmark.keywords).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'Tag1' }),
+          expect.objectContaining({ name: 'Tag2' }),
+        ]),
+      )
     })
   })
 
@@ -249,7 +296,7 @@ describe('Bookmarks API', () => {
 
     it('GET: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'select').mockImplementation(() => {
+      vi.spyOn(db.query.bookmarks, 'findMany').mockImplementation(() => {
         throw dbError
       })
       const res = await app.request(API_PATHS.BOOKMARKS)

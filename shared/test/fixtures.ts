@@ -7,6 +7,7 @@ export const MOCK_BOOKMARK_1: Bookmark = {
   title: `${MOCK_BOOKMARK_TITLE_PREFIX} 1`,
   url: 'https://example.com/1',
   sortOrder: 0,
+  keywords: [],
 }
 
 export const MOCK_BOOKMARK_2: Bookmark = {
@@ -14,6 +15,7 @@ export const MOCK_BOOKMARK_2: Bookmark = {
   title: `${MOCK_BOOKMARK_TITLE_PREFIX} 2`,
   url: 'https://example.com/2',
   sortOrder: 1,
+  keywords: [],
 }
 
 export const MOCK_BOOKMARKS = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]

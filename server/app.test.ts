@@ -30,7 +30,7 @@ describe('App Global Handlers', () => {
   it('未キャッチのエラーが発生した際に 500 エラーを共通形式で返すこと', async () => {
     const dbError = new Error('Test unhandled error')
     // 既存のエンドポイントでエラーを発生させる
-    vi.spyOn(db, 'select').mockImplementation(() => {
+    vi.spyOn(db.query.bookmarks, 'findMany').mockImplementation(() => {
       throw dbError
     })
 

@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { eq, asc, sql, inArray } from 'drizzle-orm'
+import { eq, sql, inArray } from 'drizzle-orm'
 
 import { zValidator } from '@hono/zod-validator'
 import { ERROR_MESSAGES, LOG_MESSAGES, HTTP_STATUS } from '@shared/constants'
 import {
   BookmarkIdSchema,
+  KeywordIdSchema,
   bookmarksResponseSchema,
   createBookmarkSchema,
   updateBookmarkSchema,
@@ -19,21 +20,26 @@ import { isUniqueConstraintError, API_ERROR_CODES } from '../utils/error'
 const bookmarksRoute = new Hono()
   .get('/', async (c) => {
     try {
-      const rows = await db
-        .select({
-          id: bookmarksTable.bookmarkId,
-          title: bookmarksTable.title,
-          url: bookmarksTable.url,
-          sortOrder: bookmarksTable.sortOrder,
-        })
-        .from(bookmarksTable)
-        .orderBy(asc(bookmarksTable.sortOrder))
+      const rows = await db.query.bookmarks.findMany({
+        with: {
+          bookmarkKeywords: {
+            with: {
+              keyword: true,
+            },
+          },
+        },
+        orderBy: (bookmarks, { asc }) => [asc(bookmarks.sortOrder)],
+      })
 
       const bookmarks = rows.map((row) => ({
-        id: BookmarkIdSchema.parse(String(row.id)),
+        id: BookmarkIdSchema.parse(String(row.bookmarkId)),
         title: row.title,
         url: row.url,
         sortOrder: row.sortOrder,
+        keywords: row.bookmarkKeywords.map((bk) => ({
+          id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
+          name: bk.keyword.keywordName,
+        })),
       }))
 
       const result = bookmarksResponseSchema.parse({ bookmarks })
@@ -70,6 +76,7 @@ const bookmarksRoute = new Hono()
             title: row.title,
             url: row.url,
             sortOrder: row.sortOrder,
+            keywords: [],
           },
         },
         HTTP_STATUS.CREATED,
@@ -159,13 +166,31 @@ const bookmarksRoute = new Hono()
           )
         }
 
+        // 最新のキーワード情報を含めて再取得
+        const updatedRow = await db.query.bookmarks.findFirst({
+          where: eq(bookmarksTable.bookmarkId, bookmarkId),
+          with: {
+            bookmarkKeywords: {
+              with: {
+                keyword: true,
+              },
+            },
+          },
+        })
+
+        if (!updatedRow) throw new Error(LOG_MESSAGES.FETCH_BOOKMARKS_FAILED)
+
         return c.json({
           success: true,
           data: {
-            id: BookmarkIdSchema.parse(String(row.id)),
-            title: row.title,
-            url: row.url,
-            sortOrder: row.sortOrder,
+            id: BookmarkIdSchema.parse(String(updatedRow.bookmarkId)),
+            title: updatedRow.title,
+            url: updatedRow.url,
+            sortOrder: updatedRow.sortOrder,
+            keywords: updatedRow.bookmarkKeywords.map((bk) => ({
+              id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
+              name: bk.keyword.keywordName,
+            })),
           },
         })
       } catch (error) {
