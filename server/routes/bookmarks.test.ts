@@ -23,16 +23,11 @@ describe('Bookmarks API', () => {
   const SEED_DATA_2 = { title: 'Google', url: VALID_URLS.GOOGLE }
 
   const seed = () => {
-    sqlite
-      .prepare(
-        'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?)',
-      )
-      .run(SEED_DATA_1.title, SEED_DATA_1.url, 0)
-    sqlite
-      .prepare(
-        'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?)',
-      )
-      .run(SEED_DATA_2.title, SEED_DATA_2.url, 1)
+    const insertBookmarkStmt = sqlite.prepare(
+      'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?)',
+    )
+    insertBookmarkStmt.run(SEED_DATA_1.title, SEED_DATA_1.url, 0)
+    insertBookmarkStmt.run(SEED_DATA_2.title, SEED_DATA_2.url, 1)
   }
 
   const seedWithKeywords = () => {
@@ -42,27 +37,17 @@ describe('Bookmarks API', () => {
       )
       .get(SEED_DATA_1.title, SEED_DATA_1.url, 0) as { bookmark_id: number }
 
-    const k1 = sqlite
-      .prepare(
-        'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
-      )
-      .get('Tag1') as { keyword_id: number }
-    const k2 = sqlite
-      .prepare(
-        'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
-      )
-      .get('Tag2') as { keyword_id: number }
+    const insertKeywordStmt = sqlite.prepare(
+      'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
+    )
+    const k1 = insertKeywordStmt.get('Tag1') as { keyword_id: number }
+    const k2 = insertKeywordStmt.get('Tag2') as { keyword_id: number }
 
-    sqlite
-      .prepare(
-        'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
-      )
-      .run(b1.bookmark_id, k1.keyword_id)
-    sqlite
-      .prepare(
-        'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
-      )
-      .run(b1.bookmark_id, k2.keyword_id)
+    const insertRelationStmt = sqlite.prepare(
+      'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
+    )
+    insertRelationStmt.run(b1.bookmark_id, k1.keyword_id)
+    insertRelationStmt.run(b1.bookmark_id, k2.keyword_id)
   }
 
   describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
