@@ -11,11 +11,42 @@ import {
   createBookmarkSchema,
   updateBookmarkSchema,
   reorderBookmarksSchema,
+  type Bookmark,
 } from '@shared/schemas/bookmark'
 
 import { db } from '../db'
 import { bookmarks as bookmarksTable } from '../db/schema'
 import { isUniqueConstraintError, API_ERROR_CODES } from '../utils/error'
+
+/**
+ * データベースのクエリ結果（キーワード包含）の型定義
+ */
+interface BookmarkQueryResult {
+  bookmarkId: number
+  title: string
+  url: string
+  sortOrder: number
+  bookmarkKeywords: {
+    keyword: {
+      keywordId: number
+      keywordName: string
+    }
+  }[]
+}
+
+/**
+ * DB のクエリ結果から API レスポンス形式 (DTO) へ変換するヘルパー
+ */
+const toBookmarkDto = (row: BookmarkQueryResult): Bookmark => ({
+  id: BookmarkIdSchema.parse(String(row.bookmarkId)),
+  title: row.title,
+  url: row.url,
+  sortOrder: row.sortOrder,
+  keywords: row.bookmarkKeywords.map((bk) => ({
+    id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
+    name: bk.keyword.keywordName,
+  })),
+})
 
 const bookmarksRoute = new Hono()
   .get('/', async (c) => {
@@ -31,16 +62,7 @@ const bookmarksRoute = new Hono()
         orderBy: (bookmarks, { asc }) => [asc(bookmarks.sortOrder)],
       })
 
-      const bookmarks = rows.map((row) => ({
-        id: BookmarkIdSchema.parse(String(row.bookmarkId)),
-        title: row.title,
-        url: row.url,
-        sortOrder: row.sortOrder,
-        keywords: row.bookmarkKeywords.map((bk) => ({
-          id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
-          name: bk.keyword.keywordName,
-        })),
-      }))
+      const bookmarks = rows.map(toBookmarkDto)
 
       const result = bookmarksResponseSchema.parse({ bookmarks })
       return c.json({
@@ -182,16 +204,7 @@ const bookmarksRoute = new Hono()
 
         return c.json({
           success: true,
-          data: {
-            id: BookmarkIdSchema.parse(String(updatedRow.bookmarkId)),
-            title: updatedRow.title,
-            url: updatedRow.url,
-            sortOrder: updatedRow.sortOrder,
-            keywords: updatedRow.bookmarkKeywords.map((bk) => ({
-              id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
-              name: bk.keyword.keywordName,
-            })),
-          },
+          data: toBookmarkDto(updatedRow),
         })
       } catch (error) {
         if (isUniqueConstraintError(error)) {
