@@ -189,7 +189,11 @@ import { render, renderHook } from './test/utils'
       {
         "id": "1",
         "title": "Example",
-        "url": "https://example.com"
+        "url": "https://example.com",
+        "sortOrder": 0,
+        "keywords": [
+          { "id": "10", "name": "開発" }
+        ]
       }
     ]
   }
@@ -217,7 +221,9 @@ import { render, renderHook } from './test/utils'
   "data": {
     "id": "2",
     "title": "GitHub",
-    "url": "https://github.com"
+    "url": "https://github.com",
+    "sortOrder": 1,
+    "keywords": []
   }
 }
 ```
@@ -256,7 +262,25 @@ import { render, renderHook } from './test/utils'
 
 **レスポンス:**
 
-- **200 OK**: 更新成功。更新後のオブジェクトを `data` に含めて返却
+- **200 OK**: 更新成功。更新後のオブジェクトを `data` に含めて返却。キーワード情報も含まれます。
+
+**レスポンス例:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "1",
+    "title": "新しいタイトル",
+    "url": "https://updated-example.com",
+    "sortOrder": 0,
+    "keywords": [
+      { "id": "10", "name": "開発" }
+    ]
+  }
+}
+```
+
 - **400 Bad Request**: リクエスト形式または ID が不正な場合
 - **404 Not Found**: 指定された ID が存在しない
 - **409 Conflict**: 更新後の URL が既に登録されている場合

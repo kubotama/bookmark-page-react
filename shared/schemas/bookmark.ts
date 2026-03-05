@@ -8,6 +8,18 @@ export const BookmarkIdSchema = z
   .brand<'BookmarkId'>()
 export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 
+export const KeywordIdSchema = z
+  .string()
+  .regex(/^[1-9]\d*$/)
+  .brand<'KeywordId'>()
+export type KeywordId = z.infer<typeof KeywordIdSchema>
+
+export const keywordSchema = z.object({
+  id: KeywordIdSchema,
+  name: z.string(),
+})
+export type Keyword = z.infer<typeof keywordSchema>
+
 export const bookmarkSchema = z.object({
   id: BookmarkIdSchema,
   title: z.string(),
@@ -18,6 +30,7 @@ export const bookmarkSchema = z.object({
       message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     }),
   sortOrder: z.number(),
+  keywords: z.array(keywordSchema),
 })
 
 export type Bookmark = z.infer<typeof bookmarkSchema>
