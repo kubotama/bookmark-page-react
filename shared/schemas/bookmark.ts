@@ -1,24 +1,22 @@
 import { z } from 'zod'
 import { isHttpUrl } from '../utils/url'
 import { VALIDATION_MESSAGES } from '../constants'
+import {
+  keywordSchema,
+} from './keyword'
+
+export {
+  KeywordIdSchema,
+  keywordSchema,
+  type KeywordId,
+  type Keyword,
+} from './keyword'
 
 export const BookmarkIdSchema = z
   .string()
   .regex(/^[1-9]\d*$/)
   .brand<'BookmarkId'>()
 export type BookmarkId = z.infer<typeof BookmarkIdSchema>
-
-export const KeywordIdSchema = z
-  .string()
-  .regex(/^[1-9]\d*$/)
-  .brand<'KeywordId'>()
-export type KeywordId = z.infer<typeof KeywordIdSchema>
-
-export const keywordSchema = z.object({
-  id: KeywordIdSchema,
-  name: z.string(),
-})
-export type Keyword = z.infer<typeof keywordSchema>
 
 export const bookmarkSchema = z.object({
   id: BookmarkIdSchema,
