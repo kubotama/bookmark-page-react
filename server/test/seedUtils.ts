@@ -1,18 +1,24 @@
 import { z } from 'zod'
 import { sqlite } from '../db'
+import type { Statement } from 'better-sqlite3'
 
 const BookmarkIdResultSchema = z.object({ bookmark_id: z.number() })
 const KeywordIdResultSchema = z.object({ keyword_id: z.number() })
+
+let insertBookmarkStmt: Statement | undefined
+let insertKeywordStmt: Statement | undefined
+let attachKeywordStmt: Statement | undefined
 
 /**
  * テスト用のブックマークを作成する
  */
 export const createBookmark = (title: string, url: string, sortOrder = 0) => {
-  const row = sqlite
-    .prepare(
+  if (!insertBookmarkStmt) {
+    insertBookmarkStmt = sqlite.prepare(
       'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?) RETURNING bookmark_id',
     )
-    .get(title, url, sortOrder)
+  }
+  const row = insertBookmarkStmt.get(title, url, sortOrder)
   return BookmarkIdResultSchema.parse(row)
 }
 
@@ -20,11 +26,12 @@ export const createBookmark = (title: string, url: string, sortOrder = 0) => {
  * テスト用のキーワードを作成する
  */
 export const createKeyword = (name: string) => {
-  const row = sqlite
-    .prepare(
+  if (!insertKeywordStmt) {
+    insertKeywordStmt = sqlite.prepare(
       'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
     )
-    .get(name)
+  }
+  const row = insertKeywordStmt.get(name)
   return KeywordIdResultSchema.parse(row)
 }
 
@@ -32,9 +39,10 @@ export const createKeyword = (name: string) => {
  * ブックマークとキーワードを紐付ける
  */
 export const attachKeyword = (bookmarkId: number, keywordId: number) => {
-  return sqlite
-    .prepare(
+  if (!attachKeywordStmt) {
+    attachKeywordStmt = sqlite.prepare(
       'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
     )
-    .run(bookmarkId, keywordId)
+  }
+  return attachKeywordStmt.run(bookmarkId, keywordId)
 }
