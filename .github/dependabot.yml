@@ -15,9 +15,11 @@ updates:
     labels:
       - 'type:chore'
     ignore:
-      - dependency-name: 'eslint'
+      - dependency-name: 'eslint*'
         update-types: ['version-update:semver-major']
-      - dependency-name: '@eslint/js'
+      - dependency-name: '@eslint*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'typescript-eslint'
         update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'chore(deps)'
