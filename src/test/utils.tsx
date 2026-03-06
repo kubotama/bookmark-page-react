@@ -2,6 +2,7 @@ import { useMemo, type ReactNode, type ReactElement } from 'react'
 import { render, renderHook } from '@testing-library/react'
 import type { RenderOptions, RenderHookOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { ApiProvider } from '../contexts/ApiContext'
 
 /**
@@ -23,22 +24,24 @@ export const createTestQueryClient = () =>
 /**
  * すべての Provider で包むラッパーコンポーネント
  */
-export const AllTheProviders = ({ 
-  children, 
-  initialUrl 
-}: { 
-  children: ReactNode, 
-  initialUrl?: string 
+export const AllTheProviders = ({
+  children,
+  initialUrl,
+}: {
+  children: ReactNode
+  initialUrl?: string
 }) => {
   // QueryClient をメモ化して再生成を防ぐ
   const queryClient = useMemo(() => createTestQueryClient(), [])
-  
+
   return (
-    <ApiProvider initialUrl={initialUrl}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </ApiProvider>
+    <MemoryRouter initialEntries={['/']}>
+      <ApiProvider initialUrl={initialUrl}>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </ApiProvider>
+    </MemoryRouter>
   )
 }
 
@@ -47,7 +50,7 @@ export const AllTheProviders = ({
  */
 const customRender = (
   ui: ReactElement,
-  options?: RenderOptions & { initialUrl?: string }
+  options?: RenderOptions & { initialUrl?: string },
 ) => {
   const { wrapper: Wrapper, initialUrl, ...rest } = options || {}
 
@@ -64,7 +67,7 @@ const customRender = (
  */
 const customRenderHook = <Result, Props>(
   hookRender: (initialProps: Props) => Result,
-  options?: RenderHookOptions<Props> & { initialUrl?: string }
+  options?: RenderHookOptions<Props> & { initialUrl?: string },
 ) => {
   const { wrapper: Wrapper, initialUrl, ...rest } = options || {}
 

@@ -1,30 +1,19 @@
+import { Routes, Route } from 'react-router-dom'
 import './App.css'
-import { BookmarkList } from './components/BookmarkList'
-import { BookmarkDetail } from './components/BookmarkDetail'
 import { SettingsPanel } from './components/SettingsPanel'
 import { useApp } from './hooks/useApp'
 import { FIELD_LABELS } from '@shared/constants'
+import { HomePage } from './pages/HomePage'
 
 function App() {
+  const appState = useApp()
   const {
-    bookmarks,
-    selectedBookmark,
-    selectedId,
-    isLoading,
-    error,
     showSettings,
     currentApiUrl,
-    handleRowClick,
-    handleDoubleClick,
-    handleUpdate,
-    handleDelete,
-    handleOpen,
-    handleClose,
-    handleReorder,
     handleSaveSettings,
     toggleSettings,
     closeSettings,
-  } = useApp()
+  } = appState
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden">
@@ -67,36 +56,9 @@ function App() {
         />
       )}
 
-      <main className="flex-1 flex justify-center overflow-hidden">
-        <div className="w-full max-w-2xl flex flex-col h-full shadow-xl">
-          <div className="flex-1 overflow-y-auto pt-4 pb-4 px-4">
-            <BookmarkList
-              bookmarks={bookmarks}
-              isLoading={isLoading}
-              error={error}
-              selectedId={selectedId}
-              onRowClick={handleRowClick}
-              onDoubleClick={handleDoubleClick}
-              onClose={handleClose}
-              onReorder={handleReorder}
-            />
-          </div>
-        </div>
-      </main>
-
-      {selectedBookmark && (
-        <footer className="w-full flex justify-center border-t border-gray-200 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.1)] z-10">
-          <div className="w-full max-w-2xl">
-            <BookmarkDetail
-              bookmark={selectedBookmark}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onOpen={handleOpen}
-              onClose={handleClose}
-            />
-          </div>
-        </footer>
-      )}
+      <Routes>
+        <Route path="/" element={<HomePage appState={appState} />} />
+      </Routes>
     </div>
   )
 }
