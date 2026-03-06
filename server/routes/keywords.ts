@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { sql } from 'drizzle-orm'
+import { eq, count } from 'drizzle-orm'
 import { db } from '../db'
 import { keywords as keywordsTable, bookmarkKeywords } from '../db/schema'
 import {
@@ -16,20 +16,20 @@ const keywordsRoute = new Hono().get('/', async (c) => {
       .select({
         id: keywordsTable.keywordId,
         name: keywordsTable.keywordName,
-        bookmarkCount: sql<number>`count(${bookmarkKeywords.bookmarkId})`,
+        bookmarkCount: count(bookmarkKeywords.bookmarkId),
       })
       .from(keywordsTable)
       .leftJoin(
         bookmarkKeywords,
-        sql`${keywordsTable.keywordId} = ${bookmarkKeywords.keywordId}`,
+        eq(keywordsTable.keywordId, bookmarkKeywords.keywordId),
       )
-      .groupBy(keywordsTable.keywordId)
+      .groupBy(keywordsTable.keywordId, keywordsTable.keywordName)
       .orderBy(keywordsTable.keywordName)
 
     const keywords = rows.map((row) => ({
       id: KeywordIdSchema.parse(String(row.id)),
       name: row.name,
-      bookmarkCount: Number(row.bookmarkCount),
+      bookmarkCount: row.bookmarkCount,
     }))
 
     const result = keywordsResponseSchema.parse({ keywords })
