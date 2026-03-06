@@ -33,6 +33,9 @@
     ],
     "*.{json,md,css}": [
       "prettier --write"
+    ],
+    "**/*.{ts,tsx}": [
+      "bash -c 'npm run type-check'"
     ]
   },
   "engines": {
