@@ -29,13 +29,11 @@
   "lint-staged": {
     "**/*.{ts,tsx}": [
       "prettier --write",
-      "eslint --fix"
+      "eslint --fix",
+      "bash -c 'npm run type-check'"
     ],
     "**/*.{json,md,css}": [
       "prettier --write"
-    ],
-    "**/*.{ts,tsx}": [
-      "bash -c 'npm run type-check'"
     ]
   },
   "engines": {
