@@ -11,29 +11,27 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
   })
 
   const seed = () => {
+    const createBookmark = (title: string, url: string) =>
+      sqlite
+        .prepare(
+          'INSERT INTO bookmarks (title, url) VALUES (?, ?) RETURNING bookmark_id',
+        )
+        .get(title, url) as { bookmark_id: number }
+
+    const createKeywordWithId = (name: string) =>
+      sqlite
+        .prepare(
+          'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
+        )
+        .get(name) as { keyword_id: number }
+
     // ブックマーク作成
-    const b1 = sqlite
-      .prepare(
-        'INSERT INTO bookmarks (title, url) VALUES (?, ?) RETURNING bookmark_id',
-      )
-      .get('B1', VALID_URLS.HTTP) as { bookmark_id: number }
-    const b2 = sqlite
-      .prepare(
-        'INSERT INTO bookmarks (title, url) VALUES (?, ?) RETURNING bookmark_id',
-      )
-      .get('B2', VALID_URLS.HTTPS) as { bookmark_id: number }
+    const b1 = createBookmark('B1', VALID_URLS.HTTP)
+    const b2 = createBookmark('B2', VALID_URLS.HTTPS)
 
     // キーワード作成
-    const k1 = sqlite
-      .prepare(
-        'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
-      )
-      .get('Tag1') as { keyword_id: number }
-    const k2 = sqlite
-      .prepare(
-        'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
-      )
-      .get('Tag2') as { keyword_id: number }
+    const k1 = createKeywordWithId('Tag1')
+    const k2 = createKeywordWithId('Tag2')
     sqlite.prepare('INSERT INTO keywords (keyword_name) VALUES (?)').run('Tag3') // 使われないキーワード
 
     // 紐付け (Tag1: 2件, Tag2: 1件, Tag3: 0件)
