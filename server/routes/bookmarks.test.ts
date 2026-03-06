@@ -11,6 +11,7 @@ import { VALID_URLS } from '@shared/test/fixtures'
 import app from '../app'
 import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
 import { API_ERROR_CODES } from '../utils/error'
+import { createBookmark, createKeyword, attachKeyword } from '../test/seedUtils'
 
 describe('Bookmarks API', () => {
   beforeEach(() => {
@@ -23,31 +24,17 @@ describe('Bookmarks API', () => {
   const SEED_DATA_2 = { title: 'Google', url: VALID_URLS.GOOGLE }
 
   const seed = () => {
-    const insertBookmarkStmt = sqlite.prepare(
-      'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?)',
-    )
-    insertBookmarkStmt.run(SEED_DATA_1.title, SEED_DATA_1.url, 0)
-    insertBookmarkStmt.run(SEED_DATA_2.title, SEED_DATA_2.url, 1)
+    createBookmark(SEED_DATA_1.title, SEED_DATA_1.url, 0)
+    createBookmark(SEED_DATA_2.title, SEED_DATA_2.url, 1)
   }
 
   const seedWithKeywords = () => {
-    const b1 = sqlite
-      .prepare(
-        'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?) RETURNING bookmark_id',
-      )
-      .get(SEED_DATA_1.title, SEED_DATA_1.url, 0) as { bookmark_id: number }
+    const b1 = createBookmark(SEED_DATA_1.title, SEED_DATA_1.url, 0)
+    const k1 = createKeyword('Tag1')
+    const k2 = createKeyword('Tag2')
 
-    const insertKeywordStmt = sqlite.prepare(
-      'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
-    )
-    const k1 = insertKeywordStmt.get('Tag1') as { keyword_id: number }
-    const k2 = insertKeywordStmt.get('Tag2') as { keyword_id: number }
-
-    const insertRelationStmt = sqlite.prepare(
-      'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
-    )
-    insertRelationStmt.run(b1.bookmark_id, k1.keyword_id)
-    insertRelationStmt.run(b1.bookmark_id, k2.keyword_id)
+    attachKeyword(b1.bookmark_id, k1.keyword_id)
+    attachKeyword(b1.bookmark_id, k2.keyword_id)
   }
 
   describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
