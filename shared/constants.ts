@@ -301,6 +301,7 @@ export const LOG_MESSAGES = {
   UPDATED_VERSION: (version: string) =>
     `[sync-version] Updated manifest.json version to ${version}`,
   BLOCKED_NON_HTTP_URL: (url: string) => `Blocked opening non-HTTP URL: ${url}`,
+  FETCH_KEYWORDS_FAILED: 'Failed to fetch keywords:',
 } as const
 
 /**

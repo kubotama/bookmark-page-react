@@ -38,7 +38,7 @@ const keywordsRoute = new Hono().get('/', async (c) => {
       data: result,
     })
   } catch (error) {
-    console.error(LOG_MESSAGES.FETCH_BOOKMARKS_FAILED, error) // TODO: 適切なメッセージ定数があれば差し替え
+    console.error(LOG_MESSAGES.FETCH_KEYWORDS_FAILED, error)
     throw error
   }
 })
