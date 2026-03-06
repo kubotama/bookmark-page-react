@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 
 import bookmarksRoute from './routes/bookmarks'
+import keywordsRoute from './routes/keywords'
 import { API_ERROR_CODES } from './utils/error'
 
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
@@ -66,7 +67,10 @@ app.notFound((c) => {
 })
 
 // APIルートの定義
-export const api = app.basePath('/api').route('/bookmarks', bookmarksRoute)
+export const api = app
+  .basePath('/api')
+  .route('/bookmarks', bookmarksRoute)
+  .route('/keywords', keywordsRoute)
 
 export type AppType = typeof api
 

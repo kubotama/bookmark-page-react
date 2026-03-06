@@ -225,6 +225,7 @@ export const HTML_ATTRIBUTES = {
  */
 export const API_PATHS = {
   BOOKMARKS: '/api/bookmarks',
+  KEYWORDS: '/api/keywords',
 } as const
 
 export const HTTP_STATUS = {
