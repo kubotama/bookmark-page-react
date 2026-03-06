@@ -3,6 +3,7 @@ import { API_PATHS, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import { VALID_URLS } from '@shared/test/fixtures'
 import app from '../app'
 import { sqlite, initializeDatabase, resetDatabase } from '../db'
+import { createBookmark, createKeyword, attachKeyword } from '../test/seedUtils'
 
 describe(`GET ${API_PATHS.KEYWORDS}`, () => {
   beforeEach(() => {
@@ -11,36 +12,19 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
   })
 
   const seed = () => {
-    const createBookmark = (title: string, url: string) =>
-      sqlite
-        .prepare(
-          'INSERT INTO bookmarks (title, url) VALUES (?, ?) RETURNING bookmark_id',
-        )
-        .get(title, url) as { bookmark_id: number }
-
-    const createKeywordWithId = (name: string) =>
-      sqlite
-        .prepare(
-          'INSERT INTO keywords (keyword_name) VALUES (?) RETURNING keyword_id',
-        )
-        .get(name) as { keyword_id: number }
-
     // ブックマーク作成
     const b1 = createBookmark('B1', VALID_URLS.HTTP)
     const b2 = createBookmark('B2', VALID_URLS.HTTPS)
 
     // キーワード作成
-    const k1 = createKeywordWithId('Tag1')
-    const k2 = createKeywordWithId('Tag2')
+    const k1 = createKeyword('Tag1')
+    const k2 = createKeyword('Tag2')
     sqlite.prepare('INSERT INTO keywords (keyword_name) VALUES (?)').run('Tag3') // 使われないキーワード
 
     // 紐付け (Tag1: 2件, Tag2: 1件, Tag3: 0件)
-    const insertRel = sqlite.prepare(
-      'INSERT INTO bookmark_keywords (bookmark_id, keyword_id) VALUES (?, ?)',
-    )
-    insertRel.run(b1.bookmark_id, k1.keyword_id)
-    insertRel.run(b2.bookmark_id, k1.keyword_id)
-    insertRel.run(b2.bookmark_id, k2.keyword_id)
+    attachKeyword(b1.bookmark_id, k1.keyword_id)
+    attachKeyword(b2.bookmark_id, k1.keyword_id)
+    attachKeyword(b2.bookmark_id, k2.keyword_id)
   }
 
   it('登録済みのキーワードとブックマーク数を返すこと', async () => {
