@@ -26,7 +26,7 @@ interface BookmarkQueryResult {
   title: string
   url: string
   sortOrder: number
-  bookmarkKeywords: {
+  bookmarkKeywords?: {
     keyword: {
       keywordId: number
       keywordName: string
@@ -42,10 +42,11 @@ const toBookmarkDto = (row: BookmarkQueryResult): Bookmark => ({
   title: row.title,
   url: row.url,
   sortOrder: row.sortOrder,
-  keywords: row.bookmarkKeywords.map((bk) => ({
-    id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
-    name: bk.keyword.keywordName,
-  })),
+  keywords:
+    row.bookmarkKeywords?.map((bk) => ({
+      id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
+      name: bk.keyword.keywordName,
+    })) ?? [],
 })
 
 const bookmarksRoute = new Hono()
@@ -82,7 +83,7 @@ const bookmarksRoute = new Hono()
         .insert(bookmarksTable)
         .values({ title, url })
         .returning({
-          id: bookmarksTable.bookmarkId,
+          bookmarkId: bookmarksTable.bookmarkId,
           title: bookmarksTable.title,
           url: bookmarksTable.url,
           sortOrder: bookmarksTable.sortOrder,
@@ -93,13 +94,7 @@ const bookmarksRoute = new Hono()
       return c.json(
         {
           success: true,
-          data: {
-            id: BookmarkIdSchema.parse(String(row.id)),
-            title: row.title,
-            url: row.url,
-            sortOrder: row.sortOrder,
-            keywords: [],
-          },
+          data: toBookmarkDto(row),
         },
         HTTP_STATUS.CREATED,
       )
@@ -168,12 +163,7 @@ const bookmarksRoute = new Hono()
           .update(bookmarksTable)
           .set(updates)
           .where(eq(bookmarksTable.bookmarkId, bookmarkId))
-          .returning({
-            id: bookmarksTable.bookmarkId,
-            title: bookmarksTable.title,
-            url: bookmarksTable.url,
-            sortOrder: bookmarksTable.sortOrder,
-          })
+          .returning()
 
         if (!row) {
           return c.json(
