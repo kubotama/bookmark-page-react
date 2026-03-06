@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { API_PATHS, HTTP_STATUS } from '@shared/constants'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { API_PATHS, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import { VALID_URLS } from '@shared/test/fixtures'
 import app from '../app'
 import { sqlite, initializeDatabase, resetDatabase } from '../db'
@@ -64,5 +64,27 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
     expect(res.status).toBe(HTTP_STATUS.OK)
     const body = await res.json()
     expect(body.data.keywords).toEqual([])
+  })
+
+  describe('Database Error Handling', () => {
+    it('データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const dbError = new Error('Database error')
+
+      // API 実行中にエラーを発生させる
+      vi.spyOn(sqlite, 'prepare').mockImplementation(() => {
+        throw dbError
+      })
+
+      const res = await app.request(API_PATHS.KEYWORDS)
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+
+      const body = await res.json()
+      expect(body.success).toBe(false)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.FETCH_KEYWORDS_FAILED,
+        dbError,
+      )
+    })
   })
 })
