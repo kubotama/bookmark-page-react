@@ -23,7 +23,17 @@
     "test:coverage": "vitest run --coverage",
     "extension:dev": "tsx extension/sync-version.ts && vite --config extension/vite.config.ts",
     "extension:build": "tsx extension/sync-version.ts && tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
-    "type-check:extension": "tsc -p extension/tsconfig.json --noEmit"
+    "type-check:extension": "tsc -p extension/tsconfig.json --noEmit",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=20"
@@ -64,7 +74,9 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.3.0",
+    "husky": "^9.1.7",
     "jsdom": "^28.1.0",
+    "lint-staged": "^15.4.3",
     "msw": "^2.12.10",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
