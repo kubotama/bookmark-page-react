@@ -19,7 +19,7 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
     // キーワード作成
     const k1 = createKeyword('Tag1')
     const k2 = createKeyword('Tag2')
-    sqlite.prepare('INSERT INTO keywords (keyword_name) VALUES (?)').run('Tag3') // 使われないキーワード
+    createKeyword('Tag3') // 使われないキーワード
 
     // 紐付け (Tag1: 2件, Tag2: 1件, Tag3: 0件)
     attachKeyword(b1.bookmark_id, k1.keyword_id)
