@@ -43,22 +43,6 @@ describe('useBookmarkCommands Hook', () => {
     })
   })
 
-  it('handleDoubleClick で ID が選択され、URL が開かれること', async () => {
-    const openUrlSpy = vi
-      .spyOn(urlUtils, 'openUrlInNewTab')
-      .mockImplementation(() => {})
-    const { result } = renderHook(() =>
-      useBookmarkCommands(undefined, mockSetSelectedId),
-    )
-
-    act(() => {
-      result.current.handleDoubleClick(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_1.url)
-    })
-
-    expect(mockSetSelectedId).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
-    expect(openUrlSpy).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
-  })
-
   it('handleUpdate が正しくミューテーションを呼び出すこと', async () => {
     const { result } = renderHook(() =>
       useBookmarkCommands(MOCK_BOOKMARK_1, mockSetSelectedId),

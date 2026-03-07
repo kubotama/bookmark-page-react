@@ -9,7 +9,7 @@ interface BookmarkItemProps {
   isSelected: boolean
   isFocusable: boolean
   onRowClick: (id: BookmarkId) => void
-  onDoubleClick: (id: BookmarkId, url: string) => void
+  onOpen: () => void
   onClose: () => void
 }
 
@@ -19,7 +19,7 @@ export const BookmarkItem = memo(
     isSelected,
     isFocusable,
     onRowClick,
-    onDoubleClick,
+    onOpen,
     onClose,
   }: BookmarkItemProps) => {
     const {
@@ -36,14 +36,14 @@ export const BookmarkItem = memo(
       transition,
       opacity: isDragging ? 0.5 : 1,
       zIndex: isDragging ? 50 : undefined,
-      position: isDragging ? 'relative' as const : undefined,
+      position: isDragging ? ('relative' as const) : undefined,
     }
 
     // テーブルの行のような見た目を div で再現
     const itemClassName = `flex items-center transition-colors cursor-pointer hover:bg-blue-200 bg-blue-100 text-sm text-left text-gray-900 select-none group border-b border-blue-700 ${
       isDragging ? 'shadow-lg' : ''
     }`
-    
+
     const contentClassName = `flex-1 px-2 py-1 truncate ${
       isSelected ? 'font-bold' : ''
     }`
@@ -57,10 +57,9 @@ export const BookmarkItem = memo(
         {...{ [HTML_ATTRIBUTES.ROLE]: ARIA_ROLES.BUTTON }}
         {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
         onClick={() => onRowClick(bookmark.id)}
-        onDoubleClick={() => onDoubleClick(bookmark.id, bookmark.url)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
-            onDoubleClick(bookmark.id, bookmark.url)
+            onOpen()
           } else if (e.key === ' ') {
             e.preventDefault()
             onRowClick(bookmark.id)
@@ -91,7 +90,7 @@ export const BookmarkItem = memo(
             />
           </svg>
         </div>
-        
+
         {/* ブックマークタイトル */}
         <div className={contentClassName}>{bookmark.title}</div>
       </div>

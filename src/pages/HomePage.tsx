@@ -14,7 +14,6 @@ export function HomePage({ appState }: HomePageProps) {
     isLoading,
     error,
     handleRowClick,
-    handleDoubleClick,
     handleUpdate,
     handleDelete,
     handleOpen,
@@ -33,7 +32,7 @@ export function HomePage({ appState }: HomePageProps) {
               error={error}
               selectedId={selectedId}
               onRowClick={handleRowClick}
-              onDoubleClick={handleDoubleClick}
+              onOpen={handleOpen}
               onClose={handleClose}
               onReorder={handleReorder}
             />
