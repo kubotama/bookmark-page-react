@@ -34,8 +34,20 @@ export const AllTheProviders = ({
   // QueryClient をメモ化して再生成を防ぐ
   const queryClient = useMemo(() => createTestQueryClient(), [])
 
+  // MemoryRouter 用にパス部分のみを抽出 (フルURLが渡された場合への対策)
+  const initialPath = useMemo(() => {
+    if (!initialUrl) return '/'
+    try {
+      const url = new URL(initialUrl)
+      return `${url.pathname}${url.search}${url.hash}`
+    } catch {
+      // フルURLでない場合は、'/foo/bar' のようなパスと見なしてそのまま返す
+      return initialUrl
+    }
+  }, [initialUrl])
+
   return (
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[initialPath]}>
       <ApiProvider initialUrl={initialUrl}>
         <QueryClientProvider client={queryClient}>
           {children}
