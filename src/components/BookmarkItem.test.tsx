@@ -14,9 +14,9 @@ describe('BookmarkItem', () => {
   const defaultProps = {
     bookmark: MOCK_BOOKMARK_1,
     isSelected: false,
-    isFocusable: false,
+    isFocusable: true,
     onRowClick: vi.fn(),
-    onDoubleClick: vi.fn(),
+    onOpen: vi.fn(),
     onClose: vi.fn(),
   }
 
@@ -48,26 +48,12 @@ describe('BookmarkItem', () => {
     expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
   })
 
-  it('ダブルクリック時に onDoubleClick が呼ばれること', async () => {
-    const user = userEvent.setup()
-    const onDoubleClick = vi.fn()
-    render(<BookmarkItem {...defaultProps} onDoubleClick={onDoubleClick} />, {
-      wrapper,
-    })
-
-    await user.dblClick(screen.getByText(MOCK_BOOKMARK_1.title))
-    expect(onDoubleClick).toHaveBeenCalledWith(
-      MOCK_BOOKMARK_1.id,
-      MOCK_BOOKMARK_1.url,
-    )
-  })
-
   describe('キーボード操作', () => {
-    it('Enter キーで onDoubleClick が呼ばれること', async () => {
+    it('Enter キーで onOpen が呼ばれること (isSelected が true の場合)', async () => {
       const user = userEvent.setup()
-      const onDoubleClick = vi.fn()
+      const onOpen = vi.fn()
       render(
-        <BookmarkItem {...defaultProps} onDoubleClick={onDoubleClick} />,
+        <BookmarkItem {...defaultProps} isSelected={true} onOpen={onOpen} />,
         { wrapper },
       )
 
@@ -76,10 +62,23 @@ describe('BookmarkItem', () => {
       })
       item.focus()
       await user.keyboard('{Enter}')
-      expect(onDoubleClick).toHaveBeenCalledWith(
-        MOCK_BOOKMARK_1.id,
-        MOCK_BOOKMARK_1.url,
+      expect(onOpen).toHaveBeenCalled()
+    })
+
+    it('isSelected が false の場合、Enter キーで onOpen が呼ばれないこと', async () => {
+      const user = userEvent.setup()
+      const onOpen = vi.fn()
+      render(
+        <BookmarkItem {...defaultProps} isSelected={false} onOpen={onOpen} />,
+        { wrapper },
       )
+
+      const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(MOCK_BOOKMARK_1.title),
+      })
+      item.focus()
+      await user.keyboard('{Enter}')
+      expect(onOpen).not.toHaveBeenCalled()
     })
 
     it('スペース キーで onRowClick が呼ばれること', async () => {
@@ -113,13 +112,13 @@ describe('BookmarkItem', () => {
     it('その他のキー（aなど）では何も呼ばれないこと', async () => {
       const user = userEvent.setup()
       const onRowClick = vi.fn()
-      const onDoubleClick = vi.fn()
+      const onOpen = vi.fn()
       const onClose = vi.fn()
       render(
         <BookmarkItem
           {...defaultProps}
           onRowClick={onRowClick}
-          onDoubleClick={onDoubleClick}
+          onOpen={onOpen}
           onClose={onClose}
         />,
         { wrapper },
@@ -131,7 +130,7 @@ describe('BookmarkItem', () => {
       item.focus()
       await user.keyboard('a')
       expect(onRowClick).not.toHaveBeenCalled()
-      expect(onDoubleClick).not.toHaveBeenCalled()
+      expect(onOpen).not.toHaveBeenCalled()
       expect(onClose).not.toHaveBeenCalled()
     })
   })

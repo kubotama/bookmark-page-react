@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useApp } from './useApp'
-import { TEST_MESSAGES, HTML_ATTRIBUTES } from '@shared/constants'
+import { TEST_MESSAGES } from '@shared/constants'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
 import { renderHook, waitFor, act } from '../test/utils'
@@ -90,25 +90,6 @@ describe('useApp Hook (Integration)', () => {
 
       expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
       expect(result.current.selectedBookmark).toEqual(MOCK_BOOKMARK_1)
-    })
-
-    it('ダブルクリックで URL が開かれること (Commands との連動)', async () => {
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-      const { result } = await renderAppHook()
-
-      act(() => {
-        result.current.handleDoubleClick(
-          MOCK_BOOKMARK_1.id,
-          MOCK_BOOKMARK_1.url,
-        )
-      })
-
-      expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
-      expect(openSpy).toHaveBeenCalledWith(
-        MOCK_BOOKMARK_1.url,
-        HTML_ATTRIBUTES.TARGET_BLANK,
-        HTML_ATTRIBUTES.REL_NOOPENER_NOREFERRER,
-      )
     })
 
     it('削除操作後に選択が解除されること (Commands と ListState の連動)', async () => {

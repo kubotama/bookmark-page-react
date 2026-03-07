@@ -1,11 +1,6 @@
 import { useCallback } from 'react'
-import {
-  useUpdateBookmark,
-  useDeleteBookmark,
-} from './useBookmarks'
-import {
-  UI_MESSAGES,
-} from '@shared/constants'
+import { useUpdateBookmark, useDeleteBookmark } from './useBookmarks'
+import { UI_MESSAGES } from '@shared/constants'
 import { useBookmarkReorder } from './useBookmarkReorder'
 import { openUrlInNewTab } from '@shared/utils/url'
 import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
@@ -15,16 +10,11 @@ import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
  */
 export const useBookmarkCommands = (
   selectedBookmark: Bookmark | undefined,
-  setSelectedId: (id: BookmarkId | null) => void
+  setSelectedId: (id: BookmarkId | null) => void,
 ) => {
   const updateMutation = useUpdateBookmark()
   const deleteMutation = useDeleteBookmark()
   const { handleReorder } = useBookmarkReorder()
-
-  const handleDoubleClick = useCallback((id: BookmarkId, url: string) => {
-    setSelectedId(id)
-    openUrlInNewTab(url)
-  }, [setSelectedId])
 
   const handleUpdate = useCallback(
     async (title: string, url: string) => {
@@ -60,7 +50,6 @@ export const useBookmarkCommands = (
     handleDelete,
     handleOpen,
     handleClose,
-    handleDoubleClick,
     handleReorder,
   }
 }

@@ -29,7 +29,7 @@ export type BookmarkProps = {
   error: null | string | Error
   selectedId: BookmarkId | null
   onRowClick: (id: BookmarkId) => void
-  onDoubleClick: (id: BookmarkId, url: string) => void
+  onOpen: () => void
   onClose: () => void
   onReorder: (activeId: BookmarkId, overId: BookmarkId) => void
 }
@@ -40,7 +40,7 @@ export const BookmarkList = ({
   error,
   selectedId,
   onRowClick,
-  onDoubleClick,
+  onOpen,
   onClose,
   onReorder,
 }: BookmarkProps) => {
@@ -119,7 +119,7 @@ export const BookmarkList = ({
                   (selectedId === null && index === 0)
                 }
                 onRowClick={onRowClick}
-                onDoubleClick={onDoubleClick}
+                onOpen={onOpen}
                 onClose={onClose}
               />
             ))}

@@ -1,6 +1,4 @@
-import {
-  useBookmarks,
-} from './useBookmarks'
+import { useBookmarks } from './useBookmarks'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
 import { useBookmarkCommands } from './useBookmarkCommands'
@@ -16,11 +14,7 @@ export const useApp = () => {
   } = useSettings()
 
   // 2. 一覧の状態管理
-  const {
-    selectedId,
-    setSelectedId,
-    handleRowClick,
-  } = useBookmarkListState()
+  const { selectedId, setSelectedId, handleRowClick } = useBookmarkListState()
 
   // 3. データの取得
   const { data, isLoading, error } = useBookmarks()
@@ -28,14 +22,8 @@ export const useApp = () => {
   const selectedBookmark = bookmarks.find((b) => b.id === selectedId)
 
   // 4. 操作（コマンド）ロジック
-  const {
-    handleUpdate,
-    handleDelete,
-    handleOpen,
-    handleClose,
-    handleDoubleClick,
-    handleReorder,
-  } = useBookmarkCommands(selectedBookmark, setSelectedId)
+  const { handleUpdate, handleDelete, handleOpen, handleClose, handleReorder } =
+    useBookmarkCommands(selectedBookmark, setSelectedId)
 
   return {
     bookmarks,
@@ -46,7 +34,6 @@ export const useApp = () => {
     showSettings,
     currentApiUrl,
     handleRowClick,
-    handleDoubleClick,
     handleUpdate,
     handleDelete,
     handleOpen,

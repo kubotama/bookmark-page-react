@@ -68,7 +68,7 @@ describe('BookmarkList', () => {
     error: null,
     selectedId: null,
     onRowClick: vi.fn(),
-    onDoubleClick: vi.fn(),
+    onOpen: vi.fn(),
     onClose: vi.fn(),
     onReorder: vi.fn(),
   }
@@ -173,35 +173,27 @@ describe('BookmarkList', () => {
     )
   })
 
-  it('行をダブルクリックした際に onDoubleClick が呼び出されること', async () => {
+  it('行にフォーカスして Enter キーを押した際に onOpen が呼び出されること', async () => {
     const user = userEvent.setup()
-    const onDoubleClick = vi.fn()
-    render(<BookmarkList {...defaultProps} onDoubleClick={onDoubleClick} />)
-
-    await user.dblClick(screen.getByText(MOCK_BOOKMARK_1.title))
-    expect(onDoubleClick).toHaveBeenCalledWith(
-      MOCK_BOOKMARK_1.id,
-      MOCK_BOOKMARK_1.url,
+    const onOpen = vi.fn()
+    // MOCK_BOOKMARK_2 を選択状態にしてレンダリング
+    render(
+      <BookmarkList
+        {...defaultProps}
+        onOpen={onOpen}
+        selectedId={MOCK_BOOKMARK_2.id}
+      />,
     )
-  })
-
-  it('行にフォーカスして Enter キーを押した際に onDoubleClick が呼び出されること', async () => {
-    const user = userEvent.setup()
-    const onDoubleClick = vi.fn()
-    render(<BookmarkList {...defaultProps} onDoubleClick={onDoubleClick} />)
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
       name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
-    expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
-    expect(items[1]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
+    // 選択されている items[1] (MOCK_BOOKMARK_2) にフォーカスして Enter
+    items[1]!.focus()
+    await user.keyboard('{Enter}')
 
-    await user.type(items[1]!, '{enter}')
-    expect(onDoubleClick).toHaveBeenCalledWith(
-      MOCK_BOOKMARK_2.id,
-      MOCK_BOOKMARK_2.url,
-    )
+    expect(onOpen).toHaveBeenCalled()
   })
 
   it('行にフォーカスして スペース キーを押した際に onRowClick が呼び出されること', async () => {
