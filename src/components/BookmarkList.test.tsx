@@ -176,16 +176,23 @@ describe('BookmarkList', () => {
   it('行にフォーカスして Enter キーを押した際に onOpen が呼び出されること', async () => {
     const user = userEvent.setup()
     const onOpen = vi.fn()
-    render(<BookmarkList {...defaultProps} onOpen={onOpen} />)
+    // MOCK_BOOKMARK_2 を選択状態にしてレンダリング
+    render(
+      <BookmarkList
+        {...defaultProps}
+        onOpen={onOpen}
+        selectedId={MOCK_BOOKMARK_2.id}
+      />,
+    )
 
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
       name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
-    expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
-    expect(items[1]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
+    // 選択されている items[1] (MOCK_BOOKMARK_2) にフォーカスして Enter
+    items[1]!.focus()
+    await user.keyboard('{Enter}')
 
-    await user.type(items[1]!, '{enter}')
     expect(onOpen).toHaveBeenCalled()
   })
 

@@ -49,10 +49,13 @@ describe('BookmarkItem', () => {
   })
 
   describe('キーボード操作', () => {
-    it('Enter キーで onOpen が呼ばれること', async () => {
+    it('Enter キーで onOpen が呼ばれること (isSelected が true の場合)', async () => {
       const user = userEvent.setup()
       const onOpen = vi.fn()
-      render(<BookmarkItem {...defaultProps} onOpen={onOpen} />, { wrapper })
+      render(
+        <BookmarkItem {...defaultProps} isSelected={true} onOpen={onOpen} />,
+        { wrapper },
+      )
 
       const item = screen.getByRole(ARIA_ROLES.BUTTON, {
         name: new RegExp(MOCK_BOOKMARK_1.title),
@@ -60,6 +63,22 @@ describe('BookmarkItem', () => {
       item.focus()
       await user.keyboard('{Enter}')
       expect(onOpen).toHaveBeenCalled()
+    })
+
+    it('isSelected が false の場合、Enter キーで onOpen が呼ばれないこと', async () => {
+      const user = userEvent.setup()
+      const onOpen = vi.fn()
+      render(
+        <BookmarkItem {...defaultProps} isSelected={false} onOpen={onOpen} />,
+        { wrapper },
+      )
+
+      const item = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(MOCK_BOOKMARK_1.title),
+      })
+      item.focus()
+      await user.keyboard('{Enter}')
+      expect(onOpen).not.toHaveBeenCalled()
     })
 
     it('スペース キーで onRowClick が呼ばれること', async () => {

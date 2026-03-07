@@ -58,7 +58,7 @@ export const BookmarkItem = memo(
         {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
         onClick={() => onRowClick(bookmark.id)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
+          if (e.key === 'Enter' && isSelected) {
             onOpen()
           } else if (e.key === ' ') {
             e.preventDefault()
