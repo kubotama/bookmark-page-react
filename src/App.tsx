@@ -5,6 +5,7 @@ import { useApp } from './hooks/useApp'
 import { FIELD_LABELS } from '@shared/constants'
 import { HomePage } from './pages/HomePage'
 import { BookmarkPage } from './pages/BookmarkPage'
+import { KeywordPage } from './pages/KeywordPage'
 
 function App() {
   const appState = useApp()
@@ -60,6 +61,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage appState={appState} />} />
         <Route path="/bookmark/:id" element={<BookmarkPage />} />
+        <Route path="/keyword/:id" element={<KeywordPage />} />
       </Routes>
     </div>
   )
