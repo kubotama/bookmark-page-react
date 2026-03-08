@@ -65,7 +65,7 @@ function App() {
         />
         <Route
           path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
-          element={<BookmarkPage />}
+          element={<BookmarkPage onBack={appState.handleClose} />}
         />
         <Route
           path={APP_PATHS.KEYWORD_DETAIL_PATTERN}

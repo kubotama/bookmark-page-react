@@ -1,11 +1,16 @@
 import { useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 import { useBookmarks } from '../hooks/useBookmarks'
 import { openUrlInNewTab } from '@shared/utils/url'
 
-export function BookmarkPage() {
+interface BookmarkPageProps {
+  onBack?: () => void
+}
+
+export function BookmarkPage({ onBack }: BookmarkPageProps) {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { data } = useBookmarks()
 
   const bookmark = data?.bookmarks.find((b) => b.id === id)
@@ -14,17 +19,24 @@ export function BookmarkPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && bookmark) {
         openUrlInNewTab(bookmark.url)
+      } else if (e.key === 'Escape') {
+        onBack?.()
+        navigate(APP_PATHS.HOME)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [bookmark])
+  }, [bookmark, onBack, navigate])
 
   return (
     <div className="p-4">
       <div className="mb-4">
-        <Link to={APP_PATHS.HOME} className="text-blue-600 hover:underline">
+        <Link
+          to={APP_PATHS.HOME}
+          className="text-blue-600 hover:underline"
+          onClick={() => onBack?.()}
+        >
           &larr; {FIELD_LABELS.BACK_TO_LIST}
         </Link>
       </div>
@@ -39,7 +51,7 @@ export function BookmarkPage() {
           <p className="font-semibold">{bookmark.title}</p>
           <p className="text-sm text-gray-500 truncate">{bookmark.url}</p>
           <p className="mt-2 text-xs text-blue-600 font-medium animate-pulse">
-            Press Enter to open this link
+            Press Enter to open this link, or ESC to go back
           </p>
         </div>
       )}

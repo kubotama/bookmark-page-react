@@ -27,109 +27,92 @@ describe('BookmarkPage', () => {
     )
   })
 
+  // 共通のレンダリングヘルパー（警告防止用のダミールートを含む）
+  const renderWithRoutes = (ui: React.ReactElement, initialUrl: string) => {
+    return render(
+      <Routes>
+        <Route path={APP_PATHS.HOME} element={<div>Home</div>} />
+        <Route path={APP_PATHS.BOOKMARK_DETAIL_PATTERN} element={ui} />
+      </Routes>,
+      { initialUrl }
+    )
+  }
+
   it('URL パラメータから取得した ID が表示されること', async () => {
     const testId = MOCK_BOOKMARK_1.id
-    render(
-      <Routes>
-        <Route
-          path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
-          element={<BookmarkPage />}
-        />
-      </Routes>,
-      { initialUrl: APP_PATHS.BOOKMARK_DETAIL(testId) },
-    )
-
-    expect(
-      await screen.findByText(
-        new RegExp(`${FIELD_LABELS.BOOKMARK_ID_PREFIX} ${testId}`),
-      ),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(FIELD_LABELS.BOOKMARK_DETAIL_TITLE),
-    ).toBeInTheDocument()
+    renderWithRoutes(<BookmarkPage />, APP_PATHS.BOOKMARK_DETAIL(testId))
+    
+    expect(await screen.findByText(new RegExp(`${FIELD_LABELS.BOOKMARK_ID_PREFIX} ${testId}`))).toBeInTheDocument()
+    expect(screen.getByText(FIELD_LABELS.BOOKMARK_DETAIL_TITLE)).toBeInTheDocument()
   })
 
   it('データが取得できればブックマーク情報が表示されること', async () => {
-    render(
-      <Routes>
-        <Route
-          path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
-          element={<BookmarkPage />}
-        />
-      </Routes>,
-      { initialUrl: APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id) },
-    )
-
+    renderWithRoutes(<BookmarkPage />, APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id))
+    
     expect(await screen.findByText(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
     expect(screen.getByText(MOCK_BOOKMARK_1.url)).toBeInTheDocument()
   })
 
-  describe('Keyboard interaction (Enter key shortcut)', () => {
+  describe('Keyboard interaction', () => {
     it('Enter キーを押した際に openUrlInNewTab が呼ばれること', async () => {
-      render(
-        <Routes>
-          <Route
-            path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
-            element={<BookmarkPage />}
-          />
-        </Routes>,
-        { initialUrl: APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id) },
-      )
-
+      renderWithRoutes(<BookmarkPage />, APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id))
+      
       await screen.findByText(MOCK_BOOKMARK_1.title)
       fireEvent.keyDown(window, { key: 'Enter' })
 
       expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
     })
 
+    it('Escape キーを押した際に onBack が呼ばれること', async () => {
+      const onBack = vi.fn()
+      renderWithRoutes(<BookmarkPage onBack={onBack} />, APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id))
+      
+      fireEvent.keyDown(window, { key: 'Escape' })
+
+      expect(onBack).toHaveBeenCalled()
+    })
+
     it('データがロードされていない状態で Enter キーを押しても何も起きないこと', async () => {
-      // データのロードをわざと遅延させる、または空にする設定
+      // データのロードを空にする設定
       server.use(
         http.get('*/api/bookmarks', () => {
           return HttpResponse.json({ success: true, data: { bookmarks: [] } })
         }),
       )
 
-      render(
-        <Routes>
-          <Route
-            path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
-            element={<BookmarkPage />}
-          />
-        </Routes>,
-        { initialUrl: APP_PATHS.BOOKMARK_DETAIL('non-existent-id') },
-      )
-
-      // 少し待つがブックマークは表示されない
+      renderWithRoutes(<BookmarkPage />, APP_PATHS.BOOKMARK_DETAIL('non-existent-id'))
+      
       fireEvent.keyDown(window, { key: 'Enter' })
 
       expect(urlUtils.openUrlInNewTab).not.toHaveBeenCalled()
     })
 
-    it('Enter 以外のキーを押しても何も起きないこと', async () => {
-      render(
-        <Routes>
-          <Route
-            path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
-            element={<BookmarkPage />}
-          />
-        </Routes>,
-        { initialUrl: APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id) },
-      )
-
+    it('Enter/Escape 以外のキーを押しても何も起きないこと', async () => {
+      const onBack = vi.fn()
+      renderWithRoutes(<BookmarkPage onBack={onBack} />, APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id))
+      
       await screen.findByText(MOCK_BOOKMARK_1.title)
       fireEvent.keyDown(window, { key: 'a' })
 
       expect(urlUtils.openUrlInNewTab).not.toHaveBeenCalled()
+      expect(onBack).not.toHaveBeenCalled()
     })
   })
 
   it('戻るリンクが表示されていること', () => {
-    render(<BookmarkPage />)
-    const link = screen.getByRole('link', {
-      name: new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i'),
-    })
+    renderWithRoutes(<BookmarkPage />, APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id))
+    const link = screen.getByRole('link', { name: new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i') })
     expect(link).toBeInTheDocument()
     expect(link).toHaveAttribute('href', APP_PATHS.HOME)
+  })
+
+  it('戻るリンクをクリックした際に onBack が呼ばれること', async () => {
+    const onBack = vi.fn()
+    renderWithRoutes(<BookmarkPage onBack={onBack} />, APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id))
+    
+    const link = screen.getByRole('link', { name: new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i') })
+    fireEvent.click(link)
+    
+    expect(onBack).toHaveBeenCalled()
   })
 })
