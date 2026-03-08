@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { APP_PATHS } from '@shared/constants'
 import type { BookmarkId } from '@shared/schemas/bookmark'
 
 /**
@@ -7,10 +9,15 @@ import type { BookmarkId } from '@shared/schemas/bookmark'
  */
 export const useBookmarkListState = () => {
   const [selectedId, setSelectedId] = useState<BookmarkId | null>(null)
+  const navigate = useNavigate()
 
-  const handleRowClick = useCallback((id: BookmarkId) => {
-    setSelectedId(id)
-  }, [])
+  const handleRowClick = useCallback(
+    (id: BookmarkId) => {
+      setSelectedId(id)
+      navigate(APP_PATHS.BOOKMARK_DETAIL(id))
+    },
+    [navigate],
+  )
 
   return {
     selectedId,

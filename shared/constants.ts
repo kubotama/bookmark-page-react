@@ -17,6 +17,11 @@ export const FIELD_LABELS = {
   OPTIONS_TITLE: '拡張機能の設定',
   POPUP_TITLE: 'ページをブックマーク',
   SETTING_TITLE: '設定',
+  BOOKMARK_DETAIL_TITLE: 'Bookmark Detail',
+  KEYWORD_DETAIL_TITLE: 'Keyword Detail',
+  BOOKMARK_ID_PREFIX: 'Bookmark ID:',
+  KEYWORD_ID_PREFIX: 'Keyword ID:',
+  BACK_TO_LIST: 'Back to List',
 } as const
 
 export const PLACEHOLDERS = {
@@ -226,6 +231,17 @@ export const HTML_ATTRIBUTES = {
 export const API_PATHS = {
   BOOKMARKS: '/api/bookmarks',
   KEYWORDS: '/api/keywords',
+} as const
+
+/**
+ * フロントエンドのパス関連の定数
+ */
+export const APP_PATHS = {
+  HOME: '/',
+  BOOKMARK_DETAIL: (id: string | number) => `/bookmark/${id}`,
+  BOOKMARK_DETAIL_PATTERN: '/bookmark/:id',
+  KEYWORD_DETAIL: (id: string | number) => `/keyword/${id}`,
+  KEYWORD_DETAIL_PATTERN: '/keyword/:id',
 } as const
 
 export const HTTP_STATUS = {
