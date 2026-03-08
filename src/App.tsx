@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import './App.css'
 import { SettingsPanel } from './components/SettingsPanel'
 import { useApp } from './hooks/useApp'
-import { FIELD_LABELS } from '@shared/constants'
+import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 import { HomePage } from './pages/HomePage'
 import { BookmarkPage } from './pages/BookmarkPage'
 import { KeywordPage } from './pages/KeywordPage'
@@ -59,9 +59,18 @@ function App() {
       )}
 
       <Routes>
-        <Route path="/" element={<HomePage appState={appState} />} />
-        <Route path="/bookmark/:id" element={<BookmarkPage />} />
-        <Route path="/keyword/:id" element={<KeywordPage />} />
+        <Route
+          path={APP_PATHS.HOME}
+          element={<HomePage appState={appState} />}
+        />
+        <Route
+          path={APP_PATHS.BOOKMARK_DETAIL_PATTERN}
+          element={<BookmarkPage />}
+        />
+        <Route
+          path={APP_PATHS.KEYWORD_DETAIL_PATTERN}
+          element={<KeywordPage />}
+        />
       </Routes>
     </div>
   )
