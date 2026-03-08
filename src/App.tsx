@@ -4,6 +4,7 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { useApp } from './hooks/useApp'
 import { FIELD_LABELS } from '@shared/constants'
 import { HomePage } from './pages/HomePage'
+import { BookmarkPage } from './pages/BookmarkPage'
 
 function App() {
   const appState = useApp()
@@ -58,6 +59,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<HomePage appState={appState} />} />
+        <Route path="/bookmark/:id" element={<BookmarkPage />} />
       </Routes>
     </div>
   )
