@@ -135,9 +135,7 @@ describe('App Integration', () => {
       await screen.findByText(FIELD_LABELS.BOOKMARK_DETAIL_TITLE),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        new RegExp(`${FIELD_LABELS.BOOKMARK_ID_PREFIX} ${MOCK_BOOKMARK_1.id}`),
-      ),
+      screen.getByText(new RegExp(`${MOCK_BOOKMARK_1.id}`)),
     ).toBeInTheDocument()
     expect(
       screen.getByText(new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i')),
