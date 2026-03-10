@@ -143,4 +143,17 @@ describe('BookmarkPage', () => {
       expect(await screen.findByText('Home')).toBeInTheDocument()
     })
   })
+
+  it('閉じるボタンをクリックした際に onBack が呼ばれること', async () => {
+    const onBack = vi.fn()
+    renderWithRoutes(
+      <BookmarkPage onBack={onBack} />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    const closeButton = await screen.findByText(FIELD_LABELS.BUTTON_CLOSE)
+    fireEvent.click(closeButton)
+
+    expect(onBack).toHaveBeenCalled()
+  })
 })

@@ -122,7 +122,7 @@ describe('App Integration', () => {
     expect(await screen.findByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
   })
 
-  it('行をクリックすると詳細ページへ遷移し、正しい ID が表示されること', async () => {
+  it('行をクリックすると詳細ページへ遷移すること', async () => {
     const { user } = setup()
 
     const item = await screen.findByRole(ARIA_ROLES.BUTTON, {
@@ -130,16 +130,9 @@ describe('App Integration', () => {
     })
     await user.click(item)
 
-    // 遷移後のプレースホルダ画面の内容を検証
-    expect(
-      await screen.findByText(FIELD_LABELS.BOOKMARK_DETAIL_TITLE),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(new RegExp(`${MOCK_BOOKMARK_1.id}`)),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i')),
-    ).toBeInTheDocument()
+    // 遷移後の詳細画面（編集フォーム）の存在を検証
+    expect(await screen.findByLabelText(FIELD_LABELS.TITLE)).toBeInTheDocument()
+    expect(screen.getByLabelText(FIELD_LABELS.URL)).toBeInTheDocument()
   })
 
   it('詳細ページから一覧ページへ戻れること', async () => {
@@ -150,10 +143,8 @@ describe('App Integration', () => {
     })
     await user.click(item)
 
-    const backLink = await screen.findByText(
-      new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i'),
-    )
-    await user.click(backLink)
+    const closeButton = await screen.findByText(FIELD_LABELS.BUTTON_CLOSE)
+    await user.click(closeButton)
 
     // 一覧画面に戻ったことを検証
     expect(await screen.findByText(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
