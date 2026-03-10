@@ -10,6 +10,7 @@ import { VALID_URLS } from '@shared/test/fixtures'
 
 import app from '../app'
 import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
+import { API_ERROR_CODES } from '../utils/error'
 import { attachKeyword, createBookmark, createKeyword } from '../test/seedUtils'
 
 describe(`GET ${API_PATHS.KEYWORDS}`, () => {
@@ -120,7 +121,17 @@ describe(`POST ${API_PATHS.KEYWORDS}`, () => {
     expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
   })
 
-  it('既に存在する名前の場合は 409 Conflict を返すこと', async () => {
+  it('名前が50文字を超える場合は 400 Bad Request を返すこと', async () => {
+    const res = await app.request(API_PATHS.KEYWORDS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'a'.repeat(51) }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+  })
+
+  it('既に存在する名前の場合は 409 Conflict を返し、エラーオブジェクトを含むこと', async () => {
     const DUPLICATE_KEYWORD = 'Duplicate'
     createKeyword(DUPLICATE_KEYWORD)
 
@@ -133,7 +144,8 @@ describe(`POST ${API_PATHS.KEYWORDS}`, () => {
     expect(res.status).toBe(HTTP_STATUS.CONFLICT)
     const body = await res.json()
     expect(body.success).toBe(false)
-    expect(body.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
+    expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
+    expect(body.error.code).toBe(API_ERROR_CODES.CONFLICT)
   })
 
   describe('Error Handling', () => {
@@ -160,7 +172,7 @@ describe(`POST ${API_PATHS.KEYWORDS}`, () => {
       expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.CREATE_KEYWORD_FAILED,
-        expect.any(Error),
+        new Error(ERROR_MESSAGES.KEYWORD_INSERT_RETURN_VALUE_MISSING),
       )
     })
 

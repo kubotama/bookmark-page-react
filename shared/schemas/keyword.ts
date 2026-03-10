@@ -27,7 +27,10 @@ export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
  * キーワード作成リクエストのバリデーションスキーマ
  */
 export const createKeywordRequestSchema = z.object({
-  name: z.string().min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH),
+  name: z
+    .string()
+    .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
+    .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH),
 })
 export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
 

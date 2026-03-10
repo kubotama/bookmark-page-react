@@ -12,6 +12,7 @@ import {
 
 import { db } from '../db'
 import { bookmarkKeywords, keywords as keywordsTable } from '../db/schema'
+import { API_ERROR_CODES } from '../utils/error'
 
 const keywordsRoute = new Hono()
   .get('/', async (c) => {
@@ -63,7 +64,10 @@ const keywordsRoute = new Hono()
         return c.json(
           {
             success: false,
-            message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+            error: {
+              message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+              code: API_ERROR_CODES.CONFLICT,
+            },
           },
           HTTP_STATUS.CONFLICT,
         )
@@ -77,7 +81,7 @@ const keywordsRoute = new Hono()
         .get()
 
       if (!result) {
-        throw new Error(ERROR_MESSAGES.CREATE_KEYWORD_FAILED)
+        throw new Error(ERROR_MESSAGES.KEYWORD_INSERT_RETURN_VALUE_MISSING)
       }
 
       const keyword = {
