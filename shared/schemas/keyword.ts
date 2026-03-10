@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { VALIDATION_MESSAGES } from '@shared/constants'
 
 export const KeywordIdSchema = z
   .string()
@@ -21,3 +22,19 @@ export const keywordsResponseSchema = z.object({
   keywords: z.array(keywordWithCountSchema),
 })
 export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
+
+/**
+ * キーワード作成リクエストのバリデーションスキーマ
+ */
+export const createKeywordRequestSchema = z.object({
+  name: z.string().min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH),
+})
+export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
+
+/**
+ * 単一キーワードのレスポンススキーマ
+ */
+export const keywordResponseSchema = z.object({
+  keyword: keywordSchema,
+})
+export type KeywordResponse = z.infer<typeof keywordResponseSchema>
