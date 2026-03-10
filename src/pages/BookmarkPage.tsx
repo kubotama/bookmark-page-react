@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   FIELD_LABELS,
   APP_PATHS,
@@ -22,26 +22,28 @@ interface BookmarkPageProps {
 
 export function BookmarkPage({ onBack }: BookmarkPageProps) {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
 
   // データ取得
   const { data, isLoading } = useBookmarks()
   const bookmark = data?.bookmarks.find((b) => b.id === id)
 
+  const handleNotFoundBack = useCallback(() => {
+    onBack?.()
+    navigate(APP_PATHS.HOME)
+  }, [onBack, navigate])
+
   if (isLoading) {
-    return (
-      <div className="p-4">
-        {FIELD_LABELS.BOOKMARK_DETAIL_TITLE} - Loading...
-      </div>
-    )
+    return <div className="p-4">Loading...</div>
   }
 
   if (!bookmark) {
     return (
       <div className="p-4">
         <p className="text-red-600 mb-4">Bookmark not found (ID: {id})</p>
-        <Link to={APP_PATHS.HOME} className="text-blue-600 hover:underline">
-          &larr; {FIELD_LABELS.BACK_TO_LIST}
-        </Link>
+        <Button variant="secondary" onClick={handleNotFoundBack}>
+          {FIELD_LABELS.BUTTON_CLOSE}
+        </Button>
       </div>
     )
   }
@@ -117,27 +119,6 @@ function BookmarkEditForm({
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link
-          to={APP_PATHS.HOME}
-          className="text-blue-600 hover:underline flex items-center"
-          onClick={(e) => {
-            e.preventDefault()
-            handleBack()
-          }}
-        >
-          &larr; {FIELD_LABELS.BACK_TO_LIST}
-        </Link>
-      </div>
-
-      <h1 className="text-2xl font-bold mb-6">
-        {FIELD_LABELS.BOOKMARK_DETAIL_TITLE}
-      </h1>
-
-      <p className="text-gray-600 mb-4">
-        {FIELD_LABELS.BOOKMARK_ID_PREFIX} {id}
-      </p>
-
       <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
         <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
           {/* 左側: テキストボックスを2段で配置 */}
