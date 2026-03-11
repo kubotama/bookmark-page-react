@@ -6,6 +6,8 @@ import {
   useBookmarks,
   useUpdateBookmark,
   useDeleteBookmark,
+  useCreateKeyword,
+  useAttachKeyword,
 } from './useBookmarks'
 import { openUrlInNewTab } from '@shared/utils/url'
 
@@ -35,10 +37,10 @@ export const useBookmarkPage = (onBack?: () => void) => {
   // 3. フォーム状態
   const [editTitle, setEditTitle] = useState('')
   const [editUrl, setEditUrl] = useState('')
+  const [keywordInput, setKeywordInput] = useState('')
   const [prevBookmarkId, setPrevBookmarkId] = useState<string | null>(null)
 
   // データが届いた際、またはブックマークが変わった際の初期化
-  // (Effect を使わず、レンダー中に state を調整する React 推奨パターン)
   if (bookmark && bookmark.id !== prevBookmarkId) {
     setEditTitle(bookmark.title)
     setEditUrl(bookmark.url)
@@ -48,6 +50,8 @@ export const useBookmarkPage = (onBack?: () => void) => {
   // 4. アクション（ミューテーション）
   const updateMutation = useUpdateBookmark()
   const deleteMutation = useDeleteBookmark()
+  const createKeywordMutation = useCreateKeyword()
+  const attachKeywordMutation = useAttachKeyword()
 
   const handleBack = useCallback(() => {
     onBack?.()
@@ -83,15 +87,57 @@ export const useBookmarkPage = (onBack?: () => void) => {
     }
   }, [editUrl])
 
+  const handleAddKeyword = useCallback(async () => {
+    if (!parsedId || !keywordInput.trim()) return
+
+    try {
+      // 1. キーワードを作成
+      let keyword
+      try {
+        const response = await createKeywordMutation.mutateAsync({
+          name: keywordInput.trim(),
+        })
+        keyword = response.keyword
+      } catch (e) {
+        console.error(LOG_MESSAGES.CREATE_KEYWORD_FAILED, e)
+        return // 作成失敗時は紐付けに進まない
+      }
+
+      // 2. 作成されたキーワードをブックマークに紐付け
+      try {
+        await attachKeywordMutation.mutateAsync({
+          bookmarkId: parsedId,
+          keywordId: keyword.id,
+        })
+      } catch (e) {
+        console.error(LOG_MESSAGES.ATTACH_KEYWORD_FAILED, e)
+        return
+      }
+
+      setKeywordInput('')
+    } catch (e) {
+      // 予期せぬエラー用
+      console.error('Unexpected error in handleAddKeyword:', e)
+    }
+  }, [parsedId, keywordInput, createKeywordMutation, attachKeywordMutation])
+
   // 5. キーボードショートカット
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleBack()
       } else if (e.key === 'Enter') {
+        // 入力中などの場合は無視するように調整が必要になる可能性があるが、
+        // 現状はシンプルに維持
         if (e.metaKey || e.ctrlKey) {
           handleUpdate()
-        } else {
+        } else if (
+          !(
+            e.target instanceof HTMLInputElement &&
+            e.target.id === 'keyword-input'
+          )
+        ) {
+          // キーワード入力欄以外での Enter は「開く」
           handleOpen()
         }
       }
@@ -108,11 +154,16 @@ export const useBookmarkPage = (onBack?: () => void) => {
     setEditTitle,
     editUrl,
     setEditUrl,
+    keywordInput,
+    setKeywordInput,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isAddingKeyword:
+      createKeywordMutation.isPending || attachKeywordMutation.isPending,
     handleUpdate,
     handleDelete,
     handleOpen,
     handleBack,
+    handleAddKeyword,
   }
 }

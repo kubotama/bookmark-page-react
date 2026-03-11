@@ -6,6 +6,7 @@
 // 内部定数定義: マジックストリングを一箇所に集約し、タイポを防止。
 const SCOPE = {
   BOOKMARKS: 'bookmarks',
+  KEYWORDS: 'keywords',
 } as const
 
 const TYPE = {
@@ -20,5 +21,9 @@ export const QUERY_KEYS = {
     DETAILS: () => [...QUERY_KEYS.BOOKMARKS.ALL, TYPE.DETAIL] as const,
     DETAIL: (id: string | number) =>
       [...QUERY_KEYS.BOOKMARKS.DETAILS(), String(id)] as const,
+  },
+  KEYWORDS: {
+    ALL: [SCOPE.KEYWORDS] as const,
+    LIST: () => [...QUERY_KEYS.KEYWORDS.ALL, TYPE.LIST] as const,
   },
 } as const

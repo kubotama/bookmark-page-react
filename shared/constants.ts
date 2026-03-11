@@ -22,6 +22,10 @@ export const FIELD_LABELS = {
   BOOKMARK_ID_PREFIX: 'Bookmark ID:',
   KEYWORD_ID_PREFIX: 'Keyword ID:',
   BACK_TO_LIST: 'Back to List',
+  KEYWORDS_SECTION_TITLE: 'Keywords',
+  NO_KEYWORDS_ATTACHED: 'No keywords attached',
+  ADD_KEYWORD_LABEL: 'Add New Keyword',
+  BUTTON_ADD: 'Add',
 } as const
 
 export const PLACEHOLDERS = {
