@@ -13,9 +13,14 @@ import {
   reorderBookmarksSchema,
   type Bookmark,
 } from '@shared/schemas/bookmark'
+import { attachKeywordRequestSchema } from '@shared/schemas/keyword'
 
 import { db } from '../db'
-import { bookmarks as bookmarksTable } from '../db/schema'
+import {
+  bookmarks as bookmarksTable,
+  bookmarkKeywords as bookmarkKeywordsTable,
+  keywords as keywordsTable,
+} from '../db/schema'
 import { isUniqueConstraintError, API_ERROR_CODES } from '../utils/error'
 
 /**
@@ -247,5 +252,81 @@ const bookmarksRoute = new Hono()
       throw error
     }
   })
+  .post(
+    '/:id/keywords',
+    zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
+    zValidator('json', attachKeywordRequestSchema),
+    async (c) => {
+      const { id } = c.req.valid('param')
+      const { keywordId } = c.req.valid('json')
+      const bookmarkIdNum = parseInt(id, 10)
+      const keywordIdNum = parseInt(keywordId, 10)
+
+      try {
+        // 1. ブックマークとキーワードの存在を並行して確認
+        const [bookmark, keyword] = await Promise.all([
+          db
+            .select({ id: bookmarksTable.bookmarkId })
+            .from(bookmarksTable)
+            .where(eq(bookmarksTable.bookmarkId, bookmarkIdNum))
+            .get(),
+          db
+            .select({ id: keywordsTable.keywordId })
+            .from(keywordsTable)
+            .where(eq(keywordsTable.keywordId, keywordIdNum))
+            .get(),
+        ])
+
+        if (!bookmark) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+                code: API_ERROR_CODES.NOT_FOUND,
+              },
+            },
+            HTTP_STATUS.NOT_FOUND,
+          )
+        }
+
+        if (!keyword) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+                code: API_ERROR_CODES.NOT_FOUND,
+              },
+            },
+            HTTP_STATUS.NOT_FOUND,
+          )
+        }
+
+        // 2. 紐付け (中間テーブルへの挿入)
+        await db.insert(bookmarkKeywordsTable).values({
+          bookmarkId: bookmarkIdNum,
+          keywordId: keywordIdNum,
+        })
+
+        return c.json({ success: true, data: null }, HTTP_STATUS.CREATED)
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+                code: API_ERROR_CODES.CONFLICT,
+              },
+            },
+            HTTP_STATUS.CONFLICT,
+          )
+        }
+        console.error(LOG_MESSAGES.ATTACH_KEYWORD_FAILED, error)
+        throw error
+      }
+    },
+  )
 
 export default bookmarksRoute

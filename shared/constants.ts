@@ -104,6 +104,7 @@ export const ERROR_MESSAGES = {
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   KEYWORD_INSERT_RETURN_VALUE_MISSING:
     'キーワードの挿入に成功しましたが、返り値の取得に失敗しました',
+  KEYWORD_NOT_FOUND: '指定されたキーワードが見つかりませんでした',
   BOOKMARK_NOT_FOUND: '指定されたブックマークが見つかりませんでした',
   NOT_FOUND: 'リソースが見つかりませんでした',
   INVALID_URL: '有効な URL 形式ではありません',
@@ -323,6 +324,7 @@ export const LOG_MESSAGES = {
   BLOCKED_NON_HTTP_URL: (url: string) => `Blocked opening non-HTTP URL: ${url}`,
   FETCH_KEYWORDS_FAILED: 'Failed to fetch keywords:',
   CREATE_KEYWORD_FAILED: 'Failed to create keyword:',
+  ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
 } as const
 
 /**
