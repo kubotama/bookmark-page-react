@@ -114,6 +114,49 @@ describe('useBookmarkPage Hook', () => {
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 
+  it('handleAddKeyword が成功した際、キーワードを作成して紐付けること', async () => {
+    let createCalled = false
+    let attachCalled = false
+    const NEW_TAG = 'NewTag'
+
+    server.use(
+      http.post('*/api/keywords', async ({ request }) => {
+        const body = (await request.json()) as { name: string }
+        if (body.name === NEW_TAG) {
+          createCalled = true
+          return HttpResponse.json({
+            success: true,
+            data: { keyword: { id: 'kw1', name: NEW_TAG } },
+          })
+        }
+        return new HttpResponse(null, { status: 400 })
+      }),
+      http.post('*/api/bookmarks/:id/keywords', async ({ request }) => {
+        const body = (await request.json()) as { keywordId: string }
+        if (body.keywordId === 'kw1') {
+          attachCalled = true
+          return HttpResponse.json({ success: true, data: null })
+        }
+        return new HttpResponse(null, { status: 400 })
+      }),
+    )
+
+    const { result } = renderHook(() => useBookmarkPage())
+    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+    await act(async () => {
+      result.current.setKeywordInput(NEW_TAG)
+    })
+
+    await act(async () => {
+      await result.current.handleAddKeyword()
+    })
+
+    expect(createCalled).toBe(true)
+    expect(attachCalled).toBe(true)
+    expect(result.current.keywordInput).toBe('')
+  })
+
   describe('Keyboard shortcuts', () => {
     it('Escape キーで handleBack が呼ばれること', async () => {
       renderHook(() => useBookmarkPage())
@@ -208,6 +251,68 @@ describe('useBookmarkPage Hook', () => {
       })
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
+        expect.anything(),
+      )
+    })
+
+    it('handleAddKeyword の作成失敗時にログ出力すること', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      server.use(
+        http.post('*/api/keywords', () => {
+          return HttpResponse.json(
+            { success: false },
+            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+          )
+        }),
+      )
+
+      const { result } = renderHook(() => useBookmarkPage())
+      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+      await act(async () => {
+        result.current.setKeywordInput('Fail')
+      })
+
+      await act(async () => {
+        await result.current.handleAddKeyword()
+      })
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
+        expect.anything(),
+      )
+    })
+
+    it('handleAddKeyword の紐付け失敗時にログ出力すること', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      server.use(
+        http.post('*/api/keywords', () => {
+          return HttpResponse.json({
+            success: true,
+            data: { keyword: { id: 'kw1', name: 'Success' } },
+          })
+        }),
+        http.post('*/api/bookmarks/:id/keywords', () => {
+          return HttpResponse.json(
+            { success: false },
+            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+          )
+        }),
+      )
+
+      const { result } = renderHook(() => useBookmarkPage())
+      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+      await act(async () => {
+        result.current.setKeywordInput('Success')
+      })
+
+      await act(async () => {
+        await result.current.handleAddKeyword()
+      })
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
         expect.anything(),
       )
     })

@@ -10,6 +10,11 @@ import type {
   ReorderBookmarksRequest,
   UpdateBookmarkRequest,
 } from '@shared/schemas/bookmark'
+import type {
+  KeywordId,
+  KeywordResponse,
+  CreateKeywordRequest,
+} from '@shared/schemas/keyword'
 
 /**
  * API エラー情報を保持するカスタムエラークラス
@@ -55,12 +60,15 @@ const parseResponse = async <T>(
 
 export const useBookmarks = () => {
   const { client } = useApi()
-  
+
   return useQuery({
     queryKey: QUERY_KEYS.BOOKMARKS.LIST(),
     queryFn: async () => {
       const res = await client.api.bookmarks.$get()
-      return await parseResponse<BookmarksResponse>(res, UI_MESSAGES.FETCH_FAILED)
+      return await parseResponse<BookmarksResponse>(
+        res,
+        UI_MESSAGES.FETCH_FAILED,
+      )
     },
   })
 }
@@ -138,15 +146,20 @@ export const useReorderBookmarks = () => {
 
       // 3. 楽観的に更新
       if (previousData) {
-        const bookmarkMap = new Map(previousData.bookmarks.map((b) => [b.id, b]))
+        const bookmarkMap = new Map(
+          previousData.bookmarks.map((b) => [b.id, b]),
+        )
         const newBookmarks = variables.ids
           .map((id) => bookmarkMap.get(id))
           .filter((b): b is import('@shared/schemas/bookmark').Bookmark => !!b)
 
-        queryClient.setQueryData<BookmarksResponse>(QUERY_KEYS.BOOKMARKS.LIST(), {
-          ...previousData,
-          bookmarks: newBookmarks,
-        })
+        queryClient.setQueryData<BookmarksResponse>(
+          QUERY_KEYS.BOOKMARKS.LIST(),
+          {
+            ...previousData,
+            bookmarks: newBookmarks,
+          },
+        )
       }
 
       return { previousData }
@@ -159,11 +172,60 @@ export const useReorderBookmarks = () => {
 
       // 5. ロールバック
       if (context?.previousData) {
-        queryClient.setQueryData(QUERY_KEYS.BOOKMARKS.LIST(), context.previousData)
+        queryClient.setQueryData(
+          QUERY_KEYS.BOOKMARKS.LIST(),
+          context.previousData,
+        )
       }
     },
     onSettled: () => {
       // 6. 成功・失敗に関わらず最終的な整合性をサーバーと同期
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
+    },
+  })
+}
+
+export const useCreateKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (req: CreateKeywordRequest) => {
+      const res = await client.api.keywords.$post({
+        json: req,
+      })
+
+      return await parseResponse<KeywordResponse>(
+        res,
+        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
+    },
+  })
+}
+
+export const useAttachKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      bookmarkId,
+      keywordId,
+    }: {
+      bookmarkId: BookmarkId
+      keywordId: KeywordId
+    }) => {
+      const res = await client.api.bookmarks[':id'].keywords.$post({
+        param: { id: bookmarkId },
+        json: { keywordId },
+      })
+
+      return await parseResponse<void>(res, LOG_MESSAGES.ATTACH_KEYWORD_FAILED)
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
     },
   })

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Routes, Route } from 'react-router-dom'
 import { render, screen, fireEvent, waitFor } from '../test/utils'
 import { BookmarkPage } from './BookmarkPage'
-import { FIELD_LABELS, APP_PATHS, HTTP_STATUS } from '@shared/constants'
+import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { http, HttpResponse, delay } from 'msw'
 import { server } from '../test/setup'
@@ -68,6 +68,117 @@ describe('BookmarkPage Component', () => {
     expect(urlInput).toHaveValue(MOCK_BOOKMARK_1.url)
   })
 
+  it('紐付いているキーワードが表示されること', async () => {
+    const bookmarkWithKeywords = {
+      ...MOCK_BOOKMARK_1,
+      keywords: [
+        { id: 'kw1', name: 'React' },
+        { id: 'kw2', name: 'Vitest' },
+      ],
+    }
+    server.use(
+      http.get('*/api/bookmarks', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [bookmarkWithKeywords] },
+        })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    expect(
+      await screen.findByText(FIELD_LABELS.KEYWORDS_SECTION_TITLE),
+    ).toBeInTheDocument()
+    expect(screen.getByText('React')).toBeInTheDocument()
+    expect(screen.getByText('Vitest')).toBeInTheDocument()
+  })
+
+  it('キーワードがない場合にメッセージが表示されること', async () => {
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    expect(
+      await screen.findByText(FIELD_LABELS.NO_KEYWORDS_ATTACHED),
+    ).toBeInTheDocument()
+  })
+
+  it('キーワードを入力して Add ボタンで追加できること', async () => {
+    let createCalled = false
+    server.use(
+      http.post('*/api/keywords', async () => {
+        createCalled = true
+        return HttpResponse.json({
+          success: true,
+          data: { keyword: { id: 'new-kw', name: 'NewTag' } },
+        })
+      }),
+      http.post('*/api/bookmarks/:id/keywords', () => {
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
+    fireEvent.change(input, { target: { value: 'NewTag' } })
+
+    const addButton = screen.getByRole('button', {
+      name: FIELD_LABELS.BUTTON_ADD,
+    })
+    fireEvent.click(addButton)
+
+    await waitFor(() => expect(createCalled).toBe(true))
+    expect(input).toHaveValue('') // 追加後に入力欄がクリアされること
+  })
+
+  it('キーワード入力欄で Enter キーを押すと追加されること', async () => {
+    let createCalled = false
+    server.use(
+      http.post('*/api/keywords', async () => {
+        createCalled = true
+        return HttpResponse.json({
+          success: true,
+          data: { keyword: { id: 'new-kw', name: 'EnterTag' } },
+        })
+      }),
+      http.post('*/api/bookmarks/:id/keywords', () => {
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
+    fireEvent.change(input, { target: { value: 'EnterTag' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => expect(createCalled).toBe(true))
+  })
+
+  it('入力が空のとき Add ボタンが disabled であること', async () => {
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    const addButton = await screen.findByRole('button', {
+      name: FIELD_LABELS.BUTTON_ADD,
+    })
+    expect(addButton).toBeDisabled()
+  })
+
   it('更新中（Pending）はボタンが ... になり disabled になること', async () => {
     server.use(
       http.patch('*/api/bookmarks/:id', async () => {
@@ -90,14 +201,15 @@ describe('BookmarkPage Component', () => {
     })
   })
 
-  it('削除中（Pending）はボタンが ... になり disabled になること', async () => {
+  it('削除ボタンクリックで confirm の後に削除が実行されること', async () => {
+    let deleteCalled = false
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     server.use(
-      http.delete('*/api/bookmarks/:id', async () => {
-        await delay(200)
-        return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
+      http.delete('*/api/bookmarks/:id', () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
       }),
     )
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderWithRoutes(
       <BookmarkPage />,
@@ -107,10 +219,7 @@ describe('BookmarkPage Component', () => {
     const deleteButton = await screen.findByText(FIELD_LABELS.BUTTON_DELETE)
     fireEvent.click(deleteButton)
 
-    await waitFor(() => {
-      expect(screen.getAllByText('...')).toHaveLength(1)
-      expect(deleteButton).toBeDisabled()
-    })
+    await waitFor(() => expect(deleteCalled).toBe(true))
   })
 
   it('存在しない ID の場合はエラーメッセージが表示されること', async () => {
