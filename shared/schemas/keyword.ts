@@ -41,3 +41,11 @@ export const keywordResponseSchema = z.object({
   keyword: keywordSchema,
 })
 export type KeywordResponse = z.infer<typeof keywordResponseSchema>
+
+/**
+ * キーワード紐付けリクエストのバリデーションスキーマ
+ */
+export const attachKeywordRequestSchema = z.object({
+  keywordId: KeywordIdSchema,
+})
+export type AttachKeywordRequest = z.infer<typeof attachKeywordRequestSchema>

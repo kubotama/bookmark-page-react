@@ -323,6 +323,7 @@ export const LOG_MESSAGES = {
   BLOCKED_NON_HTTP_URL: (url: string) => `Blocked opening non-HTTP URL: ${url}`,
   FETCH_KEYWORDS_FAILED: 'Failed to fetch keywords:',
   CREATE_KEYWORD_FAILED: 'Failed to create keyword:',
+  ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
 } as const
 
 /**

@@ -263,6 +263,75 @@ describe('Bookmarks API', () => {
     })
   })
 
+  describe(`POST ${API_PATHS.BOOKMARKS}/:id/keywords`, () => {
+    it('キーワードをブックマークに紐付けられること', async () => {
+      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const k1 = createKeyword('Tag1')
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+        },
+      )
+
+      expect(res.status).toBe(HTTP_STATUS.CREATED)
+      const body = await res.json()
+      expect(body.success).toBe(true)
+
+      // ブックマーク一覧で紐付けを確認
+      const getRes = await app.request(API_PATHS.BOOKMARKS)
+      const getBody = await getRes.json()
+      expect(getBody.data.bookmarks[0].keywords).toContainEqual(
+        expect.objectContaining({ name: 'Tag1' }),
+      )
+    })
+
+    it('存在しないブックマークへの紐付け時に 404 を返すこと', async () => {
+      const k1 = createKeyword('Tag1')
+      const res = await app.request(`${API_PATHS.BOOKMARKS}/999/keywords`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+      })
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+    })
+
+    it('存在しないキーワードの紐付け時に 404 を返すこと', async () => {
+      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: '999' }),
+        },
+      )
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+    })
+
+    it('既に紐付いているキーワードを再度紐付けようとした場合に 409 を返すこと', async () => {
+      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const k1 = createKeyword('Tag1')
+      attachKeyword(b1.bookmark_id, k1.keyword_id)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+        },
+      )
+
+      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
+      const body = await res.json()
+      expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
+    })
+  })
+
   describe('Database Error Handling (500)', () => {
     const dbError = new Error('Database connection failed')
 
@@ -345,6 +414,32 @@ describe('Bookmarks API', () => {
       expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.REORDER_FAILED_CONSOLE,
+        dbError,
+      )
+    })
+
+    it('POST (keywords): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
+      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const k1 = createKeyword('Tag1')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      // 最初の select (bookmark/keyword存在確認) は通し、insert でエラーを発生させる
+      vi.spyOn(db, 'insert').mockImplementation(() => {
+        throw dbError
+      })
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+        },
+      )
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
         dbError,
       )
     })
