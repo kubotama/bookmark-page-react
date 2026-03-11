@@ -310,6 +310,8 @@ describe('Bookmarks API', () => {
         },
       )
       expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+      const body = await res.json()
+      expect(body.error.message).toBe(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
     })
 
     it('既に紐付いているキーワードを再度紐付けようとした場合に 409 を返すこと', async () => {
@@ -425,6 +427,33 @@ describe('Bookmarks API', () => {
 
       // 最初の select (bookmark/keyword存在確認) は通し、insert でエラーを発生させる
       vi.spyOn(db, 'insert').mockImplementation(() => {
+        throw dbError
+      })
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+        },
+      )
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+        dbError,
+      )
+    })
+
+    it('POST (keywords): 存在確認のDBエラー時に 500 を返すこと', async () => {
+      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const k1 = createKeyword('Tag1')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const dbError = new Error('DB select failed')
+
+      // select でエラーを発生させる
+      vi.spyOn(db, 'select').mockImplementation(() => {
         throw dbError
       })
 

@@ -263,12 +263,20 @@ const bookmarksRoute = new Hono()
       const keywordIdNum = parseInt(keywordId, 10)
 
       try {
-        // 1. ブックマークの存在確認
-        const bookmark = await db
-          .select()
-          .from(bookmarksTable)
-          .where(eq(bookmarksTable.bookmarkId, bookmarkIdNum))
-          .get()
+        // 1. ブックマークとキーワードの存在を並行して確認
+        const [bookmark, keyword] = await Promise.all([
+          db
+            .select({ id: bookmarksTable.bookmarkId })
+            .from(bookmarksTable)
+            .where(eq(bookmarksTable.bookmarkId, bookmarkIdNum))
+            .get(),
+          db
+            .select({ id: keywordsTable.keywordId })
+            .from(keywordsTable)
+            .where(eq(keywordsTable.keywordId, keywordIdNum))
+            .get(),
+        ])
+
         if (!bookmark) {
           return c.json(
             {
@@ -282,18 +290,12 @@ const bookmarksRoute = new Hono()
           )
         }
 
-        // 2. キーワードの存在確認
-        const keyword = await db
-          .select()
-          .from(keywordsTable)
-          .where(eq(keywordsTable.keywordId, keywordIdNum))
-          .get()
         if (!keyword) {
           return c.json(
             {
               success: false,
               error: {
-                message: ERROR_MESSAGES.NOT_FOUND,
+                message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
                 code: API_ERROR_CODES.NOT_FOUND,
               },
             },
@@ -301,7 +303,7 @@ const bookmarksRoute = new Hono()
           )
         }
 
-        // 3. 紐付け (中間テーブルへの挿入)
+        // 2. 紐付け (中間テーブルへの挿入)
         await db.insert(bookmarkKeywordsTable).values({
           bookmarkId: bookmarkIdNum,
           keywordId: keywordIdNum,
