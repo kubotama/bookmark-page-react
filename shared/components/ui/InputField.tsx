@@ -3,11 +3,13 @@ import { type InputHTMLAttributes } from 'react'
 interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
   id: string
+  width?: string
 }
 
 export const InputField = ({
   label,
   id,
+  width = 'w-12',
   className = '',
   ...props
 }: InputFieldProps) => {
@@ -15,7 +17,7 @@ export const InputField = ({
     <div className="flex items-center gap-4">
       <label
         htmlFor={id}
-        className="w-12 text-xs font-medium text-gray-500 uppercase tracking-wider"
+        className={`text-xs font-medium text-gray-500 uppercase tracking-wider ${width}`}
       >
         {label}
       </label>

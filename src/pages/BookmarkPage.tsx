@@ -111,10 +111,11 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
             <InputField
               id="keyword-input"
               label={FIELD_LABELS.ADD_KEYWORD_LABEL}
+              width="w-28"
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
               onKeyDown={handleKeywordKeyDown}
-              placeholder="Enter keyword name..."
+              placeholder={PLACEHOLDERS.KEYWORD}
             />
           </div>
           <div className="pb-1">
