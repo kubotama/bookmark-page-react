@@ -14,8 +14,9 @@ const manifestJsonPath = path.resolve(
  * package.json と manifest.json のバージョンを同期するスクリプト
  * 成功した場合は true、変更が不要な場合は false を返す。
  * エラーが発生した場合は例外を投げる。
+ * @param checkOnly true の場合、不一致がある場合にエラーを投げ、ファイルへの書き込みを行わない。
  */
-export function syncVersion(): boolean {
+export function syncVersion(checkOnly = false): boolean {
   // 1. ファイルの存在確認 (防御的チェック)
   if (!fs.existsSync(packageJsonPath)) {
     throw new Error(
@@ -38,13 +39,13 @@ export function syncVersion(): boolean {
     )
   }
 
-  // 3. バージョンの同期
+  // 3. バージョンの同期/チェック
   if (manifest.version !== packageJson.version) {
+    if (checkOnly) {
+      throw new Error(LOG_MESSAGES.VERSION_MISMATCH_ERROR)
+    }
     manifest.version = packageJson.version
-    fs.writeFileSync(
-      manifestJsonPath,
-      JSON.stringify(manifest, null, 2) + '\n',
-    )
+    fs.writeFileSync(manifestJsonPath, JSON.stringify(manifest, null, 2) + '\n')
     console.log(LOG_MESSAGES.UPDATED_VERSION(packageJson.version))
     return true
   }
@@ -53,10 +54,13 @@ export function syncVersion(): boolean {
 }
 
 // 直接実行された場合のみ実行 (CLI としての挙動)
-const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+const isMain =
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
 if (isMain) {
+  const checkOnly = process.argv.includes('--check')
   try {
-    syncVersion()
+    syncVersion(checkOnly)
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exit(1)
