@@ -21,8 +21,11 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "extension:dev": "tsx extension/sync-version.ts && vite --config extension/vite.config.ts",
-    "extension:build": "tsx extension/sync-version.ts && tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
+    "version-sync": "tsx extension/sync-version.ts",
+    "version-check": "tsx extension/sync-version.ts --check",
+    "version": "npm run version-sync && git add extension/public/manifest.json",
+    "extension:dev": "npm run version-sync && vite --config extension/vite.config.ts",
+    "extension:build": "npm run version-sync && tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
     "type-check:extension": "tsc -p extension/tsconfig.json --noEmit",
     "prepare": "husky"
   },

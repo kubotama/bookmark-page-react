@@ -323,6 +323,8 @@ export const LOG_MESSAGES = {
     'Blocked message from unauthorized extension:',
   UNAUTHORIZED_ORIGIN_MESSAGE: 'Blocked unauthorized message from origin:',
   VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
+  VERSION_MISMATCH_ERROR:
+    '[sync-version] package.json and manifest.json versions do not match. Run "npm run version-sync" to fix.',
   UPDATED_VERSION: (version: string) =>
     `[sync-version] Updated manifest.json version to ${version}`,
   BLOCKED_NON_HTTP_URL: (url: string) => `Blocked opening non-HTTP URL: ${url}`,
