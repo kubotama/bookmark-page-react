@@ -24,13 +24,14 @@ export const FIELD_LABELS = {
   BACK_TO_LIST: 'Back to List',
   KEYWORDS_SECTION_TITLE: 'Keywords',
   NO_KEYWORDS_ATTACHED: 'No keywords attached',
-  ADD_KEYWORD_LABEL: 'Add New Keyword',
-  BUTTON_ADD: 'Add',
+  ADD_KEYWORD_LABEL: '追加するキーワード',
+  BUTTON_ADD: '追加',
 } as const
 
 export const PLACEHOLDERS = {
   TITLE: 'タイトルを入力',
   URL: 'https://...',
+  KEYWORD: 'キーワードを入力',
 } as const
 
 /**
