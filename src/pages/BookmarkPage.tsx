@@ -104,29 +104,8 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
         </div>
       </div>
 
-      {/* 2. キーワード追加・表示ブロック (暫定) */}
-      <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg shadow-sm space-y-4">
-        <h3 className="sr-only">{FIELD_LABELS.KEYWORDS_SECTION_TITLE}</h3>
-
-        {/* キーワード一覧 */}
-        <div className="flex flex-wrap gap-2">
-          {bookmark.keywords.length > 0 ? (
-            bookmark.keywords.map((kw) => (
-              <span
-                key={kw.id}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
-              >
-                {kw.name}
-              </span>
-            ))
-          ) : (
-            <span className="text-sm text-gray-400 italic">
-              {FIELD_LABELS.NO_KEYWORDS_ATTACHED}
-            </span>
-          )}
-        </div>
-
-        {/* キーワード追加フォーム */}
+      {/* 2. キーワード追加ブロック */}
+      <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg shadow-sm">
         <div className="flex gap-2 items-end">
           <div className="flex-1">
             <InputField
@@ -147,6 +126,27 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
               {isAddingKeyword ? '...' : FIELD_LABELS.BUTTON_ADD}
             </Button>
           </div>
+        </div>
+      </div>
+
+      {/* 3. 割当済みキーワードブロック */}
+      <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg shadow-sm">
+        <h3 className="sr-only">{FIELD_LABELS.KEYWORDS_SECTION_TITLE}</h3>
+        <div className="flex flex-wrap gap-2">
+          {bookmark.keywords.length > 0 ? (
+            bookmark.keywords.map((kw) => (
+              <span
+                key={kw.id}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
+              >
+                {kw.name}
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-gray-400 italic">
+              {FIELD_LABELS.NO_KEYWORDS_ATTACHED}
+            </span>
+          )}
         </div>
       </div>
     </div>
