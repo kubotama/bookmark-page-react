@@ -5,6 +5,16 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
 import { renderHook, waitFor, act } from '../test/utils'
 import { MOCK_BOOKMARK_1, VALID_URLS } from '@shared/test/fixtures'
+import { openUrlInNewTab } from '@shared/utils/url'
+
+// openUrlInNewTab をモック化
+vi.mock('@shared/utils/url', async () => {
+  const actual = await vi.importActual('@shared/utils/url')
+  return {
+    ...actual,
+    openUrlInNewTab: vi.fn(),
+  }
+})
 
 describe('useApp Hook (Integration)', () => {
   beforeEach(() => {
@@ -89,21 +99,38 @@ describe('useApp Hook (Integration)', () => {
       })
 
       expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
-      expect(result.current.selectedBookmark).toEqual(MOCK_BOOKMARK_1)
     })
 
-    it('削除操作後に選択が解除されること (Commands と ListState の連動)', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true)
+    it('handleOpen が呼ばれると選択されたブックマークの URL が開かれること', async () => {
+      const { result } = await renderAppHook()
+
+      // 未選択時は何も起こらない
+      act(() => {
+        result.current.handleOpen()
+      })
+      expect(openUrlInNewTab).not.toHaveBeenCalled()
+
+      // 選択して開く
+      act(() => {
+        result.current.handleRowClick(MOCK_BOOKMARK_1.id)
+      })
+      act(() => {
+        result.current.handleOpen()
+      })
+      expect(openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
+    })
+
+    it('handleClose が呼ばれると選択が解除されること', async () => {
       const { result } = await renderAppHook()
 
       act(() => {
         result.current.handleRowClick(MOCK_BOOKMARK_1.id)
       })
+      expect(result.current.selectedId).toBe(MOCK_BOOKMARK_1.id)
 
-      await act(async () => {
-        await result.current.handleDelete()
+      act(() => {
+        result.current.handleClose()
       })
-
       expect(result.current.selectedId).toBeNull()
     })
   })

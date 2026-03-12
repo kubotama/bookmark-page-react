@@ -1,5 +1,4 @@
 import { BookmarkList } from '../components/BookmarkList'
-import { BookmarkDetail } from '../components/BookmarkDetail'
 import { useApp } from '../hooks/useApp'
 
 interface HomePageProps {
@@ -9,13 +8,10 @@ interface HomePageProps {
 export function HomePage({ appState }: HomePageProps) {
   const {
     bookmarks,
-    selectedBookmark,
     selectedId,
     isLoading,
     error,
     handleRowClick,
-    handleUpdate,
-    handleDelete,
     handleOpen,
     handleClose,
     handleReorder,
@@ -39,20 +35,6 @@ export function HomePage({ appState }: HomePageProps) {
           </div>
         </div>
       </main>
-
-      {selectedBookmark && (
-        <footer className="w-full flex justify-center border-t border-gray-200 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.1)] z-10">
-          <div className="w-full max-w-2xl">
-            <BookmarkDetail
-              bookmark={selectedBookmark}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onOpen={handleOpen}
-              onClose={handleClose}
-            />
-          </div>
-        </footer>
-      )}
     </>
   )
 }
