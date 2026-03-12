@@ -106,9 +106,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
 
       {/* 2. キーワード追加・表示ブロック (暫定) */}
       <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg shadow-sm space-y-4">
-        <h3 className="text-sm font-medium text-gray-700">
-          {FIELD_LABELS.KEYWORDS_SECTION_TITLE}
-        </h3>
+        <h3 className="sr-only">{FIELD_LABELS.KEYWORDS_SECTION_TITLE}</h3>
 
         {/* キーワード一覧 */}
         <div className="flex flex-wrap gap-2">
