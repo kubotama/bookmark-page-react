@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest'
-import { type ReactNode } from 'react'
 
 import {
   ARIA_ATTRIBUTES,
@@ -8,6 +7,7 @@ import {
   HTML_ATTRIBUTES,
   UI_MESSAGES,
   TEST_MESSAGES,
+  ERROR_MESSAGES,
 } from '@shared/constants'
 import {
   MOCK_BOOKMARK_1,
@@ -20,46 +20,36 @@ import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'
 import { type BookmarkProps } from './BookmarkList'
-import type { DragEndEvent } from '@dnd-kit/core'
+import { type DraggableListProps } from './DraggableList'
+import { type Bookmark } from '@shared/schemas/bookmark'
 
-// DndContext をモック化して内部のイベントをトリガーしやすくする
-vi.mock('@dnd-kit/core', async () => {
-  const actual = await vi.importActual('@dnd-kit/core')
-  return {
-    ...actual,
-    DndContext: ({
-      children,
-      onDragEnd,
-    }: {
-      children: ReactNode
-      onDragEnd: (event: DragEndEvent) => void
-    }) => (
+// DraggableList をモック化して内部のイベントをトリガーしやすくする
+vi.mock('./DraggableList', () => ({
+  DraggableList: ({
+    onReorder,
+    renderItem,
+    items,
+    listRole,
+  }: DraggableListProps<Bookmark>) => (
+    <div data-testid="mock-draggable-list" role={listRole}>
+      {/* 既存の DndContext モックの役割（正常系テスト用） */}
       <div
         data-testid="mock-dnd-context"
+        onClick={() => onReorder(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id)}
+      />
+      {/* 型ガード検証用（異常系テスト用） */}
+      <button
+        data-testid="trigger-invalid-reorder"
         onClick={() =>
-          onDragEnd({
-            active: {
-              id: MOCK_BOOKMARK_1.id,
-              data: { current: undefined },
-              rect: { current: null },
-            },
-            over: {
-              id: MOCK_BOOKMARK_2.id,
-              rect: { current: null },
-              data: { current: undefined },
-              disabled: false,
-            },
-            delta: { x: 0, y: 0 },
-            activatorEvent: {} as Event,
-            collisions: null,
-          } as unknown as DragEndEvent)
+          onReorder(1 as unknown as string, 2 as unknown as string)
         }
       >
-        {children}
-      </div>
-    ),
-  }
-})
+        Trigger Invalid
+      </button>
+      {items.map((item, index) => renderItem(item, index))}
+    </div>
+  ),
+}))
 
 describe('BookmarkList', () => {
   const defaultProps: BookmarkProps = {
@@ -97,12 +87,22 @@ describe('BookmarkList', () => {
         expect(screen.getByText(MOCK_BOOKMARK_1.title)).toBeInTheDocument()
         expect(screen.getByText(MOCK_BOOKMARK_2.title)).toBeInTheDocument()
         // リストロールを確認
-        expect(screen.getByRole(ARIA_ROLES.LIST)).toBeInTheDocument()
-        expect(
-          screen.getAllByRole(ARIA_ROLES.BUTTON, {
-            name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
-          }),
-        ).toHaveLength(2)
+        const list = screen.getByRole(ARIA_ROLES.LIST)
+        expect(list).toBeInTheDocument()
+
+        // リスト項目の階層構造を確認 (list > listitem > button)
+        const listItems = screen.getAllByRole(ARIA_ROLES.LISTITEM)
+        expect(listItems).toHaveLength(2)
+
+        const buttons = screen.getAllByRole(ARIA_ROLES.BUTTON, {
+          name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
+        })
+        expect(buttons).toHaveLength(2)
+
+        // 各リスト項目の中にボタンが含まれていることを確認
+        listItems.forEach((item, index) => {
+          expect(item).toContainElement(buttons[index])
+        })
       },
     },
     {
@@ -164,7 +164,7 @@ describe('BookmarkList', () => {
     const onReorder = vi.fn()
     render(<BookmarkList {...defaultProps} onReorder={onReorder} />)
 
-    // モック化した DndContext をクリックしてドラッグ終了イベントを擬似的に発火
+    // モック化した DndContext (現 DraggableList モック内の div) をクリック
     await user.click(screen.getByTestId('mock-dnd-context'))
 
     expect(onReorder).toHaveBeenCalledWith(
@@ -176,7 +176,6 @@ describe('BookmarkList', () => {
   it('行にフォーカスして Enter キーを押した際に onOpen が呼び出されること', async () => {
     const user = userEvent.setup()
     const onOpen = vi.fn()
-    // MOCK_BOOKMARK_2 を選択状態にしてレンダリング
     render(
       <BookmarkList
         {...defaultProps}
@@ -189,7 +188,6 @@ describe('BookmarkList', () => {
       name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
 
-    // 選択されている items[1] (MOCK_BOOKMARK_2) にフォーカスして Enter
     items[1]!.focus()
     await user.keyboard('{Enter}')
 
@@ -220,7 +218,6 @@ describe('BookmarkList', () => {
     expect(items[0]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '-1')
     expect(items[1]).toHaveAttribute(HTML_ATTRIBUTES.TAB_INDEX, '0')
 
-    // 選択解除時
     rerender(<BookmarkList {...defaultProps} selectedId={null} />)
     const updatedItems = screen.getAllByRole(ARIA_ROLES.BUTTON, {
       name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
@@ -243,17 +240,39 @@ describe('BookmarkList', () => {
     expect(otherItem).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
   })
 
-  it('正しい階層構造 (role="list" > role="button") でレンダリングされること', () => {
+  it('正しい階層構造 (role="list" > role="listitem" > role="button") でレンダリングされること', () => {
     render(<BookmarkList {...defaultProps} />)
 
     const list = screen.getByRole(ARIA_ROLES.LIST)
     expect(list).toBeInTheDocument()
 
-    // リストの直下にある要素がブックマーク項目 (button) であることを確認
-    const items = list.children
-    expect(items).toHaveLength(MOCK_BOOKMARKS.length)
-    Array.from(items).forEach((child) => {
-      expect(child).toHaveAttribute(HTML_ATTRIBUTES.ROLE, ARIA_ROLES.BUTTON)
+    const listItems = screen.getAllByRole(ARIA_ROLES.LISTITEM)
+    expect(listItems).toHaveLength(MOCK_BOOKMARKS.length)
+
+    listItems.forEach((item) => {
+      expect(list).toContainElement(item)
+      const button = screen.getByRole(ARIA_ROLES.BUTTON, {
+        name: new RegExp(item.textContent || ''),
+      })
+      expect(item).toContainElement(button)
     })
+  })
+
+  it('不正な ID 型 (number) が渡された場合、onReorder を呼び出さず警告を出力すること', async () => {
+    const user = userEvent.setup()
+    const onReorder = vi.fn()
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(<BookmarkList {...defaultProps} onReorder={onReorder} />)
+
+    const trigger = screen.getByTestId('trigger-invalid-reorder')
+    await user.click(trigger)
+
+    expect(onReorder).not.toHaveBeenCalled()
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining(ERROR_MESSAGES.UNEXPECTED_ID_TYPE),
+    )
+
+    consoleSpy.mockRestore()
   })
 })

@@ -1,26 +1,16 @@
 import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import {
   ARIA_ATTRIBUTES,
   ARIA_ROLES,
   COMMON_MESSAGES,
   UI_MESSAGES,
+  ERROR_MESSAGES,
 } from '@shared/constants'
 
 import { BookmarkItem } from './BookmarkItem'
+import { DraggableList } from './DraggableList'
+import { DraggableItem } from './DraggableItem'
 
-import type { DragEndEvent } from '@dnd-kit/core'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
 
 export type BookmarkProps = {
@@ -44,25 +34,6 @@ export const BookmarkList = ({
   onClose,
   onReorder,
 }: BookmarkProps) => {
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // クリックとドラッグを区別するための遊び
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (over && active.id !== over.id) {
-      onReorder(active.id as BookmarkId, over.id as BookmarkId)
-    }
-  }
-
   if (isLoading) {
     return (
       <div
@@ -99,19 +70,25 @@ export const BookmarkList = ({
 
   return (
     <div className="w-full max-w-2xl mx-auto overflow-hidden bg-white shadow border-t border-l border-r border-blue-700">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={bookmarks.map((b) => b.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div role={ARIA_ROLES.LIST}>
-            {bookmarks.map((bookmark, index) => (
+      <DraggableList
+        items={bookmarks}
+        listRole={ARIA_ROLES.LIST}
+        onReorder={(activeId, overId) => {
+          const activeResult = BookmarkIdSchema.safeParse(activeId)
+          const overResult = BookmarkIdSchema.safeParse(overId)
+
+          if (activeResult.success && overResult.success) {
+            onReorder(activeResult.data, overResult.data)
+          } else {
+            console.error(
+              `[BookmarkList] ${ERROR_MESSAGES.UNEXPECTED_ID_TYPE}: activeId=${typeof activeId}, overId=${typeof overId}`,
+            )
+          }
+        }}
+        renderItem={(bookmark, index) => (
+          <DraggableItem key={bookmark.id} item={bookmark}>
+            {(dndProps) => (
               <BookmarkItem
-                key={bookmark.id}
                 bookmark={bookmark}
                 isSelected={selectedId === bookmark.id}
                 isFocusable={
@@ -121,11 +98,12 @@ export const BookmarkList = ({
                 onRowClick={onRowClick}
                 onOpen={onOpen}
                 onClose={onClose}
+                {...dndProps}
               />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+            )}
+          </DraggableItem>
+        )}
+      />
     </div>
   )
 }

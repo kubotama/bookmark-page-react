@@ -19,6 +19,8 @@ export type DraggableListProps<T extends DraggableEntity> = {
   onReorder: (activeId: string | number, overId: string | number) => void
   renderItem: (item: T, index: number) => React.ReactNode
   strategy?: typeof verticalListSortingStrategy
+  listRole?: string
+  ariaLabel?: string
 }
 
 export const DraggableList = <T extends DraggableEntity>({
@@ -26,6 +28,8 @@ export const DraggableList = <T extends DraggableEntity>({
   onReorder,
   renderItem,
   strategy = verticalListSortingStrategy,
+  listRole,
+  ariaLabel,
 }: DraggableListProps<T>) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -46,6 +50,8 @@ export const DraggableList = <T extends DraggableEntity>({
     }
   }
 
+  const renderedItems = items.map((item, index) => renderItem(item, index))
+
   return (
     <DndContext
       sensors={sensors}
@@ -53,7 +59,13 @@ export const DraggableList = <T extends DraggableEntity>({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={items.map((i) => i.id)} strategy={strategy}>
-        {items.map((item, index) => renderItem(item, index))}
+        {listRole ? (
+          <div role={listRole} aria-label={ariaLabel}>
+            {renderedItems}
+          </div>
+        ) : (
+          <>{renderedItems}</>
+        )}
       </SortableContext>
     </DndContext>
   )
