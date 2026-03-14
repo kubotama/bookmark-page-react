@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { z } from 'zod'
 import { render, screen } from '../test/utils'
 import { DraggableList } from './DraggableList'
 import { DraggableItem } from './DraggableItem'
 import * as sortable from '@dnd-kit/sortable'
+
+const mockIdSchema = z.string()
 
 // DndContext をモック
 vi.mock('@dnd-kit/core', async () => {
@@ -62,6 +65,7 @@ describe('DraggableList', () => {
     render(
       <DraggableList
         items={mockItems}
+        idSchema={mockIdSchema}
         onReorder={onReorder}
         renderItem={(item) => (
           <DraggableItem key={item.id} item={item}>
@@ -90,6 +94,7 @@ describe('DraggableList', () => {
     render(
       <DraggableList
         items={mockItems}
+        idSchema={mockIdSchema}
         onReorder={onReorder}
         renderItem={(item) => (
           <DraggableItem key={item.id} item={item}>
@@ -103,6 +108,34 @@ describe('DraggableList', () => {
     context.click()
 
     expect(onReorder).toHaveBeenCalledWith('1', '2')
+  })
+
+  it('IDの検証に失敗した場合、onReorder が呼び出されないこと', () => {
+    const onReorder = vi.fn()
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // ID が数値であることを期待するスキーマを使用
+    const numberIdSchema = z.number()
+
+    render(
+      <DraggableList
+        items={mockItems as unknown as { id: string | number; name: string }[]}
+        idSchema={numberIdSchema}
+        onReorder={onReorder}
+        renderItem={(item) => (
+          <DraggableItem key={item.id} item={item}>
+            {({ setNodeRef }) => <div ref={setNodeRef}>{item.name}</div>}
+          </DraggableItem>
+        )}
+      />,
+    )
+
+    const context = screen.getByTestId('dnd-context')
+    context.click() // モックでは文字列 '1', '2' を渡すため、検証に失敗する
+
+    expect(onReorder).not.toHaveBeenCalled()
+    expect(consoleSpy).toHaveBeenCalled()
+    consoleSpy.mockRestore()
   })
 
   it('ドラッグ中のアイテムに適切なスタイルが適用されること (Branch Coverage用)', () => {
@@ -124,6 +157,7 @@ describe('DraggableList', () => {
     render(
       <DraggableList
         items={mockItems}
+        idSchema={mockIdSchema}
         onReorder={onReorder}
         renderItem={(item) => (
           <DraggableItem key={item.id} item={item}>

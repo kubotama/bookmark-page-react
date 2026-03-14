@@ -20,36 +20,46 @@ import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'
 import { type BookmarkProps } from './BookmarkList'
-import { type DraggableListProps } from './DraggableList'
-import { type Bookmark } from '@shared/schemas/bookmark'
 
-// DraggableList をモック化して内部のイベントをトリガーしやすくする
-vi.mock('./DraggableList', () => ({
-  DraggableList: ({
-    onReorder,
-    renderItem,
-    items,
-    listRole,
-  }: DraggableListProps<Bookmark>) => (
-    <div data-testid="mock-draggable-list" role={listRole}>
-      {/* 既存の DndContext モックの役割（正常系テスト用） */}
+// DndContext をモック化して内部のイベントをトリガーしやすくする
+vi.mock('@dnd-kit/core', async () => {
+  const actual = await vi.importActual('@dnd-kit/core')
+  return {
+    ...actual,
+    DndContext: ({
+      children,
+      onDragEnd,
+    }: {
+      children: React.ReactNode
+      onDragEnd: (event: {
+        active: { id: string | number }
+        over: { id: string | number } | null
+      }) => void
+    }) => (
       <div
         data-testid="mock-dnd-context"
-        onClick={() => onReorder(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id)}
-      />
-      {/* 型ガード検証用（異常系テスト用） */}
-      <button
-        data-testid="trigger-invalid-reorder"
-        onClick={() =>
-          onReorder(1 as unknown as string, 2 as unknown as string)
-        }
+        onClick={(e) => {
+          const activeId =
+            e.currentTarget.getAttribute('data-active-id') || MOCK_BOOKMARK_1.id
+          const overId =
+            e.currentTarget.getAttribute('data-over-id') || MOCK_BOOKMARK_2.id
+          const type = e.currentTarget.getAttribute('data-id-type')
+
+          // 型ガードのテスト用に number を渡せるようにする
+          const finalActiveId = type === 'number' ? Number(activeId) : activeId
+          const finalOverId = type === 'number' ? Number(overId) : overId
+
+          onDragEnd({
+            active: { id: finalActiveId },
+            over: { id: finalOverId },
+          })
+        }}
       >
-        Trigger Invalid
-      </button>
-      {items.map((item, index) => renderItem(item, index))}
-    </div>
-  ),
-}))
+        {children}
+      </div>
+    ),
+  }
+})
 
 describe('BookmarkList', () => {
   const defaultProps: BookmarkProps = {
@@ -164,7 +174,7 @@ describe('BookmarkList', () => {
     const onReorder = vi.fn()
     render(<BookmarkList {...defaultProps} onReorder={onReorder} />)
 
-    // モック化した DndContext (現 DraggableList モック内の div) をクリック
+    // デフォルト（MOCK_BOOKMARK_1 -> MOCK_BOOKMARK_2）
     await user.click(screen.getByTestId('mock-dnd-context'))
 
     expect(onReorder).toHaveBeenCalledWith(
@@ -265,8 +275,13 @@ describe('BookmarkList', () => {
 
     render(<BookmarkList {...defaultProps} onReorder={onReorder} />)
 
-    const trigger = screen.getByTestId('trigger-invalid-reorder')
-    await user.click(trigger)
+    const context = screen.getByTestId('mock-dnd-context')
+    // ID に number をセットしてクリック
+    context.setAttribute('data-active-id', '1')
+    context.setAttribute('data-over-id', '2')
+    context.setAttribute('data-id-type', 'number')
+
+    await user.click(context)
 
     expect(onReorder).not.toHaveBeenCalled()
     expect(consoleSpy).toHaveBeenCalledWith(

@@ -3,7 +3,6 @@ import {
   ARIA_ROLES,
   COMMON_MESSAGES,
   UI_MESSAGES,
-  ERROR_MESSAGES,
 } from '@shared/constants'
 
 import { BookmarkItem } from './BookmarkItem'
@@ -72,19 +71,9 @@ export const BookmarkList = ({
     <div className="w-full max-w-2xl mx-auto overflow-hidden bg-white shadow border-t border-l border-r border-blue-700">
       <DraggableList
         items={bookmarks}
+        idSchema={BookmarkIdSchema}
         listRole={ARIA_ROLES.LIST}
-        onReorder={(activeId, overId) => {
-          const activeResult = BookmarkIdSchema.safeParse(activeId)
-          const overResult = BookmarkIdSchema.safeParse(overId)
-
-          if (activeResult.success && overResult.success) {
-            onReorder(activeResult.data, overResult.data)
-          } else {
-            console.error(
-              `[BookmarkList] ${ERROR_MESSAGES.UNEXPECTED_ID_TYPE}: activeId=${typeof activeId}, overId=${typeof overId}`,
-            )
-          }
-        }}
+        onReorder={onReorder}
         renderItem={(bookmark, index) => (
           <DraggableItem key={bookmark.id} item={bookmark}>
             {(dndProps) => (
