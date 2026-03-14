@@ -119,6 +119,7 @@ export const ERROR_MESSAGES = {
     'セキュリティ上の理由により、このポートへの接続は許可されていません。',
   API_PROVIDER_REQUIRED: 'useApi は ApiProvider の内側で使用する必要があります',
   UPDATE_API_URL_FAILED: 'API URL の更新に失敗しました:',
+  UNEXPECTED_ID_TYPE: '予期しない ID 型が検出されました',
 } as const
 
 /**
@@ -217,6 +218,7 @@ export const EXTENSION_MESSAGE_TYPES = {
 export const ARIA_ROLES = {
   BUTTON: 'button',
   LIST: 'list',
+  LISTITEM: 'listitem',
   STATUS: 'status',
   ALERT: 'alert',
   ROWGROUP: 'rowgroup',
