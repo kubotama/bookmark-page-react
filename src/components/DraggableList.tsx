@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   closestCenter,
   DndContext,
@@ -12,11 +13,13 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import type { DragEndEvent } from '@dnd-kit/core'
+import { ERROR_MESSAGES } from '@shared/constants'
 import type { DraggableEntity } from '@shared/schemas/draggable'
 
 export type DraggableListProps<T extends DraggableEntity> = {
   items: T[]
-  onReorder: (activeId: string | number, overId: string | number) => void
+  idSchema: z.ZodTypeAny
+  onReorder: (activeId: T['id'], overId: T['id']) => void
   renderItem: (item: T, index: number) => React.ReactNode
   strategy?: typeof verticalListSortingStrategy
   listRole?: string
@@ -25,6 +28,7 @@ export type DraggableListProps<T extends DraggableEntity> = {
 
 export const DraggableList = <T extends DraggableEntity>({
   items,
+  idSchema,
   onReorder,
   renderItem,
   strategy = verticalListSortingStrategy,
@@ -46,7 +50,16 @@ export const DraggableList = <T extends DraggableEntity>({
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      onReorder(active.id, over.id)
+      const activeResult = idSchema.safeParse(active.id)
+      const overResult = idSchema.safeParse(over.id)
+
+      if (activeResult.success && overResult.success) {
+        onReorder(activeResult.data as T['id'], overResult.data as T['id'])
+      } else {
+        console.error(
+          `[DraggableList] ${ERROR_MESSAGES.UNEXPECTED_ID_TYPE}: activeId=${typeof active.id}, overId=${typeof over.id}`,
+        )
+      }
     }
   }
 
