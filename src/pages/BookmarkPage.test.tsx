@@ -2,8 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Routes, Route } from 'react-router-dom'
 import { render, screen, fireEvent, waitFor } from '../test/utils'
 import { BookmarkPage } from './BookmarkPage'
-import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
+import {
+  FIELD_LABELS,
+  APP_PATHS,
+  UI_MESSAGES,
+  LOG_MESSAGES,
+} from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import { updateBookmarkSchema } from '@shared/schemas/bookmark'
 import { http, HttpResponse, delay } from 'msw'
 import { server } from '../test/setup'
 import * as urlUtils from '@shared/utils/url'
@@ -26,6 +32,17 @@ describe('BookmarkPage Component', () => {
         return HttpResponse.json({
           success: true,
           data: { bookmarks: [MOCK_BOOKMARK_1] },
+        })
+      }),
+      http.get('*/api/keywords', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            keywords: [
+              { id: '1', name: 'React', bookmarkCount: 0 },
+              { id: '2', name: 'TypeScript', bookmarkCount: 0 },
+            ],
+          },
         })
       }),
     )
@@ -56,6 +73,40 @@ describe('BookmarkPage Component', () => {
     expect(screen.getByText(/Loading.../i)).toBeInTheDocument()
   })
 
+  it('タイトルとURLを編集して更新できること', async () => {
+    let patchCalled = false
+    server.use(
+      http.patch('*/api/bookmarks/:id', async ({ request }) => {
+        const body = await request.json()
+        const parsed = updateBookmarkSchema.parse(body)
+        expect(parsed.title).toBe('New Title')
+        expect(parsed.url).toBe('https://new-url.com')
+        patchCalled = true
+        return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    // 初期値のロードを待機
+    const titleInput = await screen.findByLabelText(FIELD_LABELS.TITLE)
+    const urlInput = screen.getByLabelText(FIELD_LABELS.URL)
+
+    // 実際に値を変更（これにより onChange = setEditTitle/setEditUrl が呼ばれる）
+    fireEvent.change(titleInput, { target: { value: 'New Title' } })
+    fireEvent.change(urlInput, { target: { value: 'https://new-url.com' } })
+
+    const updateButton = screen.getByRole('button', {
+      name: FIELD_LABELS.BUTTON_UPDATE,
+    })
+    fireEvent.click(updateButton)
+
+    await waitFor(() => expect(patchCalled).toBe(true))
+  })
+
   it('ブックマーク情報がフォームに初期表示されること', async () => {
     renderWithRoutes(
       <BookmarkPage />,
@@ -72,8 +123,8 @@ describe('BookmarkPage Component', () => {
     const bookmarkWithKeywords = {
       ...MOCK_BOOKMARK_1,
       keywords: [
-        { id: 'kw1', name: 'React' },
-        { id: 'kw2', name: 'Vitest' },
+        { id: '1', name: 'React' },
+        { id: '2', name: 'Vitest' },
       ],
     }
     server.use(
@@ -95,6 +146,85 @@ describe('BookmarkPage Component', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('React')).toBeInTheDocument()
     expect(screen.getByText('Vitest')).toBeInTheDocument()
+  })
+
+  it('未割当キーワードが第 4 ブロックに表示されること', async () => {
+    // 1 は割当済み、2 は未割当とする
+    const bookmarkWithKeyword = {
+      ...MOCK_BOOKMARK_1,
+      keywords: [{ id: '1', name: 'React' }],
+    }
+    server.use(
+      http.get('*/api/bookmarks', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [bookmarkWithKeyword] },
+        })
+      }),
+      http.get('*/api/keywords', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            keywords: [
+              { id: '1', name: 'React', bookmarkCount: 0 },
+              { id: '2', name: 'TypeScript', bookmarkCount: 0 },
+            ],
+          },
+        })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    // セクションタイトルを確認
+    expect(
+      await screen.findByText(FIELD_LABELS.UNASSIGNED_KEYWORDS_LABEL),
+    ).toBeInTheDocument()
+
+    // 未割当の kw2 (TypeScript) は表示されるはず
+    expect(screen.getByText('TypeScript')).toBeInTheDocument()
+  })
+
+  it('未割当キーワードがない場合に適切なメッセージが表示されること', async () => {
+    // 全てのキーワードが割当済みとする
+    const bookmarkWithAllKeywords = {
+      ...MOCK_BOOKMARK_1,
+      keywords: [
+        { id: '1', name: 'React' },
+        { id: '2', name: 'TypeScript' },
+      ],
+    }
+    server.use(
+      http.get('*/api/bookmarks', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [bookmarkWithAllKeywords] },
+        })
+      }),
+      http.get('*/api/keywords', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            keywords: [
+              { id: '1', name: 'React', bookmarkCount: 0 },
+              { id: '2', name: 'TypeScript', bookmarkCount: 0 },
+            ],
+          },
+        })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    expect(
+      await screen.findByText(UI_MESSAGES.NO_KEYWORDS_AVAILABLE),
+    ).toBeInTheDocument()
   })
 
   it('キーワードがない場合にメッセージが表示されること', async () => {
@@ -222,9 +352,61 @@ describe('BookmarkPage Component', () => {
     await waitFor(() => expect(deleteCalled).toBe(true))
   })
 
-  it('存在しない ID の場合はエラーメッセージが表示されること', async () => {
-    renderWithRoutes(<BookmarkPage />, APP_PATHS.BOOKMARK_DETAIL('999'))
+  it('handleAddKeyword 内で予期せぬエラーが発生した場合にログ出力すること', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // mutateAsync が例外を投げるように設定
+    server.use(
+      http.post('*/api/keywords', () => {
+        return HttpResponse.error() // ネットワークエラー等をシミュレート
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage />,
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+    )
+
+    const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
+    fireEvent.change(input, { target: { value: 'ErrorTag' } })
+    const addButton = screen.getByRole('button', {
+      name: FIELD_LABELS.BUTTON_ADD,
+    })
+    fireEvent.click(addButton)
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
+        expect.anything(),
+      )
+    })
+    consoleSpy.mockRestore()
+  })
+
+  it('存在しない ID の場合はエラーメッセージが表示され、Close ボタンで戻れること', async () => {
+    const onBack = vi.fn()
+    // MSW でブックマークが見つからない状態をシミュレート
+    server.use(
+      http.get('*/api/bookmarks', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [] },
+        })
+      }),
+    )
+
+    renderWithRoutes(
+      <BookmarkPage onBack={onBack} />,
+      APP_PATHS.BOOKMARK_DETAIL('999'),
+    )
+
     expect(await screen.findByText(/Bookmark not found/i)).toBeInTheDocument()
+
+    // 閉じるボタンの動作確認
+    const closeButton = screen.getByRole('button', {
+      name: FIELD_LABELS.BUTTON_CLOSE,
+    })
+    fireEvent.click(closeButton)
+    expect(onBack).toHaveBeenCalled()
   })
 
   describe('Keyboard interaction', () => {
