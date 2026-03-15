@@ -38,6 +38,18 @@ describe('useBookmarkPage Hook', () => {
           data: { bookmarks: [MOCK_BOOKMARK_1] },
         })
       }),
+      http.get('*/api/keywords', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            keywords: [
+              { id: 'kw1', name: 'React' }, // 割当済み (MOCK_BOOKMARK_1 に含まれる)
+              { id: 'kw2', name: 'TypeScript' }, // 未割当
+              { id: 'kw3', name: 'Vite' }, // 未割当
+            ],
+          },
+        })
+      }),
     )
   })
 
@@ -49,6 +61,33 @@ describe('useBookmarkPage Hook', () => {
     )
     expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
     expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url)
+  })
+
+  it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
+    // 割当済みキーワードを 1 つ持つブックマークとしてモックを上書き
+    const bookmarkWithKeyword = {
+      ...MOCK_BOOKMARK_1,
+      keywords: [{ id: 'kw1', name: 'React' }],
+    }
+    server.use(
+      http.get('*/api/bookmarks', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { bookmarks: [bookmarkWithKeyword] },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useBookmarkPage())
+
+    // ロード完了を待機
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    // kw1 が除外され、kw2, kw3 が残っていることを確認
+    expect(result.current.unassignedKeywords).toEqual([
+      { id: 'kw2', name: 'TypeScript' },
+      { id: 'kw3', name: 'Vite' },
+    ])
   })
 
   it('handleUpdate が成功した際、一覧へ戻ること', async () => {

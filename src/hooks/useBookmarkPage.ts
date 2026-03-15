@@ -4,6 +4,7 @@ import { APP_PATHS, LOG_MESSAGES } from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   useBookmarks,
+  useKeywords,
   useUpdateBookmark,
   useDeleteBookmark,
   useCreateKeyword,
@@ -28,11 +29,22 @@ export const useBookmarkPage = (onBack?: () => void) => {
   }, [id])
 
   // 2. データ取得
-  const { data, isLoading } = useBookmarks()
+  const { data, isLoading: isBookmarksLoading } = useBookmarks()
+  const { data: keywordsData, isLoading: isKeywordsLoading } = useKeywords()
+
   const bookmark = useMemo(
     () => data?.bookmarks.find((b) => b.id === parsedId),
     [data, parsedId],
   )
+
+  // 未割当キーワードの抽出
+  const unassignedKeywords = useMemo(() => {
+    if (!keywordsData || !bookmark) return []
+    const assignedIds = new Set(bookmark.keywords.map((k) => k.id))
+    return keywordsData.keywords.filter((k) => !assignedIds.has(k.id))
+  }, [keywordsData, bookmark])
+
+  const isLoading = isBookmarksLoading || isKeywordsLoading
 
   // 3. フォーム状態
   const [editTitle, setEditTitle] = useState('')
@@ -149,6 +161,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
   return {
     id,
     bookmark,
+    unassignedKeywords,
     isLoading,
     editTitle,
     setEditTitle,
