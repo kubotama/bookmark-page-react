@@ -13,6 +13,7 @@ import type {
 import type {
   KeywordId,
   KeywordResponse,
+  KeywordsResponse,
   CreateKeywordRequest,
 } from '@shared/schemas/keyword'
 
@@ -67,7 +68,22 @@ export const useBookmarks = () => {
       const res = await client.api.bookmarks.$get()
       return await parseResponse<BookmarksResponse>(
         res,
-        UI_MESSAGES.FETCH_FAILED,
+        UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
+      )
+    },
+  })
+}
+
+export const useKeywords = () => {
+  const { client } = useApi()
+
+  return useQuery({
+    queryKey: QUERY_KEYS.KEYWORDS.LIST(),
+    queryFn: async () => {
+      const res = await client.api.keywords.$get()
+      return await parseResponse<KeywordsResponse>(
+        res,
+        UI_MESSAGES.FETCH_KEYWORDS_FAILED,
       )
     },
   })
@@ -197,7 +213,7 @@ export const useCreateKeyword = () => {
 
       return await parseResponse<KeywordResponse>(
         res,
-        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
+        UI_MESSAGES.CREATE_KEYWORD_FAILED,
       )
     },
     onSettled: () => {
@@ -223,7 +239,7 @@ export const useAttachKeyword = () => {
         json: { keywordId },
       })
 
-      return await parseResponse<void>(res, LOG_MESSAGES.ATTACH_KEYWORD_FAILED)
+      return await parseResponse<void>(res, UI_MESSAGES.ATTACH_KEYWORD_FAILED)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })

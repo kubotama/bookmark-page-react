@@ -127,7 +127,7 @@ export const ERROR_MESSAGES = {
  */
 export const UI_MESSAGES = {
   NO_BOOKMARKS: 'ブックマークがありません。',
-  FETCH_FAILED: 'ブックマークの取得に失敗しました',
+  FETCH_BOOKMARKS_FAILED: 'ブックマークの取得に失敗しました',
   UPDATE_FAILED: 'ブックマークの更新に失敗しました',
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
@@ -136,6 +136,9 @@ export const UI_MESSAGES = {
   SYNC_NOT_DETECTED: '拡張機能環境が検出されませんでした',
   SYNC_INVALID_RESPONSE: '拡張機能から不正なレスポンスが返されました',
   SYNC_CONNECTION_FAILED: '拡張機能との接続に失敗しました',
+  FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
+  CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
+  ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
 } as const
 
 /**
