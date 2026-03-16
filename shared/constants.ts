@@ -139,6 +139,7 @@ export const UI_MESSAGES = {
   FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
+  DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
 } as const
 
@@ -338,6 +339,7 @@ export const LOG_MESSAGES = {
   FETCH_KEYWORDS_FAILED: 'Failed to fetch keywords:',
   CREATE_KEYWORD_FAILED: 'Failed to create keyword:',
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
+  DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
 } as const
 
 /**

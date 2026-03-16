@@ -334,6 +334,35 @@ describe('Bookmarks API', () => {
     })
   })
 
+  describe(`DELETE ${API_PATHS.BOOKMARKS}/:id/keywords/:keywordId`, () => {
+    it('キーワードの紐付けを解除できること', async () => {
+      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const k1 = createKeyword('Tag1')
+      attachKeyword(b1.bookmark_id, k1.keyword_id)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords/${k1.keyword_id}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+      expect(res.status).toBe(HTTP_STATUS.NO_CONTENT)
+
+      // ブックマーク一覧で紐付けが消えていることを確認
+      const getRes = await app.request(API_PATHS.BOOKMARKS)
+      const getBody = await getRes.json()
+      expect(getBody.data.bookmarks[0].keywords).toHaveLength(0)
+    })
+
+    it('存在しない紐付けの解除時に 404 を返すこと', async () => {
+      const res = await app.request(`${API_PATHS.BOOKMARKS}/999/keywords/999`, {
+        method: 'DELETE',
+      })
+      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+    })
+  })
+
   describe('Database Error Handling (500)', () => {
     const dbError = new Error('Database connection failed')
 
@@ -469,6 +498,23 @@ describe('Bookmarks API', () => {
       expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+        dbError,
+      )
+    })
+
+    it('DELETE (keywords): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.spyOn(db, 'delete').mockImplementation(() => {
+        throw dbError
+      })
+
+      const res = await app.request(`${API_PATHS.BOOKMARKS}/1/keywords/1`, {
+        method: 'DELETE',
+      })
+
+      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.DETACH_KEYWORD_FAILED,
         dbError,
       )
     })
