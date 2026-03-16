@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { eq, sql, inArray } from 'drizzle-orm'
+import { and, eq, sql, inArray } from 'drizzle-orm'
 
 import { zValidator } from '@hono/zod-validator'
 import { ERROR_MESSAGES, LOG_MESSAGES, HTTP_STATUS } from '@shared/constants'
@@ -324,6 +324,51 @@ const bookmarksRoute = new Hono()
           )
         }
         console.error(LOG_MESSAGES.ATTACH_KEYWORD_FAILED, error)
+        throw error
+      }
+    },
+  )
+  .delete(
+    '/:id/keywords/:keywordId',
+    zValidator(
+      'param',
+      z.object({
+        id: z.string().regex(/^[1-9]\d*$/),
+        keywordId: z.string().regex(/^[1-9]\d*$/),
+      }),
+    ),
+    async (c) => {
+      const { id, keywordId } = c.req.valid('param')
+      const bookmarkIdNum = parseInt(id, 10)
+      const keywordIdNum = parseInt(keywordId, 10)
+
+      try {
+        const result = await db
+          .delete(bookmarkKeywordsTable)
+          .where(
+            and(
+              eq(bookmarkKeywordsTable.bookmarkId, bookmarkIdNum),
+              eq(bookmarkKeywordsTable.keywordId, keywordIdNum),
+            ),
+          )
+          .returning()
+
+        if (result.length === 0) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.NOT_FOUND,
+                code: API_ERROR_CODES.NOT_FOUND,
+              },
+            },
+            HTTP_STATUS.NOT_FOUND,
+          )
+        }
+
+        return c.body(null, HTTP_STATUS.NO_CONTENT)
+      } catch (error) {
+        console.error(LOG_MESSAGES.DETACH_KEYWORD_FAILED, error)
         throw error
       }
     },
