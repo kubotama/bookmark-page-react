@@ -24,6 +24,7 @@ export const FIELD_LABELS = {
   BACK_TO_LIST: 'Back to List',
   KEYWORDS_SECTION_TITLE: 'Keywords',
   NO_KEYWORDS_ATTACHED: 'No keywords attached',
+  UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
   ADD_KEYWORD_LABEL: '追加するキーワード',
   BUTTON_ADD: '追加',
 } as const
@@ -139,6 +140,7 @@ export const UI_MESSAGES = {
   FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
+  NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
 } as const
 
 /**

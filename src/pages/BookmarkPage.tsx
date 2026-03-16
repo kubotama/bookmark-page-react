@@ -2,6 +2,7 @@ import { FIELD_LABELS, PLACEHOLDERS, UI_MESSAGES } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 import { useBookmarkPage } from '../hooks/useBookmarkPage'
+import { KeywordList } from '../components/KeywordList'
 
 interface BookmarkPageProps {
   onBack?: () => void
@@ -11,6 +12,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
   const {
     id,
     bookmark,
+    unassignedKeywords,
     isLoading,
     editTitle,
     setEditTitle,
@@ -149,6 +151,18 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
             </span>
           )}
         </div>
+      </div>
+
+      {/* 4. 未割当キーワードブロック */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-gray-700 ml-1">
+          {FIELD_LABELS.UNASSIGNED_KEYWORDS_LABEL}
+        </h3>
+        <KeywordList
+          keywords={unassignedKeywords}
+          onKeywordClick={() => {}}
+          onReorder={() => {}}
+        />
       </div>
     </div>
   )
