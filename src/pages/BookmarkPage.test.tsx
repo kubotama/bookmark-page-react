@@ -142,7 +142,7 @@ describe('BookmarkPage Component', () => {
     )
 
     expect(
-      await screen.findByText(FIELD_LABELS.KEYWORDS_SECTION_TITLE),
+      await screen.findByText(FIELD_LABELS.ASSIGNED_KEYWORDS_LABEL),
     ).toBeInTheDocument()
     expect(screen.getByText('React')).toBeInTheDocument()
     expect(screen.getByText('Vitest')).toBeInTheDocument()
@@ -234,7 +234,7 @@ describe('BookmarkPage Component', () => {
     )
 
     expect(
-      await screen.findByText(FIELD_LABELS.NO_KEYWORDS_ATTACHED),
+      await screen.findByText(UI_MESSAGES.NO_KEYWORDS_AVAILABLE),
     ).toBeInTheDocument()
   })
 

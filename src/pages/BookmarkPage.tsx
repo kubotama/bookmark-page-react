@@ -133,24 +133,15 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
       </div>
 
       {/* 3. 割当済みキーワードブロック */}
-      <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg shadow-sm">
-        <h3 className="sr-only">{FIELD_LABELS.KEYWORDS_SECTION_TITLE}</h3>
-        <div className="flex flex-wrap gap-2">
-          {bookmark.keywords.length > 0 ? (
-            bookmark.keywords.map((kw) => (
-              <span
-                key={kw.id}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
-              >
-                {kw.name}
-              </span>
-            ))
-          ) : (
-            <span className="text-sm text-gray-400 italic">
-              {FIELD_LABELS.NO_KEYWORDS_ATTACHED}
-            </span>
-          )}
-        </div>
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-gray-700 ml-1">
+          {FIELD_LABELS.ASSIGNED_KEYWORDS_LABEL}
+        </h3>
+        <KeywordList
+          keywords={bookmark.keywords}
+          onKeywordClick={() => {}}
+          onReorder={() => {}}
+        />
       </div>
 
       {/* 4. 未割当キーワードブロック */}
