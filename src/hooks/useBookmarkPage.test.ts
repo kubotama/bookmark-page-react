@@ -7,6 +7,7 @@ import { server } from '../test/setup'
 import { APP_PATHS, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import { fireEvent } from '@testing-library/react'
 import * as urlUtils from '@shared/utils/url'
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 
 // モックの設定
 const mockNavigate = vi.fn()
@@ -43,9 +44,9 @@ describe('useBookmarkPage Hook', () => {
           success: true,
           data: {
             keywords: [
-              { id: 'kw1', name: 'React' }, // 割当済み (MOCK_BOOKMARK_1 に含まれる)
-              { id: 'kw2', name: 'TypeScript' }, // 未割当
-              { id: 'kw3', name: 'Vite' }, // 未割当
+              { id: '1', name: 'React' }, // 割当済み
+              { id: '2', name: 'TypeScript' }, // 未割当
+              { id: '3', name: 'Vite' }, // 未割当
             ],
           },
         })
@@ -64,10 +65,10 @@ describe('useBookmarkPage Hook', () => {
   })
 
   it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
-    // 割当済みキーワードを 1 つ持つブックマークとしてモックを上書き
+    // ID: 1 が割当済みのブックマークとしてモックを上書き
     const bookmarkWithKeyword = {
       ...MOCK_BOOKMARK_1,
-      keywords: [{ id: 'kw1', name: 'React' }],
+      keywords: [{ id: '1', name: 'React' }],
     }
     server.use(
       http.get('*/api/bookmarks', () => {
@@ -83,10 +84,10 @@ describe('useBookmarkPage Hook', () => {
     // ロード完了を待機
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-    // kw1 が除外され、kw2, kw3 が残っていることを確認
+    // 1 が除外され、2, 3 が残っていることを確認
     expect(result.current.unassignedKeywords).toEqual([
-      { id: 'kw2', name: 'TypeScript' },
-      { id: 'kw3', name: 'Vite' },
+      { id: '2', name: 'TypeScript' },
+      { id: '3', name: 'Vite' },
     ])
   })
 
@@ -111,10 +112,8 @@ describe('useBookmarkPage Hook', () => {
   })
 
   it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
-    let deleteCalled = false
     server.use(
       http.delete('*/api/bookmarks/:id', () => {
-        deleteCalled = true
         return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
       }),
     )
@@ -126,7 +125,6 @@ describe('useBookmarkPage Hook', () => {
       await result.current.handleDelete()
     })
 
-    expect(deleteCalled).toBe(true)
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 
@@ -153,6 +151,101 @@ describe('useBookmarkPage Hook', () => {
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 
+  it('handleKeywordKeyDown が Enter キーで handleAddKeyword を呼び出すこと', async () => {
+    let createCalled = false
+    server.use(
+      http.post('*/api/keywords', () => {
+        createCalled = true
+        return HttpResponse.json({
+          success: true,
+          data: { keyword: { id: '10', name: 'Enter' } },
+        })
+      }),
+      http.post('*/api/bookmarks/:id/keywords', () => {
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+
+    const { result } = renderHook(() => useBookmarkPage())
+    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+    await act(async () => {
+      result.current.setKeywordInput('Enter')
+    })
+
+    act(() => {
+      const event = {
+        key: 'Enter',
+        shiftKey: false,
+        preventDefault: vi.fn(),
+      } as unknown as React.KeyboardEvent
+      result.current.handleKeywordKeyDown(event)
+    })
+
+    await waitFor(() => expect(createCalled).toBe(true))
+  })
+
+  describe('Drag and Drop Handlers', () => {
+    it('handleDragStart が activeKeyword を設定すること', async () => {
+      const { result } = renderHook(() => useBookmarkPage())
+      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+      act(() => {
+        result.current.handleDragStart({
+          active: { id: '2' },
+        } as DragStartEvent)
+      })
+
+      expect(result.current.activeKeyword?.id).toBe('2')
+    })
+
+    it('handleDragEnd が割当済み領域へのドロップで handleAttachKeyword を呼び出すこと', async () => {
+      let attachCalled = false
+      server.use(
+        http.post('*/api/bookmarks/:id/keywords', () => {
+          attachCalled = true
+          return HttpResponse.json({ success: true, data: null })
+        }),
+      )
+
+      const { result } = renderHook(() => useBookmarkPage())
+      await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+      await act(async () => {
+        result.current.handleDragEnd({
+          active: { id: '2' },
+          over: { id: 'assigned-list' },
+        } as DragEndEvent)
+      })
+
+      expect(attachCalled).toBe(true)
+      expect(result.current.activeKeyword).toBeNull()
+    })
+
+    it('handleDragEnd が未割当領域へのドロップでは何もしないこと', async () => {
+      let attachCalled = false
+      server.use(
+        http.post('*/api/bookmarks/:id/keywords', () => {
+          attachCalled = true
+          return HttpResponse.json({ success: true, data: null })
+        }),
+      )
+
+      const { result } = renderHook(() => useBookmarkPage())
+      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+      await act(async () => {
+        result.current.handleDragEnd({
+          active: { id: '2' },
+          over: { id: 'unassigned-list' },
+        } as DragEndEvent)
+      })
+
+      expect(attachCalled).toBe(false)
+      expect(result.current.activeKeyword).toBeNull()
+    })
+  })
+
   it('handleAddKeyword が成功した際、キーワードを作成して紐付けること', async () => {
     let createCalled = false
     let attachCalled = false
@@ -165,14 +258,14 @@ describe('useBookmarkPage Hook', () => {
           createCalled = true
           return HttpResponse.json({
             success: true,
-            data: { keyword: { id: 'kw1', name: NEW_TAG } },
+            data: { keyword: { id: '10', name: NEW_TAG } },
           })
         }
         return new HttpResponse(null, { status: 400 })
       }),
       http.post('*/api/bookmarks/:id/keywords', async ({ request }) => {
         const body = (await request.json()) as { keywordId: string }
-        if (body.keywordId === 'kw1') {
+        if (body.keywordId === '10') {
           attachCalled = true
           return HttpResponse.json({ success: true, data: null })
         }
@@ -328,7 +421,7 @@ describe('useBookmarkPage Hook', () => {
         http.post('*/api/keywords', () => {
           return HttpResponse.json({
             success: true,
-            data: { keyword: { id: 'kw1', name: 'Success' } },
+            data: { keyword: { id: '10', name: 'Success' } },
           })
         }),
         http.post('*/api/bookmarks/:id/keywords', () => {

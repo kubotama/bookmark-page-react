@@ -12,12 +12,12 @@ interface KeywordItemProps {
   isFocusable: boolean
   onClick: (id: KeywordId) => void
   onClose?: () => void
-  // D&D Props
-  attributes: DraggableAttributes
-  listeners: DraggableSyntheticListeners
-  setNodeRef: (node: HTMLElement | null) => void
-  style: React.CSSProperties
-  isDragging: boolean
+  // D&D Props (オプショナルに変更)
+  attributes?: DraggableAttributes
+  listeners?: DraggableSyntheticListeners
+  setNodeRef?: (node: HTMLElement | null) => void
+  style?: React.CSSProperties
+  isDragging?: boolean
 }
 
 export const KeywordItem = memo(
@@ -31,7 +31,7 @@ export const KeywordItem = memo(
     listeners,
     setNodeRef,
     style,
-    isDragging,
+    isDragging = false,
   }: KeywordItemProps) => {
     // BookmarkItem とデザインを合わせつつ、キーワード用の配色を適用（例：グレー背景）
     const itemClassName = `flex items-center transition-colors cursor-pointer hover:bg-gray-200 bg-gray-100 text-sm text-left text-gray-900 select-none group border-b border-gray-300 ${

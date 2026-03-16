@@ -11,6 +11,9 @@ import {
   useAttachKeyword,
 } from './useBookmarks'
 import { openUrlInNewTab } from '@shared/utils/url'
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
+import { KeywordIdSchema } from '@shared/schemas/keyword'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 /**
  * ブックマーク詳細画面のロジックを管理するカスタムフック
@@ -51,6 +54,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
   const [editUrl, setEditUrl] = useState('')
   const [keywordInput, setKeywordInput] = useState('')
   const [prevBookmarkId, setPrevBookmarkId] = useState<string | null>(null)
+  const [activeKeyword, setActiveKeyword] = useState<Keyword | null>(null)
 
   // データが届いた際、またはブックマークが変わった際の初期化
   if (bookmark && bookmark.id !== prevBookmarkId) {
@@ -129,9 +133,73 @@ export const useBookmarkPage = (onBack?: () => void) => {
       setKeywordInput('')
     } catch (e) {
       // 予期せぬエラー用
-      console.error('Unexpected error in handleAddKeyword:', e)
+      console.error(LOG_MESSAGES.UNEXPECTED_ERROR_IN_ADD_KEYWORD, e)
     }
   }, [parsedId, keywordInput, createKeywordMutation, attachKeywordMutation])
+
+  const handleAttachKeyword = useCallback(
+    async (keywordId: KeywordId) => {
+      if (!parsedId) return
+      try {
+        await attachKeywordMutation.mutateAsync({
+          bookmarkId: parsedId,
+          keywordId,
+        })
+      } catch (e) {
+        console.error(LOG_MESSAGES.ATTACH_KEYWORD_FAILED, e)
+      }
+    },
+    [parsedId, attachKeywordMutation],
+  )
+
+  const handleKeywordKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        handleAddKeyword()
+      }
+    },
+    [handleAddKeyword],
+  )
+
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event
+      const keyword =
+        bookmark?.keywords.find((k) => k.id === active.id) ||
+        unassignedKeywords.find((k) => k.id === active.id)
+      if (keyword) {
+        setActiveKeyword(keyword)
+      }
+    },
+    [bookmark, unassignedKeywords],
+  )
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      setActiveKeyword(null)
+      if (!over) return
+
+      const activeId = active.id
+      const isFromUnassigned = unassignedKeywords.some(
+        (kw) => kw.id === activeId,
+      )
+      if (!isFromUnassigned) return
+
+      const isAssignedTarget =
+        over.id === 'assigned-list' ||
+        bookmark?.keywords.some((kw) => kw.id === over.id)
+
+      if (isAssignedTarget) {
+        const result = KeywordIdSchema.safeParse(activeId)
+        if (result.success) {
+          handleAttachKeyword(result.data)
+        }
+      }
+    },
+    [bookmark, unassignedKeywords, handleAttachKeyword],
+  )
 
   // 5. キーボードショートカット
   useEffect(() => {
@@ -139,8 +207,6 @@ export const useBookmarkPage = (onBack?: () => void) => {
       if (e.key === 'Escape') {
         handleBack()
       } else if (e.key === 'Enter') {
-        // 入力中などの場合は無視するように調整が必要になる可能性があるが、
-        // 現状はシンプルに維持
         if (e.metaKey || e.ctrlKey) {
           handleUpdate()
         } else if (
@@ -149,7 +215,6 @@ export const useBookmarkPage = (onBack?: () => void) => {
             e.target.id === 'keyword-input'
           )
         ) {
-          // キーワード入力欄以外での Enter は「開く」
           handleOpen()
         }
       }
@@ -173,10 +238,15 @@ export const useBookmarkPage = (onBack?: () => void) => {
     isDeleting: deleteMutation.isPending,
     isAddingKeyword:
       createKeywordMutation.isPending || attachKeywordMutation.isPending,
+    activeKeyword,
     handleUpdate,
     handleDelete,
     handleOpen,
     handleBack,
     handleAddKeyword,
+    handleAttachKeyword,
+    handleKeywordKeyDown,
+    handleDragStart,
+    handleDragEnd,
   }
 }
