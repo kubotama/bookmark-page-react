@@ -24,6 +24,7 @@ export type DraggableListProps<T extends DraggableEntity> = {
   strategy?: typeof verticalListSortingStrategy
   listRole?: string
   ariaLabel?: string
+  dndContext?: boolean // 追加
 }
 
 export const DraggableList = <T extends DraggableEntity>({
@@ -34,6 +35,7 @@ export const DraggableList = <T extends DraggableEntity>({
   strategy = verticalListSortingStrategy,
   listRole,
   ariaLabel,
+  dndContext = true, // 追加（デフォルトは true）
 }: DraggableListProps<T>) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -65,21 +67,30 @@ export const DraggableList = <T extends DraggableEntity>({
 
   const renderedItems = items.map((item, index) => renderItem(item, index))
 
+  const content = (
+    <SortableContext items={items.map((i) => i.id)} strategy={strategy}>
+      {listRole ? (
+        <div role={listRole} aria-label={ariaLabel}>
+          {renderedItems}
+        </div>
+      ) : (
+        <>{renderedItems}</>
+      )}
+    </SortableContext>
+  )
+
+  // dndContext が明示的に false の場合は、wrapper を返さず content のみを返す
+  if (!dndContext) {
+    return content
+  }
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={items.map((i) => i.id)} strategy={strategy}>
-        {listRole ? (
-          <div role={listRole} aria-label={ariaLabel}>
-            {renderedItems}
-          </div>
-        ) : (
-          <>{renderedItems}</>
-        )}
-      </SortableContext>
+      {content}
     </DndContext>
   )
 }

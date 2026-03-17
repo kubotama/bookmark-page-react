@@ -11,6 +11,7 @@ interface KeywordListProps {
   onKeywordClick: (id: KeywordId) => void
   onReorder: (activeId: KeywordId, overId: KeywordId) => void
   onClose?: () => void
+  dndContext?: boolean // 追加
 }
 
 export const KeywordList = ({
@@ -19,6 +20,7 @@ export const KeywordList = ({
   onKeywordClick,
   onReorder,
   onClose,
+  dndContext, // 追加
 }: KeywordListProps) => {
   if (keywords.length === 0) {
     return (
@@ -35,6 +37,7 @@ export const KeywordList = ({
         idSchema={KeywordIdSchema}
         listRole={ARIA_ROLES.LIST}
         onReorder={onReorder}
+        dndContext={dndContext} // 渡す
         renderItem={(keyword, index) => (
           <DraggableItem key={keyword.id} item={keyword}>
             {(dndProps) => (

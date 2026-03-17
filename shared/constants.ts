@@ -340,6 +340,7 @@ export const LOG_MESSAGES = {
   CREATE_KEYWORD_FAILED: 'Failed to create keyword:',
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
+  UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
 } as const
 
 /**

@@ -450,4 +450,20 @@ describe('BookmarkPage Component', () => {
 
     expect(onBack).toHaveBeenCalled()
   })
+
+  describe('Drag and Drop interaction', () => {
+    it('キーワード一覧が DndContext を共有する設定でレンダリングされること', async () => {
+      renderWithRoutes(
+        <BookmarkPage />,
+        APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+      )
+
+      // キーワード一覧のロードを待機
+      expect(await screen.findByText('TypeScript')).toBeInTheDocument()
+
+      // コンテナ ID が存在することを確認
+      expect(document.getElementById('assigned-list')).toBeInTheDocument()
+      expect(document.getElementById('unassigned-list')).toBeInTheDocument()
+    })
+  })
 })
