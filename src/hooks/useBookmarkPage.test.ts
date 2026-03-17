@@ -4,7 +4,12 @@ import { useBookmarkPage } from './useBookmarkPage'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { http, HttpResponse, delay } from 'msw'
 import { server } from '../test/setup'
-import { APP_PATHS, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
+import {
+  APP_PATHS,
+  HTTP_STATUS,
+  LOG_MESSAGES,
+  DROPPABLE_IDS,
+} from '@shared/constants'
 import { fireEvent } from '@testing-library/react'
 import * as urlUtils from '@shared/utils/url'
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
@@ -214,7 +219,7 @@ describe('useBookmarkPage Hook', () => {
       await act(async () => {
         result.current.handleDragEnd({
           active: { id: '2' },
-          over: { id: 'assigned-list' },
+          over: { id: DROPPABLE_IDS.ASSIGNED_LIST },
         } as DragEndEvent)
       })
 
@@ -237,11 +242,45 @@ describe('useBookmarkPage Hook', () => {
       await act(async () => {
         result.current.handleDragEnd({
           active: { id: '2' },
-          over: { id: 'unassigned-list' },
+          over: { id: DROPPABLE_IDS.UNASSIGNED_LIST },
         } as DragEndEvent)
       })
 
       expect(attachCalled).toBe(false)
+      expect(result.current.activeKeyword).toBeNull()
+    })
+
+    it('handleDragEnd が未割当領域へのドロップで handleDetachKeyword を呼び出すこと', async () => {
+      let detachCalled = false
+      // 割当済みキーワード (ID: 1) を持つブックマークを返すようにモック
+      const bookmarkWithKeyword = {
+        ...MOCK_BOOKMARK_1,
+        keywords: [{ id: '1', name: 'React' }],
+      }
+      server.use(
+        http.get('*/api/bookmarks', () => {
+          return HttpResponse.json({
+            success: true,
+            data: { bookmarks: [bookmarkWithKeyword] },
+          })
+        }),
+        http.delete('*/api/bookmarks/:id/keywords/:keywordId', () => {
+          detachCalled = true
+          return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
+        }),
+      )
+
+      const { result } = renderHook(() => useBookmarkPage())
+      await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+      await act(async () => {
+        result.current.handleDragEnd({
+          active: { id: '1' }, // 割当済みキーワード
+          over: { id: DROPPABLE_IDS.UNASSIGNED_LIST },
+        } as DragEndEvent)
+      })
+
+      expect(detachCalled).toBe(true)
       expect(result.current.activeKeyword).toBeNull()
     })
   })

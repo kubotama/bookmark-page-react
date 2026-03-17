@@ -279,6 +279,21 @@ export const STORAGE_KEYS = {
 } as const
 
 /**
+ * D&D 用のドロップ可能領域 ID
+ */
+export const DROPPABLE_IDS = {
+  ASSIGNED_LIST: 'assigned-list',
+  UNASSIGNED_LIST: 'unassigned-list',
+} as const
+
+/**
+ * DOM 要素の ID
+ */
+export const ELEMENT_IDS = {
+  KEYWORD_INPUT: 'keyword-input',
+} as const
+
+/**
  * データベース関連の定数
  */
 export const DB_CONSTANTS = {
