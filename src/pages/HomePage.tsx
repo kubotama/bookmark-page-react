@@ -30,11 +30,7 @@ export function HomePage({ appState }: HomePageProps) {
               {FIELD_LABELS.KEYWORDS_HEADING}
             </h2>
             <div className="flex-1 overflow-y-auto">
-              <KeywordList
-                keywords={keywords}
-                onKeywordClick={() => {}} // 表示のみのため空
-                onReorder={() => {}} // 表示のみのため空
-              />
+              <KeywordList keywords={keywords} />
             </div>
           </aside>
 

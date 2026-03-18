@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '../test/utils'
+import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { useBookmarkPage } from './useBookmarkPage'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import { http, HttpResponse, delay } from 'msw'
@@ -12,7 +13,6 @@ import {
 } from '@shared/constants'
 import { fireEvent } from '@testing-library/react'
 import * as urlUtils from '@shared/utils/url'
-import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 
 // モックの設定
 const mockNavigate = vi.fn()
@@ -189,9 +189,9 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
       act(() => {
-        result.current.handleDragStart({
-          active: { id: MOCK_KEYWORDS[1].id },
-        } as unknown as DragStartEvent)
+        result.current.handleDragStart(
+          createDragStartEvent(MOCK_KEYWORDS[1].id),
+        )
       })
 
       expect(result.current.activeKeyword?.id).toBe(MOCK_KEYWORDS[1].id)
@@ -210,10 +210,9 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false))
 
       await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: MOCK_KEYWORDS[1].id },
-          over: { id: DROPPABLE_IDS.ASSIGNED_LIST },
-        } as unknown as DragEndEvent)
+        result.current.handleDragEnd(
+          createDragEndEvent(MOCK_KEYWORDS[1].id, DROPPABLE_IDS.ASSIGNED_LIST),
+        )
       })
 
       expect(attachCalled).toBe(true)
@@ -233,10 +232,12 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
       await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: MOCK_KEYWORDS[1].id },
-          over: { id: DROPPABLE_IDS.UNASSIGNED_LIST },
-        } as unknown as DragEndEvent)
+        result.current.handleDragEnd(
+          createDragEndEvent(
+            MOCK_KEYWORDS[1].id,
+            DROPPABLE_IDS.UNASSIGNED_LIST,
+          ),
+        )
       })
 
       expect(attachCalled).toBe(false)
@@ -267,10 +268,12 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false))
 
       await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: MOCK_KEYWORDS[0].id },
-          over: { id: DROPPABLE_IDS.UNASSIGNED_LIST },
-        } as unknown as DragEndEvent)
+        result.current.handleDragEnd(
+          createDragEndEvent(
+            MOCK_KEYWORDS[0].id,
+            DROPPABLE_IDS.UNASSIGNED_LIST,
+          ),
+        )
       })
 
       expect(detachCalled).toBe(true)

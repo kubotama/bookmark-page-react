@@ -8,8 +8,8 @@ import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 interface KeywordListProps {
   keywords: Keyword[]
   selectedId?: KeywordId | null
-  onKeywordClick: (id: KeywordId) => void
-  onReorder: (activeId: KeywordId, overId: KeywordId) => void
+  onKeywordClick?: (id: KeywordId) => void
+  onReorder?: (activeId: KeywordId, overId: KeywordId) => void
   onClose?: () => void
   dndContext?: boolean
 }
@@ -37,7 +37,7 @@ export const KeywordList = ({
         idSchema={KeywordIdSchema}
         listRole={ARIA_ROLES.LIST}
         ariaLabel={FIELD_LABELS.KEYWORDS_LABEL}
-        onReorder={onReorder}
+        onReorder={onReorder ?? (() => {})}
         dndContext={dndContext}
         renderItem={(keyword, index) => (
           <DraggableItem key={keyword.id} item={keyword}>
@@ -49,7 +49,7 @@ export const KeywordList = ({
                   selectedId === keyword.id ||
                   (selectedId === null && index === 0)
                 }
-                onClick={onKeywordClick}
+                onClick={onKeywordClick ?? (() => {})}
                 onClose={onClose}
                 {...dndProps}
               />
