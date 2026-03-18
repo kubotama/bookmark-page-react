@@ -15,6 +15,7 @@ import {
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
 import { render, screen, waitFor } from './test/utils'
+import { createDragEndEvent } from './test/dnd-utils'
 import userEvent from '@testing-library/user-event'
 
 import App from './App'
@@ -43,22 +44,9 @@ vi.mock('@dnd-kit/core', async () => {
               '[aria-label="' + FIELD_LABELS.BOOKMARKS_LABEL + '"]',
             )
           ) {
-            onDragEnd({
-              active: {
-                id: MOCK_BOOKMARK_1.id,
-                data: { current: undefined },
-                rect: { current: null },
-              },
-              over: {
-                id: MOCK_BOOKMARK_2.id,
-                rect: { current: null },
-                data: { current: undefined },
-                disabled: false,
-              },
-              delta: { x: 0, y: 0 },
-              activatorEvent: {} as Event,
-              collisions: null,
-            } as unknown as DragEndEvent)
+            onDragEnd(
+              createDragEndEvent(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id),
+            )
           }
         }}
       >
