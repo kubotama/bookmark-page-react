@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '../test/utils'
+import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { useBookmarkPage } from './useBookmarkPage'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import { http, HttpResponse, delay } from 'msw'
 import { server } from '../test/setup'
 import {
@@ -12,7 +13,6 @@ import {
 } from '@shared/constants'
 import { fireEvent } from '@testing-library/react'
 import * as urlUtils from '@shared/utils/url'
-import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 
 // モックの設定
 const mockNavigate = vi.fn()
@@ -48,11 +48,7 @@ describe('useBookmarkPage Hook', () => {
         return HttpResponse.json({
           success: true,
           data: {
-            keywords: [
-              { id: '1', name: 'React' }, // 割当済み
-              { id: '2', name: 'TypeScript' }, // 未割当
-              { id: '3', name: 'Vite' }, // 未割当
-            ],
+            keywords: MOCK_KEYWORDS,
           },
         })
       }),
@@ -70,10 +66,10 @@ describe('useBookmarkPage Hook', () => {
   })
 
   it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
-    // ID: 1 が割当済みのブックマークとしてモックを上書き
+    // 最初のキーワードが割当済みのブックマークとしてモックを上書き
     const bookmarkWithKeyword = {
       ...MOCK_BOOKMARK_1,
-      keywords: [{ id: '1', name: 'React' }],
+      keywords: [MOCK_KEYWORDS[0]],
     }
     server.use(
       http.get('*/api/bookmarks', () => {
@@ -89,11 +85,8 @@ describe('useBookmarkPage Hook', () => {
     // ロード完了を待機
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-    // 1 が除外され、2, 3 が残っていることを確認
-    expect(result.current.unassignedKeywords).toEqual([
-      { id: '2', name: 'TypeScript' },
-      { id: '3', name: 'Vite' },
-    ])
+    // 1番目以外が残っていることを確認
+    expect(result.current.unassignedKeywords).toEqual(MOCK_KEYWORDS.slice(1))
   })
 
   it('handleUpdate が成功した際、一覧へ戻ること', async () => {
@@ -196,12 +189,12 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
       act(() => {
-        result.current.handleDragStart({
-          active: { id: '2' },
-        } as DragStartEvent)
+        result.current.handleDragStart(
+          createDragStartEvent(MOCK_KEYWORDS[1].id),
+        )
       })
 
-      expect(result.current.activeKeyword?.id).toBe('2')
+      expect(result.current.activeKeyword?.id).toBe(MOCK_KEYWORDS[1].id)
     })
 
     it('handleDragEnd が割当済み領域へのドロップで handleAttachKeyword を呼び出すこと', async () => {
@@ -217,10 +210,9 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false))
 
       await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: '2' },
-          over: { id: DROPPABLE_IDS.ASSIGNED_LIST },
-        } as DragEndEvent)
+        result.current.handleDragEnd(
+          createDragEndEvent(MOCK_KEYWORDS[1].id, DROPPABLE_IDS.ASSIGNED_LIST),
+        )
       })
 
       expect(attachCalled).toBe(true)
@@ -240,10 +232,12 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
       await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: '2' },
-          over: { id: DROPPABLE_IDS.UNASSIGNED_LIST },
-        } as DragEndEvent)
+        result.current.handleDragEnd(
+          createDragEndEvent(
+            MOCK_KEYWORDS[1].id,
+            DROPPABLE_IDS.UNASSIGNED_LIST,
+          ),
+        )
       })
 
       expect(attachCalled).toBe(false)
@@ -252,10 +246,10 @@ describe('useBookmarkPage Hook', () => {
 
     it('handleDragEnd が未割当領域へのドロップで handleDetachKeyword を呼び出すこと', async () => {
       let detachCalled = false
-      // 割当済みキーワード (ID: 1) を持つブックマークを返すようにモック
+      // 最初のキーワードが割当済みのブックマークとしてモックを上書き
       const bookmarkWithKeyword = {
         ...MOCK_BOOKMARK_1,
-        keywords: [{ id: '1', name: 'React' }],
+        keywords: [MOCK_KEYWORDS[0]],
       }
       server.use(
         http.get('*/api/bookmarks', () => {
@@ -274,10 +268,12 @@ describe('useBookmarkPage Hook', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false))
 
       await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: '1' }, // 割当済みキーワード
-          over: { id: DROPPABLE_IDS.UNASSIGNED_LIST },
-        } as DragEndEvent)
+        result.current.handleDragEnd(
+          createDragEndEvent(
+            MOCK_KEYWORDS[0].id,
+            DROPPABLE_IDS.UNASSIGNED_LIST,
+          ),
+        )
       })
 
       expect(detachCalled).toBe(true)

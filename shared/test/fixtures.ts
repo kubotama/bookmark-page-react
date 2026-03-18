@@ -1,9 +1,18 @@
-import type { Bookmark, BookmarkId } from '../schemas/bookmark'
+import { BookmarkIdSchema } from '../schemas/bookmark'
+import type { Bookmark } from '../schemas/bookmark'
+import { KeywordIdSchema } from '../schemas/keyword'
+import type { Keyword } from '../schemas/keyword'
 
 export const MOCK_BOOKMARK_TITLE_PREFIX = 'Test Bookmark'
 
+export const MOCK_KEYWORDS: Keyword[] = [
+  { id: KeywordIdSchema.parse('1'), name: 'React' },
+  { id: KeywordIdSchema.parse('2'), name: 'TypeScript' },
+  { id: KeywordIdSchema.parse('3'), name: 'Vite' },
+]
+
 export const MOCK_BOOKMARK_1: Bookmark = {
-  id: '1' as BookmarkId,
+  id: BookmarkIdSchema.parse('1'),
   title: `${MOCK_BOOKMARK_TITLE_PREFIX} 1`,
   url: 'https://example.com/1',
   sortOrder: 0,
@@ -11,7 +20,7 @@ export const MOCK_BOOKMARK_1: Bookmark = {
 }
 
 export const MOCK_BOOKMARK_2: Bookmark = {
-  id: '2' as BookmarkId,
+  id: BookmarkIdSchema.parse('2'),
   title: `${MOCK_BOOKMARK_TITLE_PREFIX} 2`,
   url: 'https://example.com/2',
   sortOrder: 1,

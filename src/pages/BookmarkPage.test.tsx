@@ -1,18 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Routes, Route } from 'react-router-dom'
-import { render, screen, fireEvent, waitFor } from '../test/utils'
-import { BookmarkPage } from './BookmarkPage'
+import { delay, http, HttpResponse } from 'msw'
+import { Route, Routes } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
-  FIELD_LABELS,
   APP_PATHS,
-  UI_MESSAGES,
+  DROPPABLE_IDS,
+  FIELD_LABELS,
   LOG_MESSAGES,
+  UI_MESSAGES,
 } from '@shared/constants'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { updateBookmarkSchema } from '@shared/schemas/bookmark'
-import { http, HttpResponse, delay } from 'msw'
-import { server } from '../test/setup'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
+
+import { server } from '../test/setup'
+import { fireEvent, render, screen, waitFor } from '../test/utils'
+import { BookmarkPage } from './BookmarkPage'
 
 // openUrlInNewTab をモック
 vi.mock('@shared/utils/url', async () => {
@@ -38,10 +41,7 @@ describe('BookmarkPage Component', () => {
         return HttpResponse.json({
           success: true,
           data: {
-            keywords: [
-              { id: '1', name: 'React', bookmarkCount: 0 },
-              { id: '2', name: 'TypeScript', bookmarkCount: 0 },
-            ],
+            keywords: MOCK_KEYWORDS,
           },
         })
       }),
@@ -122,10 +122,7 @@ describe('BookmarkPage Component', () => {
   it('紐付いているキーワードが表示されること', async () => {
     const bookmarkWithKeywords = {
       ...MOCK_BOOKMARK_1,
-      keywords: [
-        { id: '1', name: 'React' },
-        { id: '2', name: 'Vitest' },
-      ],
+      keywords: [MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]],
     }
     server.use(
       http.get('*/api/bookmarks', () => {
@@ -144,15 +141,15 @@ describe('BookmarkPage Component', () => {
     expect(
       await screen.findByText(FIELD_LABELS.ASSIGNED_KEYWORDS_LABEL),
     ).toBeInTheDocument()
-    expect(screen.getByText('React')).toBeInTheDocument()
-    expect(screen.getByText('Vitest')).toBeInTheDocument()
+    expect(screen.getByText(MOCK_KEYWORDS[0].name)).toBeInTheDocument()
+    expect(screen.getByText(MOCK_KEYWORDS[1].name)).toBeInTheDocument()
   })
 
   it('未割当キーワードが第 4 ブロックに表示されること', async () => {
-    // 1 は割当済み、2 は未割当とする
+    // 最初のキーワードのみ割当済みとする
     const bookmarkWithKeyword = {
       ...MOCK_BOOKMARK_1,
-      keywords: [{ id: '1', name: 'React' }],
+      keywords: [MOCK_KEYWORDS[0]],
     }
     server.use(
       http.get('*/api/bookmarks', () => {
@@ -165,10 +162,7 @@ describe('BookmarkPage Component', () => {
         return HttpResponse.json({
           success: true,
           data: {
-            keywords: [
-              { id: '1', name: 'React', bookmarkCount: 0 },
-              { id: '2', name: 'TypeScript', bookmarkCount: 0 },
-            ],
+            keywords: MOCK_KEYWORDS,
           },
         })
       }),
@@ -184,18 +178,15 @@ describe('BookmarkPage Component', () => {
       await screen.findByText(FIELD_LABELS.UNASSIGNED_KEYWORDS_LABEL),
     ).toBeInTheDocument()
 
-    // 未割当の kw2 (TypeScript) は表示されるはず
-    expect(screen.getByText('TypeScript')).toBeInTheDocument()
+    // 未割当のキーワードが表示されるはず
+    expect(screen.getByText(MOCK_KEYWORDS[1].name)).toBeInTheDocument()
   })
 
   it('未割当キーワードがない場合に適切なメッセージが表示されること', async () => {
     // 全てのキーワードが割当済みとする
     const bookmarkWithAllKeywords = {
       ...MOCK_BOOKMARK_1,
-      keywords: [
-        { id: '1', name: 'React' },
-        { id: '2', name: 'TypeScript' },
-      ],
+      keywords: MOCK_KEYWORDS,
     }
     server.use(
       http.get('*/api/bookmarks', () => {
@@ -208,10 +199,7 @@ describe('BookmarkPage Component', () => {
         return HttpResponse.json({
           success: true,
           data: {
-            keywords: [
-              { id: '1', name: 'React', bookmarkCount: 0 },
-              { id: '2', name: 'TypeScript', bookmarkCount: 0 },
-            ],
+            keywords: MOCK_KEYWORDS,
           },
         })
       }),
@@ -223,19 +211,28 @@ describe('BookmarkPage Component', () => {
     )
 
     expect(
-      await screen.findByText(UI_MESSAGES.NO_KEYWORDS_AVAILABLE),
-    ).toBeInTheDocument()
+      (await screen.findAllByText(UI_MESSAGES.NO_KEYWORDS_AVAILABLE)).length,
+    ).toBeGreaterThan(0)
   })
 
   it('キーワードがない場合にメッセージが表示されること', async () => {
+    server.use(
+      http.get('*/api/keywords', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { keywords: [] },
+        })
+      }),
+    )
+
     renderWithRoutes(
       <BookmarkPage />,
       APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
     )
 
     expect(
-      await screen.findByText(UI_MESSAGES.NO_KEYWORDS_AVAILABLE),
-    ).toBeInTheDocument()
+      (await screen.findAllByText(UI_MESSAGES.NO_KEYWORDS_AVAILABLE)).length,
+    ).toBeGreaterThan(0)
   })
 
   it('キーワードを入力して Add ボタンで追加できること', async () => {
@@ -459,11 +456,15 @@ describe('BookmarkPage Component', () => {
       )
 
       // キーワード一覧のロードを待機
-      expect(await screen.findByText('TypeScript')).toBeInTheDocument()
+      expect(await screen.findByText(MOCK_KEYWORDS[1].name)).toBeInTheDocument()
 
       // コンテナ ID が存在することを確認
-      expect(document.getElementById('assigned-list')).toBeInTheDocument()
-      expect(document.getElementById('unassigned-list')).toBeInTheDocument()
+      expect(
+        document.getElementById(DROPPABLE_IDS.ASSIGNED_LIST),
+      ).toBeInTheDocument()
+      expect(
+        document.getElementById(DROPPABLE_IDS.UNASSIGNED_LIST),
+      ).toBeInTheDocument()
     })
   })
 })

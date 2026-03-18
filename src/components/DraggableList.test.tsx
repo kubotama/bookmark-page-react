@@ -4,6 +4,8 @@ import { render, screen } from '../test/utils'
 import { DraggableList } from './DraggableList'
 import { DraggableItem } from './DraggableItem'
 import * as sortable from '@dnd-kit/sortable'
+import { createDragEndEvent } from 'src/test/dnd-utils'
+import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
 const mockIdSchema = z.string()
 
@@ -24,7 +26,9 @@ vi.mock('@dnd-kit/core', async () => {
     }) => (
       <div
         data-testid="dnd-context"
-        onClick={() => onDragEnd({ active: { id: '1' }, over: { id: '2' } })}
+        onClick={() =>
+          onDragEnd(createDragEndEvent(MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id))
+        }
       >
         {children}
       </div>
