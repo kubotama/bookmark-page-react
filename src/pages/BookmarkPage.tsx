@@ -1,4 +1,10 @@
-import { FIELD_LABELS, PLACEHOLDERS, UI_MESSAGES } from '@shared/constants'
+import {
+  FIELD_LABELS,
+  PLACEHOLDERS,
+  UI_MESSAGES,
+  DROPPABLE_IDS,
+  ELEMENT_IDS,
+} from '@shared/constants'
 import {
   DndContext,
   closestCorners,
@@ -49,7 +55,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
     setKeywordInput,
     isUpdating,
     isDeleting,
-    isAddingKeyword,
+    isKeywordProcessing,
     activeKeyword,
     handleUpdate,
     handleDelete,
@@ -140,7 +146,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
           <div className="flex gap-2 items-end">
             <div className="flex-1">
               <InputField
-                id="keyword-input"
+                id={ELEMENT_IDS.KEYWORD_INPUT}
                 label={FIELD_LABELS.ADD_KEYWORD_LABEL}
                 width="w-28"
                 value={keywordInput}
@@ -152,10 +158,10 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
             <div className="pb-1">
               <Button
                 onClick={handleAddKeyword}
-                disabled={!keywordInput.trim() || isAddingKeyword}
+                disabled={!keywordInput.trim() || isKeywordProcessing}
                 variant="secondary"
               >
-                {isAddingKeyword ? '...' : FIELD_LABELS.BUTTON_ADD}
+                {isKeywordProcessing ? '...' : FIELD_LABELS.BUTTON_ADD}
               </Button>
             </div>
           </div>
@@ -166,7 +172,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
           <h3 className="text-sm font-medium text-gray-700 ml-1">
             {FIELD_LABELS.ASSIGNED_KEYWORDS_LABEL}
           </h3>
-          <DroppableContainer id="assigned-list">
+          <DroppableContainer id={DROPPABLE_IDS.ASSIGNED_LIST}>
             <KeywordList
               keywords={bookmark.keywords}
               onKeywordClick={() => {}}
@@ -181,7 +187,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
           <h3 className="text-sm font-medium text-gray-700 ml-1">
             {FIELD_LABELS.UNASSIGNED_KEYWORDS_LABEL}
           </h3>
-          <DroppableContainer id="unassigned-list">
+          <DroppableContainer id={DROPPABLE_IDS.UNASSIGNED_LIST}>
             <KeywordList
               keywords={unassignedKeywords}
               onKeywordClick={() => {}}

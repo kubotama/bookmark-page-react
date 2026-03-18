@@ -246,3 +246,33 @@ export const useAttachKeyword = () => {
     },
   })
 }
+
+export const useDetachKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      bookmarkId,
+      keywordId,
+    }: {
+      bookmarkId: BookmarkId
+      keywordId: KeywordId
+    }) => {
+      const res = await client.api.bookmarks[':id'].keywords[
+        ':keywordId'
+      ].$delete({
+        param: { id: bookmarkId, keywordId },
+      })
+
+      if (res.status === HTTP_STATUS.NO_CONTENT) {
+        return
+      }
+
+      return await parseResponse<void>(res, UI_MESSAGES.DETACH_KEYWORD_FAILED)
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
+    },
+  })
+}

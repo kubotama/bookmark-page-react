@@ -1,6 +1,11 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { APP_PATHS, LOG_MESSAGES } from '@shared/constants'
+import {
+  APP_PATHS,
+  LOG_MESSAGES,
+  DROPPABLE_IDS,
+  ELEMENT_IDS,
+} from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   useBookmarks,
@@ -9,6 +14,7 @@ import {
   useDeleteBookmark,
   useCreateKeyword,
   useAttachKeyword,
+  useDetachKeyword,
 } from './useBookmarks'
 import { openUrlInNewTab } from '@shared/utils/url'
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
@@ -68,6 +74,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
   const deleteMutation = useDeleteBookmark()
   const createKeywordMutation = useCreateKeyword()
   const attachKeywordMutation = useAttachKeyword()
+  const detachKeywordMutation = useDetachKeyword()
 
   const handleBack = useCallback(() => {
     onBack?.()
@@ -152,6 +159,21 @@ export const useBookmarkPage = (onBack?: () => void) => {
     [parsedId, attachKeywordMutation],
   )
 
+  const handleDetachKeyword = useCallback(
+    async (keywordId: KeywordId) => {
+      if (!parsedId) return
+      try {
+        await detachKeywordMutation.mutateAsync({
+          bookmarkId: parsedId,
+          keywordId,
+        })
+      } catch (e) {
+        console.error(LOG_MESSAGES.DETACH_KEYWORD_FAILED, e)
+      }
+    },
+    [parsedId, detachKeywordMutation],
+  )
+
   const handleKeywordKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -181,24 +203,35 @@ export const useBookmarkPage = (onBack?: () => void) => {
       setActiveKeyword(null)
       if (!over) return
 
-      const activeId = active.id
+      // ID のバリデーションを先に行う (DRY)
+      const parseResult = KeywordIdSchema.safeParse(active.id)
+      if (!parseResult.success) return
+      const activeId = parseResult.data
+
       const isFromUnassigned = unassignedKeywords.some(
         (kw) => kw.id === activeId,
       )
-      if (!isFromUnassigned) return
+      const isFromAssigned = bookmark?.keywords.some((kw) => kw.id === activeId)
 
-      const isAssignedTarget =
-        over.id === 'assigned-list' ||
-        bookmark?.keywords.some((kw) => kw.id === over.id)
+      if (isFromUnassigned) {
+        const isAssignedTarget =
+          over.id === DROPPABLE_IDS.ASSIGNED_LIST ||
+          bookmark?.keywords.some((kw) => kw.id === over.id)
 
-      if (isAssignedTarget) {
-        const result = KeywordIdSchema.safeParse(activeId)
-        if (result.success) {
-          handleAttachKeyword(result.data)
+        if (isAssignedTarget) {
+          handleAttachKeyword(activeId)
+        }
+      } else if (isFromAssigned) {
+        const isUnassignedTarget =
+          over.id === DROPPABLE_IDS.UNASSIGNED_LIST ||
+          unassignedKeywords.some((kw) => kw.id === over.id)
+
+        if (isUnassignedTarget) {
+          handleDetachKeyword(activeId)
         }
       }
     },
-    [bookmark, unassignedKeywords, handleAttachKeyword],
+    [bookmark, unassignedKeywords, handleAttachKeyword, handleDetachKeyword],
   )
 
   // 5. キーボードショートカット
@@ -212,7 +245,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
         } else if (
           !(
             e.target instanceof HTMLInputElement &&
-            e.target.id === 'keyword-input'
+            e.target.id === ELEMENT_IDS.KEYWORD_INPUT
           )
         ) {
           handleOpen()
@@ -236,8 +269,10 @@ export const useBookmarkPage = (onBack?: () => void) => {
     setKeywordInput,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    isAddingKeyword:
-      createKeywordMutation.isPending || attachKeywordMutation.isPending,
+    isKeywordProcessing:
+      createKeywordMutation.isPending ||
+      attachKeywordMutation.isPending ||
+      detachKeywordMutation.isPending,
     activeKeyword,
     handleUpdate,
     handleDelete,
@@ -245,6 +280,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
     handleBack,
     handleAddKeyword,
     handleAttachKeyword,
+    handleDetachKeyword,
     handleKeywordKeyDown,
     handleDragStart,
     handleDragEnd,
