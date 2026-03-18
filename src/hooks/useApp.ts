@@ -1,6 +1,7 @@
 import { useBookmarks, useKeywords } from './useBookmarks'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
+import { useKeywordListState } from './useKeywordListState'
 import { useBookmarkReorder } from './useBookmarkReorder'
 import { openUrlInNewTab } from '@shared/utils/url'
 
@@ -16,6 +17,7 @@ export const useApp = () => {
 
   // 2. 一覧の状態管理
   const { selectedId, setSelectedId, handleRowClick } = useBookmarkListState()
+  const { selectedKeywordIds, toggleKeywordSelection } = useKeywordListState()
 
   // 3. データの取得
   const {
@@ -55,6 +57,7 @@ export const useApp = () => {
     isLoading,
     error,
     selectedId,
+    selectedKeywordIds,
     showSettings,
     currentApiUrl,
     handleRowClick,
@@ -64,5 +67,6 @@ export const useApp = () => {
     closeSettings,
     handleSaveSettings,
     handleReorder,
+    toggleKeywordSelection,
   }
 }
