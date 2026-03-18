@@ -1,4 +1,4 @@
-import { useBookmarks } from './useBookmarks'
+import { useBookmarks, useKeywords } from './useBookmarks'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
 import { useBookmarkReorder } from './useBookmarkReorder'
@@ -18,8 +18,22 @@ export const useApp = () => {
   const { selectedId, setSelectedId, handleRowClick } = useBookmarkListState()
 
   // 3. データの取得
-  const { data, isLoading, error } = useBookmarks()
-  const bookmarks = data?.bookmarks || []
+  const {
+    data: bookmarksData,
+    isLoading: isBookmarksLoading,
+    error: bookmarksError,
+  } = useBookmarks()
+  const {
+    data: keywordsData,
+    isLoading: isKeywordsLoading,
+    error: keywordsError,
+  } = useKeywords()
+
+  const bookmarks = bookmarksData?.bookmarks || []
+  const keywords = keywordsData?.keywords || []
+
+  const isLoading = isBookmarksLoading || isKeywordsLoading
+  const error = bookmarksError || keywordsError
 
   // 4. 操作ロジック
   const { handleReorder } = useBookmarkReorder()
@@ -37,6 +51,7 @@ export const useApp = () => {
 
   return {
     bookmarks,
+    keywords,
     isLoading,
     error,
     selectedId,

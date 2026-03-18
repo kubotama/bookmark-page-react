@@ -4,7 +4,11 @@ import { TEST_MESSAGES } from '@shared/constants'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
 import { renderHook, waitFor, act } from '../test/utils'
-import { MOCK_BOOKMARK_1, VALID_URLS } from '@shared/test/fixtures'
+import {
+  MOCK_BOOKMARK_1,
+  VALID_URLS,
+  MOCK_KEYWORDS,
+} from '@shared/test/fixtures'
 import { openUrlInNewTab } from '@shared/utils/url'
 
 // openUrlInNewTab をモック化
@@ -36,6 +40,12 @@ describe('useApp Hook (Integration)', () => {
           data: { bookmarks: [MOCK_BOOKMARK_1] },
         })
       }),
+      http.get('*/api/keywords', () => {
+        return HttpResponse.json({
+          success: true,
+          data: { keywords: MOCK_KEYWORDS },
+        })
+      }),
       http.patch('*/api/bookmarks/:id', () => {
         return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
       }),
@@ -52,11 +62,14 @@ describe('useApp Hook (Integration)', () => {
     const renderResult = renderHook(() => useApp(), { initialUrl })
 
     // isLoading が false になるまで待機
-    await waitFor(() => {
-      if (renderResult.result.current.isLoading) {
-        throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
-      }
-    })
+    await waitFor(
+      () => {
+        if (renderResult.result.current.isLoading) {
+          throw new Error(TEST_MESSAGES.UNEXPECTED_ERROR)
+        }
+      },
+      { timeout: 3000 },
+    )
 
     return renderResult
   }
@@ -74,6 +87,9 @@ describe('useApp Hook (Integration)', () => {
     // useBookmarks (データフェッチ) 由来
     expect(result.current.bookmarks).toHaveLength(1)
     expect(result.current.bookmarks[0]).toEqual(MOCK_BOOKMARK_1)
+
+    // useKeywords (データフェッチ) 由来
+    expect(result.current.keywords).toEqual(MOCK_KEYWORDS)
   })
 
   it('設定画面の開閉状態が useSettings と連動していること', async () => {

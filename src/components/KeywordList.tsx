@@ -1,4 +1,4 @@
-import { ARIA_ROLES, UI_MESSAGES } from '@shared/constants'
+import { ARIA_ROLES, FIELD_LABELS, UI_MESSAGES } from '@shared/constants'
 import { DraggableList } from './DraggableList'
 import { DraggableItem } from './DraggableItem'
 import { KeywordItem } from './KeywordItem'
@@ -11,7 +11,7 @@ interface KeywordListProps {
   onKeywordClick: (id: KeywordId) => void
   onReorder: (activeId: KeywordId, overId: KeywordId) => void
   onClose?: () => void
-  dndContext?: boolean // 追加
+  dndContext?: boolean
 }
 
 export const KeywordList = ({
@@ -20,7 +20,7 @@ export const KeywordList = ({
   onKeywordClick,
   onReorder,
   onClose,
-  dndContext, // 追加
+  dndContext,
 }: KeywordListProps) => {
   if (keywords.length === 0) {
     return (
@@ -36,8 +36,9 @@ export const KeywordList = ({
         items={keywords}
         idSchema={KeywordIdSchema}
         listRole={ARIA_ROLES.LIST}
+        ariaLabel={FIELD_LABELS.KEYWORDS_LABEL}
         onReorder={onReorder}
-        dndContext={dndContext} // 渡す
+        dndContext={dndContext}
         renderItem={(keyword, index) => (
           <DraggableItem key={keyword.id} item={keyword}>
             {(dndProps) => (

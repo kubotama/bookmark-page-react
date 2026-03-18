@@ -9,7 +9,11 @@ import {
   HTTP_STATUS,
   DEFAULT_API_URL,
 } from '@shared/constants'
-import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
+import {
+  MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
+  MOCK_KEYWORDS,
+} from '@shared/test/fixtures'
 import { render, screen, waitFor } from './test/utils'
 import userEvent from '@testing-library/user-event'
 
@@ -32,24 +36,31 @@ vi.mock('@dnd-kit/core', async () => {
     }) => (
       <div
         data-testid="mock-dnd-context"
-        onClick={() =>
-          onDragEnd({
-            active: {
-              id: MOCK_BOOKMARK_1.id,
-              data: { current: undefined },
-              rect: { current: null },
-            },
-            over: {
-              id: MOCK_BOOKMARK_2.id,
-              rect: { current: null },
-              data: { current: undefined },
-              disabled: false,
-            },
-            delta: { x: 0, y: 0 },
-            activatorEvent: {} as Event,
-            collisions: null,
-          } as unknown as DragEndEvent)
-        }
+        onClick={(e) => {
+          // BookmarkList 内のモック DndContext のみが反応するようにフィルタリング（簡易的）
+          if (
+            e.currentTarget.querySelector(
+              '[aria-label="' + FIELD_LABELS.BOOKMARKS_LABEL + '"]',
+            )
+          ) {
+            onDragEnd({
+              active: {
+                id: MOCK_BOOKMARK_1.id,
+                data: { current: undefined },
+                rect: { current: null },
+              },
+              over: {
+                id: MOCK_BOOKMARK_2.id,
+                rect: { current: null },
+                data: { current: undefined },
+                disabled: false,
+              },
+              delta: { x: 0, y: 0 },
+              activatorEvent: {} as Event,
+              collisions: null,
+            } as unknown as DragEndEvent)
+          }
+        }}
       >
         {children}
       </div>
@@ -70,6 +81,12 @@ describe('App Integration', () => {
           data: { bookmarks: [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2] },
         })
       }),
+      http.get(`${DEFAULT_API_URL}${API_PATHS.KEYWORDS}`, () => {
+        return HttpResponse.json({
+          success: true,
+          data: { keywords: MOCK_KEYWORDS },
+        })
+      }),
       http.put(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}/reorder`, () => {
         return HttpResponse.json({ success: true, data: null })
       }),
@@ -83,13 +100,22 @@ describe('App Integration', () => {
   /**
    * テスト用のセットアップヘルパー
    */
-  const setup = (bookmarks = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]) => {
+  const setup = (
+    bookmarks = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2],
+    keywords = MOCK_KEYWORDS,
+  ) => {
     const user = userEvent.setup()
     server.use(
       http.get(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}`, () => {
         return HttpResponse.json({
           success: true,
           data: { bookmarks },
+        })
+      }),
+      http.get(`${DEFAULT_API_URL}${API_PATHS.KEYWORDS}`, () => {
+        return HttpResponse.json({
+          success: true,
+          data: { keywords },
         })
       }),
     )
@@ -115,6 +141,13 @@ describe('App Integration', () => {
           },
           { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
         )
+      }),
+      // キーワード API は成功させる
+      http.get(`${DEFAULT_API_URL}${API_PATHS.KEYWORDS}`, () => {
+        return HttpResponse.json({
+          success: true,
+          data: { keywords: MOCK_KEYWORDS },
+        })
       }),
     )
     render(<App />, { initialUrl: DEFAULT_API_URL })
@@ -168,10 +201,23 @@ describe('App Integration', () => {
 
     setup()
 
-    await screen.findByRole(ARIA_ROLES.LIST)
+    // ブックマークリストを特定して待機
+    await screen.findByRole(ARIA_ROLES.LIST, {
+      name: FIELD_LABELS.BOOKMARKS_LABEL,
+    })
 
-    const dndContext = screen.getByTestId('mock-dnd-context')
-    await userEvent.click(dndContext)
+    // DndContext モックを探す。複数ある場合はブックマークリスト側のものをクリック
+    const dndContexts = screen.getAllByTestId('mock-dnd-context')
+    // ブックマーク一覧を含んでいる方を特定
+    const bookmarkDndContext = dndContexts.find((ctx) =>
+      ctx.querySelector('[aria-label="' + FIELD_LABELS.BOOKMARKS_LABEL + '"]'),
+    )
+
+    if (!bookmarkDndContext) {
+      throw new Error('Bookmark DndContext not found')
+    }
+
+    await userEvent.click(bookmarkDndContext)
 
     expect(putCalled).toBe(true)
   })
@@ -187,6 +233,12 @@ describe('App Integration', () => {
         return HttpResponse.json({
           success: true,
           data: { bookmarks: [MOCK_BOOKMARK_2] },
+        })
+      }),
+      http.get(`${NEW_BASE_URL}${API_PATHS.KEYWORDS}`, () => {
+        return HttpResponse.json({
+          success: true,
+          data: { keywords: MOCK_KEYWORDS },
         })
       }),
     )

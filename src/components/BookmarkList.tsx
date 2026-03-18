@@ -2,6 +2,7 @@ import {
   ARIA_ATTRIBUTES,
   ARIA_ROLES,
   COMMON_MESSAGES,
+  FIELD_LABELS,
   UI_MESSAGES,
 } from '@shared/constants'
 
@@ -73,6 +74,7 @@ export const BookmarkList = ({
         items={bookmarks}
         idSchema={BookmarkIdSchema}
         listRole={ARIA_ROLES.LIST}
+        ariaLabel={FIELD_LABELS.BOOKMARKS_LABEL}
         onReorder={onReorder}
         renderItem={(bookmark, index) => (
           <DraggableItem key={bookmark.id} item={bookmark}>
