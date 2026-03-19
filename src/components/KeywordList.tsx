@@ -7,7 +7,7 @@ import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 interface KeywordListProps {
   keywords: Keyword[]
-  selectedId?: KeywordId | null
+  selectedKeywordIds?: KeywordId[]
   onKeywordClick?: (id: KeywordId) => void
   onReorder?: (activeId: KeywordId, overId: KeywordId) => void
   onClose?: () => void
@@ -16,7 +16,7 @@ interface KeywordListProps {
 
 export const KeywordList = ({
   keywords,
-  selectedId,
+  selectedKeywordIds,
   onKeywordClick,
   onReorder,
   onClose,
@@ -44,10 +44,10 @@ export const KeywordList = ({
             {(dndProps) => (
               <KeywordItem
                 keyword={keyword}
-                isSelected={selectedId === keyword.id}
+                isSelected={selectedKeywordIds?.includes(keyword.id) ?? false}
                 isFocusable={
-                  selectedId === keyword.id ||
-                  (selectedId === null && index === 0)
+                  (selectedKeywordIds?.includes(keyword.id) ?? false) ||
+                  (selectedKeywordIds?.length === 0 && index === 0)
                 }
                 onClick={onKeywordClick ?? (() => {})}
                 onClose={onClose}

@@ -33,14 +33,17 @@ export const KeywordItem = memo(
     style,
     isDragging = false,
   }: KeywordItemProps) => {
-    // BookmarkItem とデザインを合わせつつ、キーワード用の配色を適用（例：グレー背景）
-    const itemClassName = `flex items-center transition-colors cursor-pointer hover:bg-gray-200 bg-gray-100 text-sm text-left text-gray-900 select-none group border-b border-gray-300 ${
+    // 選択状態に応じたスタイル。選択時は青背景、未選択時はグレー背景。
+    const bgColorClass = isSelected
+      ? 'bg-blue-600 text-white hover:bg-blue-700'
+      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+
+    const itemClassName = `flex items-center transition-colors cursor-pointer text-sm text-left select-none group border-b border-gray-300 ${bgColorClass} ${
       isDragging ? 'shadow-lg' : ''
     }`
 
-    const contentClassName = `flex-1 px-2 py-1 truncate ${
-      isSelected ? 'font-bold' : ''
-    }`
+    // 選択時に bold にするスタイルは削除 (要件に従い)
+    const contentClassName = 'flex-1 px-2 py-1 truncate'
 
     return (
       <div ref={setNodeRef} style={style} role={ARIA_ROLES.LISTITEM}>
@@ -61,7 +64,9 @@ export const KeywordItem = memo(
         >
           {/* ドラッグハンドル */}
           <div
-            className="w-8 h-full flex items-center justify-center px-2 cursor-grab active:cursor-grabbing text-gray-400 hover:text-blue-600 transition-colors"
+            className={`w-8 h-full flex items-center justify-center px-2 cursor-grab active:cursor-grabbing transition-colors ${
+              isSelected ? 'text-blue-200' : 'text-gray-400 hover:text-blue-600'
+            }`}
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
