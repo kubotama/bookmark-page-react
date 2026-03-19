@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   API_PATHS,
+  ARIA_ATTRIBUTES,
   ARIA_ROLES,
   FIELD_LABELS,
   HTTP_STATUS,
@@ -253,5 +254,34 @@ describe('App Integration', () => {
       { timeout: 2000 },
     )
     expect(await screen.findByText(MOCK_BOOKMARK_2.title)).toBeInTheDocument()
+  })
+
+  describe('Keyword Selection', () => {
+    it('キーワードをクリックすると選択状態が切り替わり、複数選択が可能であること', async () => {
+      const { user } = setup()
+
+      // キーワード一覧が表示されるのを待機
+      const keyword1 = await screen.findByRole('button', {
+        name: MOCK_KEYWORDS[0].name,
+      })
+      const keyword2 = await screen.findByRole('button', {
+        name: MOCK_KEYWORDS[1].name,
+      })
+
+      // 1. キーワード1を選択
+      await user.click(keyword1)
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+
+      // 2. キーワード2を追加選択 (複数選択)
+      await user.click(keyword2)
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+
+      // 3. キーワード1を解除
+      await user.click(keyword1)
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+    })
   })
 })

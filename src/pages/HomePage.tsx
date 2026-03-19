@@ -12,12 +12,14 @@ export function HomePage({ appState }: HomePageProps) {
     bookmarks,
     keywords,
     selectedId,
+    selectedKeywordIds,
     isLoading,
     error,
     handleRowClick,
     handleOpen,
     handleClose,
     handleReorder,
+    toggleKeywordSelection,
   } = appState
 
   return (
@@ -30,7 +32,11 @@ export function HomePage({ appState }: HomePageProps) {
               {FIELD_LABELS.KEYWORDS_HEADING}
             </h2>
             <div className="flex-1 overflow-y-auto">
-              <KeywordList keywords={keywords} />
+              <KeywordList
+                keywords={keywords}
+                selectedKeywordIds={selectedKeywordIds}
+                onKeywordClick={toggleKeywordSelection}
+              />
             </div>
           </aside>
 

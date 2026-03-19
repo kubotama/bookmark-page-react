@@ -69,4 +69,29 @@ describe('KeywordItem', () => {
     const button = screen.getByRole(ARIA_ROLES.BUTTON)
     expect(listItem).toContainElement(button)
   })
+
+  describe('スタイル制御', () => {
+    it('isSelected が false の時、デフォルトのスタイルが適用されること', () => {
+      render(<KeywordItem {...defaultProps} isSelected={false} />)
+      const button = screen.getByRole(ARIA_ROLES.BUTTON)
+      // デフォルトの背景色クラス
+      expect(button).toHaveClass('bg-gray-100')
+      // 太字ではないこと
+      expect(screen.getByText(mockKeyword.name)).not.toHaveClass('font-bold')
+    })
+
+    it('isSelected が true の時、選択中のスタイル（青背景・白文字）が適用され、太字が解除されること', () => {
+      render(<KeywordItem {...defaultProps} isSelected={true} />)
+      const button = screen.getByRole(ARIA_ROLES.BUTTON)
+      const nameElement = screen.getByText(mockKeyword.name)
+
+      // 選択時のクラス
+      expect(button).toHaveClass('bg-blue-600')
+      expect(button).toHaveClass('text-white')
+      // デフォルトの背景色が解除されていること
+      expect(button).not.toHaveClass('bg-gray-100')
+      // 太字が解除されていること
+      expect(nameElement).not.toHaveClass('font-bold')
+    })
+  })
 })
