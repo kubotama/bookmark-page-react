@@ -70,6 +70,15 @@
 npm install
 ```
 
+> [!IMPORTANT]
+> 本プロジェクトではセキュリティ向上のため、`.npmrc` にて `ignore-scripts=true` を設定しています。これにより、`npm install` 時に依存パッケージのスクリプト（ネイティブモジュールのビルド等）が自動実行されません。
+>
+> `better-sqlite3` などのバイナリを含むパッケージを使用する場合、インストール後（または Node.js バージョン変更時）に以下のコマンドで手動ビルドを行う必要があります：
+>
+> ```bash
+> cd node_modules/better-sqlite3 && npm run install
+> ```
+
 ### エディタ設定 (Editor Setup)
 
 VSCode を使用する場合、プロジェクトルートの `tsconfig.json` に基づき `@shared/*` および `@shared/ui/*` パスエイリアスが自動的に認識されます。
