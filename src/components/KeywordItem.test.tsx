@@ -40,7 +40,18 @@ describe('KeywordItem', () => {
     expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
   })
 
-  it('Enter キーで onClick が呼ばれること', async () => {
+  it('Space キーで onClick が呼ばれること', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(<KeywordItem {...defaultProps} onClick={onClick} />)
+
+    const item = screen.getByRole(ARIA_ROLES.BUTTON)
+    item.focus()
+    await user.keyboard(' ')
+    expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
+  })
+
+  it('Enter キーでは onClick が呼ばれないこと（一括起動に譲るため）', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()
     render(<KeywordItem {...defaultProps} onClick={onClick} />)
@@ -48,7 +59,7 @@ describe('KeywordItem', () => {
     const item = screen.getByRole(ARIA_ROLES.BUTTON)
     item.focus()
     await user.keyboard('{Enter}')
-    expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
+    expect(onClick).not.toHaveBeenCalled()
   })
 
   it('Escape キーで onClose が呼ばれること', async () => {

@@ -4,8 +4,10 @@ import { TEST_MESSAGES } from '@shared/constants'
 import { http, HttpResponse } from 'msw'
 import { server } from '../test/setup'
 import { renderHook, waitFor, act } from '../test/utils'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
   VALID_URLS,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
@@ -148,6 +150,56 @@ describe('useApp Hook (Integration)', () => {
         result.current.handleClose()
       })
       expect(result.current.selectedId).toBeNull()
+    })
+
+    it('キーワード選択中に handleOpen が呼ばれると、一致する全てのブックマークが開かれること', async () => {
+      const kw1 = MOCK_KEYWORDS[0]
+      const b1 = {
+        ...MOCK_BOOKMARK_1,
+        title: 'B1',
+        url: 'https://b1.com',
+        keywords: [kw1],
+      }
+      const b2 = {
+        ...MOCK_BOOKMARK_2,
+        title: 'B2',
+        url: 'https://b2.com',
+        keywords: [kw1],
+      }
+      const b3 = {
+        ...MOCK_BOOKMARK_1,
+        id: BookmarkIdSchema.parse('3'),
+        title: 'B3',
+        url: 'https://b3.com',
+        keywords: [],
+      }
+
+      server.use(
+        http.get('*/api/bookmarks', () => {
+          return HttpResponse.json({
+            success: true,
+            data: { bookmarks: [b1, b2, b3] },
+          })
+        }),
+      )
+
+      const { result } = await renderAppHook()
+
+      // キーワード1を選択
+      act(() => {
+        result.current.toggleKeywordSelection(kw1.id)
+      })
+
+      // 開く
+      act(() => {
+        result.current.handleOpen()
+      })
+
+      // 一致する2件が開かれ、一致しない1件は開かれない
+      expect(openUrlInNewTab).toHaveBeenCalledTimes(2)
+      expect(openUrlInNewTab).toHaveBeenCalledWith(b1.url)
+      expect(openUrlInNewTab).toHaveBeenCalledWith(b2.url)
+      expect(openUrlInNewTab).not.toHaveBeenCalledWith(b3.url)
     })
   })
 

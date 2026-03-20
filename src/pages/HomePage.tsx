@@ -2,6 +2,7 @@ import { FIELD_LABELS } from '@shared/constants'
 import { BookmarkList } from '../components/BookmarkList'
 import { KeywordList } from '../components/KeywordList'
 import { useApp } from '../hooks/useApp'
+import { useEffect } from 'react'
 
 interface HomePageProps {
   appState: ReturnType<typeof useApp>
@@ -22,6 +23,25 @@ export function HomePage({ appState }: HomePageProps) {
     handleReorder,
     toggleKeywordSelection,
   } = appState
+
+  // キーボードショートカットの設定
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        // 入力フィールド（キーワード入力欄など）にフォーカスがある場合は、そちらを優先
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        ) {
+          return
+        }
+        handleOpen()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleOpen])
 
   // BookmarkList で共通して使用するプロパティを定義
   const commonBookmarkListProps = {

@@ -4,7 +4,7 @@ import { useBookmarkListState } from './useBookmarkListState'
 import { useKeywordListState } from './useKeywordListState'
 import { useBookmarkReorder } from './useBookmarkReorder'
 import { openUrlInNewTab } from '@shared/utils/url'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 
 export const useApp = () => {
   // 1. 設定管理
@@ -71,16 +71,22 @@ export const useApp = () => {
   // 4. 操作ロジック
   const { handleReorder } = useBookmarkReorder()
 
-  const handleOpen = () => {
-    const selected = bookmarks.find((b) => b.id === selectedId)
-    if (selected) {
-      openUrlInNewTab(selected.url)
+  const handleOpen = useCallback(() => {
+    if (selectedKeywordIds.length > 0) {
+      // キーワード選択時は一致するものを一括で開く
+      filteredBookmarks.forEach((b) => openUrlInNewTab(b.url))
+    } else {
+      // 未選択時は選択中のブックマーク（詳細画面遷移用）を開く
+      const selected = bookmarks.find((b) => b.id === selectedId)
+      if (selected) {
+        openUrlInNewTab(selected.url)
+      }
     }
-  }
+  }, [selectedKeywordIds, filteredBookmarks, bookmarks, selectedId])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSelectedId(null)
-  }
+  }, [setSelectedId])
 
   return {
     bookmarks, // 全件（後方互換性のため維持）
