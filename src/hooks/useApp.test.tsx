@@ -150,4 +150,84 @@ describe('useApp Hook (Integration)', () => {
       expect(result.current.selectedId).toBeNull()
     })
   })
+
+  describe('フィルタリング（分類）ロジック', () => {
+    it('キーワードが選択されていない場合、全てのブックマークが filteredBookmarks に含まれること', async () => {
+      const { result } = await renderAppHook()
+      expect(result.current.filteredBookmarks).toHaveLength(1)
+      expect(result.current.otherBookmarks).toHaveLength(0)
+    })
+
+    it('キーワードが選択されている場合、一致するものが filteredBookmarks に、それ以外が otherBookmarks に分類されること', async () => {
+      // 1. キーワード1を持つブックマークと、持たないブックマークを準備
+      const bookmarkWithKw1 = {
+        ...MOCK_BOOKMARK_1,
+        keywords: [MOCK_KEYWORDS[0]],
+      }
+      const bookmarkWithoutKw1 = {
+        ...MOCK_BOOKMARK_1,
+        id: '2',
+        title: 'Other',
+        keywords: [MOCK_KEYWORDS[1]],
+      }
+
+      server.use(
+        http.get('*/api/bookmarks', () => {
+          return HttpResponse.json({
+            success: true,
+            data: { bookmarks: [bookmarkWithKw1, bookmarkWithoutKw1] },
+          })
+        }),
+      )
+
+      const { result } = await renderAppHook()
+
+      // 2. キーワード1を選択
+      act(() => {
+        result.current.toggleKeywordSelection(MOCK_KEYWORDS[0].id)
+      })
+
+      // 3. 分類結果を検証
+      expect(result.current.filteredBookmarks).toHaveLength(1)
+      expect(result.current.filteredBookmarks[0].id).toBe(bookmarkWithKw1.id)
+      expect(result.current.otherBookmarks).toHaveLength(1)
+      expect(result.current.otherBookmarks[0].id).toBe(bookmarkWithoutKw1.id)
+    })
+
+    it('複数のキーワードが選択された場合、AND検索として機能すること', async () => {
+      const bookmarkWithBoth = {
+        ...MOCK_BOOKMARK_1,
+        id: '1',
+        keywords: [MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]],
+      }
+      const bookmarkWithOnly1 = {
+        ...MOCK_BOOKMARK_1,
+        id: '2',
+        keywords: [MOCK_KEYWORDS[0]],
+      }
+
+      server.use(
+        http.get('*/api/bookmarks', () => {
+          return HttpResponse.json({
+            success: true,
+            data: { bookmarks: [bookmarkWithBoth, bookmarkWithOnly1] },
+          })
+        }),
+      )
+
+      const { result } = await renderAppHook()
+
+      // 両方のキーワードを選択
+      act(() => {
+        result.current.toggleKeywordSelection(MOCK_KEYWORDS[0].id)
+        result.current.toggleKeywordSelection(MOCK_KEYWORDS[1].id)
+      })
+
+      // 両方持つものだけが filteredBookmarks に入る
+      expect(result.current.filteredBookmarks).toHaveLength(1)
+      expect(result.current.filteredBookmarks[0].id).toBe(bookmarkWithBoth.id)
+      expect(result.current.otherBookmarks).toHaveLength(1)
+      expect(result.current.otherBookmarks[0].id).toBe(bookmarkWithOnly1.id)
+    })
+  })
 })

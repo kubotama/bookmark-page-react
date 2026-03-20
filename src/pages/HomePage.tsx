@@ -9,7 +9,8 @@ interface HomePageProps {
 
 export function HomePage({ appState }: HomePageProps) {
   const {
-    bookmarks,
+    filteredBookmarks,
+    otherBookmarks,
     keywords,
     selectedId,
     selectedKeywordIds,
@@ -21,6 +22,15 @@ export function HomePage({ appState }: HomePageProps) {
     handleReorder,
     toggleKeywordSelection,
   } = appState
+
+  // BookmarkList で共通して使用するプロパティを定義
+  const commonBookmarkListProps = {
+    selectedId,
+    onRowClick: handleRowClick,
+    onOpen: handleOpen,
+    onClose: handleClose,
+    onReorder: handleReorder,
+  }
 
   return (
     <>
@@ -41,18 +51,56 @@ export function HomePage({ appState }: HomePageProps) {
           </aside>
 
           {/* 右カラム: ブックマーク一覧 */}
-          <section className="flex-1 flex flex-col h-full shadow-xl">
-            <div className="flex-1 overflow-y-auto pt-4 pb-4 px-4 bg-white">
-              <BookmarkList
-                bookmarks={bookmarks}
-                isLoading={isLoading}
-                error={error}
-                selectedId={selectedId}
-                onRowClick={handleRowClick}
-                onOpen={handleOpen}
-                onClose={handleClose}
-                onReorder={handleReorder}
-              />
+          <section className="flex-1 flex flex-col h-full shadow-xl bg-white overflow-hidden">
+            <div className="flex-1 overflow-y-auto pt-4 pb-4 px-4">
+              {isLoading || error ? (
+                /* ロード中またはエラー時は単一の BookmarkList で状態を表示 */
+                <BookmarkList
+                  bookmarks={[]}
+                  isLoading={isLoading}
+                  error={error}
+                  {...commonBookmarkListProps}
+                />
+              ) : selectedKeywordIds.length === 0 ? (
+                /* キーワード未選択時は全件をそのまま表示 */
+                <BookmarkList
+                  bookmarks={filteredBookmarks}
+                  isLoading={false}
+                  error={null}
+                  {...commonBookmarkListProps}
+                />
+              ) : (
+                /* キーワード選択時は「一致」と「その他」に分けて表示 */
+                <div className="space-y-8">
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
+                      {FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
+                    </h3>
+                    <BookmarkList
+                      bookmarks={filteredBookmarks}
+                      isLoading={false}
+                      error={null}
+                      {...commonBookmarkListProps}
+                      ariaLabel={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
+                    />
+                  </div>
+
+                  {otherBookmarks.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
+                        {FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                      </h3>
+                      <BookmarkList
+                        bookmarks={otherBookmarks}
+                        isLoading={false}
+                        error={null}
+                        {...commonBookmarkListProps}
+                        ariaLabel={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </section>
         </div>

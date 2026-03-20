@@ -15,7 +15,7 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
-import { render, screen, waitFor } from './test/utils'
+import { render, screen, waitFor, within } from './test/utils'
 import { createDragEndEvent } from './test/dnd-utils'
 import userEvent from '@testing-library/user-event'
 
@@ -282,6 +282,44 @@ describe('App Integration', () => {
       await user.click(keyword1)
       expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
       expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+    })
+
+    it('キーワード選択時、ブックマークが「一致」と「その他」のセクションに分かれて表示されること', async () => {
+      // キーワード1を持つブックマーク1と、キーワード2を持つブックマーク2を準備
+      const kw1 = MOCK_KEYWORDS[0]
+      const kw2 = MOCK_KEYWORDS[1]
+      const b1 = { ...MOCK_BOOKMARK_1, keywords: [kw1] }
+      const b2 = { ...MOCK_BOOKMARK_2, keywords: [kw2] }
+
+      const { user } = setup([b1, b2])
+
+      // 1. キーワード1を選択
+      const keywordBtn1 = await screen.findByRole('button', {
+        name: kw1.name,
+      })
+      await user.click(keywordBtn1)
+
+      // 2. セクション見出しが表示されていることを確認
+      expect(
+        screen.getByText(FIELD_LABELS.MATCHED_BOOKMARKS_LABEL),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(FIELD_LABELS.OTHER_BOOKMARKS_LABEL),
+      ).toBeInTheDocument()
+
+      // 3. 各セクションの内容を検証
+      const matchedSection = screen.getByRole('list', {
+        name: FIELD_LABELS.MATCHED_BOOKMARKS_LABEL,
+      })
+      const otherSection = screen.getByRole('list', {
+        name: FIELD_LABELS.OTHER_BOOKMARKS_LABEL,
+      })
+
+      expect(within(matchedSection).getByText(b1.title)).toBeInTheDocument()
+      expect(within(otherSection).getByText(b2.title)).toBeInTheDocument()
+      expect(
+        within(matchedSection).queryByText(b2.title),
+      ).not.toBeInTheDocument()
     })
   })
 })
