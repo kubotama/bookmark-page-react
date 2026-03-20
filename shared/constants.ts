@@ -25,6 +25,8 @@ export const FIELD_LABELS = {
   BOOKMARKS_LABEL: 'ブックマーク一覧',
   KEYWORDS_LABEL: 'キーワード一覧',
   KEYWORDS_HEADING: 'Keywords',
+  MATCHED_BOOKMARKS_LABEL: '一致したブックマーク',
+  OTHER_BOOKMARKS_LABEL: 'その他のブックマーク',
   ASSIGNED_KEYWORDS_LABEL: '割り当て済みのキーワード',
   UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
   ADD_KEYWORD_LABEL: '追加するキーワード',
