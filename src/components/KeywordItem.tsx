@@ -52,13 +52,23 @@ export const KeywordItem = memo(
           {...{ [HTML_ATTRIBUTES.TAB_INDEX]: isFocusable ? 0 : -1 }}
           {...{ [HTML_ATTRIBUTES.ROLE]: ARIA_ROLES.BUTTON }}
           {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
-          onClick={() => onClick(keyword.id)}
+          // マウスによる選択。合成イベント(Enter)の影響を受けないようMouseUpを使用。
+          onMouseUp={(e) => {
+            if (e.button === 0) {
+              onClick(keyword.id)
+            }
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === ' ') {
+              // Space キーで選択（トグル）
               e.preventDefault()
               onClick(keyword.id)
             } else if (e.key === 'Escape') {
               onClose?.()
+            } else if (e.key === 'Enter') {
+              // Enter キーによるブラウザ標準の合成クリック発火を防止
+              // これにより、HomePage の一括起動のみが実行されるようになる
+              e.preventDefault()
             }
           }}
         >

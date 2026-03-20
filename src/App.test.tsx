@@ -15,7 +15,7 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
-import { render, screen, waitFor, within } from './test/utils'
+import { render, screen, waitFor, within, fireEvent } from './test/utils'
 import { createDragEndEvent } from './test/dnd-utils'
 import userEvent from '@testing-library/user-event'
 
@@ -320,6 +320,30 @@ describe('App Integration', () => {
       expect(
         within(matchedSection).queryByText(b2.title),
       ).not.toBeInTheDocument()
+    })
+
+    it('キーワード選択中に Enter キーを押すと、一致する全てのブックマークが一括で開かれ、選択状態が維持されること', async () => {
+      const kw1 = MOCK_KEYWORDS[0]
+      const b1 = { ...MOCK_BOOKMARK_1, keywords: [kw1] }
+      const b2 = { ...MOCK_BOOKMARK_2, keywords: [kw1] }
+
+      const { user } = setup([b1, b2])
+
+      // 1. キーワード1を選択
+      const keywordBtn1 = await screen.findByRole('button', {
+        name: kw1.name,
+      })
+      await user.click(keywordBtn1)
+      expect(keywordBtn1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+
+      // 2. Enter キーを押下
+      fireEvent.keyDown(window, { key: 'Enter' })
+
+      // 3. 一括起動の検証
+      expect(window.open).toHaveBeenCalledTimes(2)
+
+      // 4. 重要: キーワードの選択状態が解除されていないことを検証
+      expect(keywordBtn1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
     })
   })
 })
