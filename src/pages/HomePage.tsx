@@ -22,6 +22,7 @@ export function HomePage({ appState }: HomePageProps) {
     handleClose,
     handleReorder,
     toggleKeywordSelection,
+    clearKeywordSelection,
   } = appState
 
   // キーボードショートカットの設定
@@ -35,13 +36,28 @@ export function HomePage({ appState }: HomePageProps) {
         ) {
           return
         }
+
+        // ボタン（キーワード等）にフォーカスがある場合でも、Enter なら一括起動を優先
+        // ボタン自身のクリックイベント（トグル動作など）が連鎖して起きないように抑制する
+        if (e.target instanceof HTMLButtonElement) {
+          e.preventDefault()
+          e.stopPropagation()
+        }
+
         handleOpen()
+      } else if (e.key === 'Escape') {
+        // キーワードが選択されている場合、Escape で全解除
+        if (selectedKeywordIds.length > 0) {
+          e.preventDefault()
+          e.stopPropagation()
+          clearKeywordSelection()
+        }
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleOpen])
+    window.addEventListener('keydown', handleKeyDown, true) // Captureフェーズで確実に捕捉
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [handleOpen, clearKeywordSelection, selectedKeywordIds.length])
 
   // BookmarkList で共通して使用するプロパティを定義
   const commonBookmarkListProps = {

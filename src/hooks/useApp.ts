@@ -18,7 +18,8 @@ export const useApp = () => {
 
   // 2. 一覧の状態管理
   const { selectedId, setSelectedId, handleRowClick } = useBookmarkListState()
-  const { selectedKeywordIds, toggleKeywordSelection } = useKeywordListState()
+  const { selectedKeywordIds, toggleKeywordSelection, clearKeywordSelection } =
+    useKeywordListState()
 
   // 3. データの取得
   const {
@@ -107,5 +108,6 @@ export const useApp = () => {
     handleSaveSettings,
     handleReorder,
     toggleKeywordSelection,
+    clearKeywordSelection,
   }
 }

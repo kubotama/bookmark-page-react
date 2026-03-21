@@ -345,5 +345,29 @@ describe('App Integration', () => {
       // 4. 重要: キーワードの選択状態が解除されていないことを検証
       expect(keywordBtn1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
     })
+
+    it('キーワード選択中に Escape キーを押すと、すべての選択が解除されること', async () => {
+      const { user } = setup()
+
+      const keyword1 = await screen.findByRole('button', {
+        name: MOCK_KEYWORDS[0].name,
+      })
+      const keyword2 = await screen.findByRole('button', {
+        name: MOCK_KEYWORDS[1].name,
+      })
+
+      // 1. 2つのキーワードを選択
+      await user.click(keyword1)
+      await user.click(keyword2)
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+
+      // 2. Escape キーを押下
+      fireEvent.keyDown(window, { key: 'Escape' })
+
+      // 3. 全ての選択が解除されていることを検証
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+    })
   })
 })

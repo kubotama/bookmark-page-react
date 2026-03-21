@@ -19,5 +19,9 @@ export const useKeywordListState = () => {
     })
   }, [])
 
-  return { selectedKeywordIds, toggleKeywordSelection }
+  const clearKeywordSelection = useCallback(() => {
+    setSelectedKeywordIds([])
+  }, [])
+
+  return { selectedKeywordIds, toggleKeywordSelection, clearKeywordSelection }
 }
