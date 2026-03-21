@@ -42,4 +42,21 @@ describe('useKeywordListState', () => {
     })
     expect(result.current.selectedKeywordIds).toEqual([id2])
   })
+
+  it('clearKeywordSelection で全ての選択が解除されること', () => {
+    const { result } = renderHook(() => useKeywordListState())
+    const id1 = KeywordIdSchema.parse('1')
+    const id2 = KeywordIdSchema.parse('2')
+
+    act(() => {
+      result.current.toggleKeywordSelection(id1)
+      result.current.toggleKeywordSelection(id2)
+    })
+    expect(result.current.selectedKeywordIds).toHaveLength(2)
+
+    act(() => {
+      result.current.clearKeywordSelection()
+    })
+    expect(result.current.selectedKeywordIds).toEqual([])
+  })
 })
