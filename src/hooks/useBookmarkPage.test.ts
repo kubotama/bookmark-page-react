@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '../test/utils'
 import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
+import { createKeyboardEvent } from '../test/event-utils'
 import { useBookmarkPage } from './useBookmarkPage'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import { http, HttpResponse, delay } from 'msw'
@@ -10,6 +11,7 @@ import {
   HTTP_STATUS,
   LOG_MESSAGES,
   DROPPABLE_IDS,
+  KEY_VALUES,
 } from '@shared/constants'
 import { fireEvent } from '@testing-library/react'
 import * as urlUtils from '@shared/utils/url'
@@ -172,11 +174,7 @@ describe('useBookmarkPage Hook', () => {
     })
 
     act(() => {
-      const event = {
-        key: 'Enter',
-        shiftKey: false,
-        preventDefault: vi.fn(),
-      } as unknown as React.KeyboardEvent
+      const event = createKeyboardEvent(KEY_VALUES.ENTER)
       result.current.handleKeywordKeyDown(event)
     })
 
@@ -328,7 +326,7 @@ describe('useBookmarkPage Hook', () => {
     it('Escape キーで handleBack が呼ばれること', async () => {
       renderHook(() => useBookmarkPage())
 
-      fireEvent.keyDown(window, { key: 'Escape' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
       expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
     })
 
@@ -336,7 +334,7 @@ describe('useBookmarkPage Hook', () => {
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
-      fireEvent.keyDown(window, { key: 'Enter' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
       expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
     })
 
@@ -352,7 +350,7 @@ describe('useBookmarkPage Hook', () => {
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
-      fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ENTER, ctrlKey: true })
 
       await waitFor(() => expect(patchCalled).toBe(true))
     })

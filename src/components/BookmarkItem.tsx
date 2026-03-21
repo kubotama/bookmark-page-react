@@ -1,5 +1,10 @@
 import { memo } from 'react'
-import { ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
+import {
+  ARIA_ROLES,
+  ARIA_ATTRIBUTES,
+  HTML_ATTRIBUTES,
+  KEY_VALUES,
+} from '@shared/constants'
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
@@ -53,12 +58,12 @@ export const BookmarkItem = memo(
           {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
           onClick={() => onRowClick(bookmark.id)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && isSelected) {
+            if (e.key === KEY_VALUES.ENTER && isSelected) {
               onOpen()
-            } else if (e.key === ' ') {
+            } else if (e.key === KEY_VALUES.SPACE) {
               e.preventDefault()
               onRowClick(bookmark.id)
-            } else if (e.key === 'Escape') {
+            } else if (e.key === KEY_VALUES.ESCAPE) {
               onClose()
             }
           }}

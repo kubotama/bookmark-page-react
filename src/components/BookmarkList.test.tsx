@@ -8,6 +8,7 @@ import {
   UI_MESSAGES,
   TEST_MESSAGES,
   ERROR_MESSAGES,
+  KEY_VALUES,
 } from '@shared/constants'
 import {
   MOCK_BOOKMARK_1,
@@ -199,7 +200,7 @@ describe('BookmarkList', () => {
     })
 
     items[1]!.focus()
-    await user.keyboard('{Enter}')
+    await user.keyboard(`{${KEY_VALUES.ENTER}}`)
 
     expect(onOpen).toHaveBeenCalled()
   })
@@ -212,7 +213,8 @@ describe('BookmarkList', () => {
     const items = screen.getAllByRole(ARIA_ROLES.BUTTON, {
       name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
     })
-    await user.type(items[0]!, ' ')
+    items[0]!.focus()
+    await user.keyboard(KEY_VALUES.SPACE)
     expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
   })
 

@@ -8,6 +8,7 @@ import {
   FIELD_LABELS,
   LOG_MESSAGES,
   UI_MESSAGES,
+  KEY_VALUES,
 } from '@shared/constants'
 import { updateBookmarkSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
@@ -289,7 +290,7 @@ describe('BookmarkPage Component', () => {
 
     const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
     fireEvent.change(input, { target: { value: 'EnterTag' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    fireEvent.keyDown(input, { key: KEY_VALUES.ENTER })
 
     await waitFor(() => expect(createCalled).toBe(true))
   })
@@ -414,7 +415,7 @@ describe('BookmarkPage Component', () => {
       )
       await screen.findByLabelText(FIELD_LABELS.TITLE)
 
-      fireEvent.keyDown(window, { key: 'Enter' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
 
       await waitFor(() => {
         expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(
@@ -430,7 +431,7 @@ describe('BookmarkPage Component', () => {
       )
       await screen.findByLabelText(FIELD_LABELS.TITLE)
 
-      fireEvent.keyDown(window, { key: 'Escape' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
       expect(await screen.findByText('Home')).toBeInTheDocument()
     })
   })

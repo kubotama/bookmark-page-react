@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ARIA_ROLES } from '@shared/constants'
+import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
 import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -47,7 +47,7 @@ describe('KeywordItem', () => {
 
     const item = screen.getByRole(ARIA_ROLES.BUTTON)
     item.focus()
-    await user.keyboard(' ')
+    await user.keyboard(KEY_VALUES.SPACE)
     expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
   })
 
@@ -58,7 +58,7 @@ describe('KeywordItem', () => {
 
     const item = screen.getByRole(ARIA_ROLES.BUTTON)
     item.focus()
-    await user.keyboard('{Enter}')
+    await user.keyboard(`{${KEY_VALUES.ENTER}}`)
     expect(onClick).not.toHaveBeenCalled()
   })
 
@@ -69,7 +69,7 @@ describe('KeywordItem', () => {
 
     const item = screen.getByRole(ARIA_ROLES.BUTTON)
     item.focus()
-    await user.keyboard('{Escape}')
+    await user.keyboard(`{${KEY_VALUES.ESCAPE}}`)
     expect(onClose).toHaveBeenCalled()
   })
 

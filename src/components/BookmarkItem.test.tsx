@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { ARIA_ATTRIBUTES, ARIA_ROLES, HTML_ATTRIBUTES } from '@shared/constants'
+import {
+  ARIA_ATTRIBUTES,
+  ARIA_ROLES,
+  HTML_ATTRIBUTES,
+  KEY_VALUES,
+} from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
@@ -56,7 +61,7 @@ describe('BookmarkItem', () => {
         name: new RegExp(MOCK_BOOKMARK_1.title),
       })
       item.focus()
-      await user.keyboard('{Enter}')
+      await user.keyboard(`{${KEY_VALUES.ENTER}}`)
       expect(onOpen).toHaveBeenCalled()
     })
 
@@ -71,7 +76,7 @@ describe('BookmarkItem', () => {
         name: new RegExp(MOCK_BOOKMARK_1.title),
       })
       item.focus()
-      await user.keyboard('{Enter}')
+      await user.keyboard(`{${KEY_VALUES.ENTER}}`)
       expect(onOpen).not.toHaveBeenCalled()
     })
 
@@ -84,7 +89,7 @@ describe('BookmarkItem', () => {
         name: new RegExp(MOCK_BOOKMARK_1.title),
       })
       item.focus()
-      await user.keyboard(' ')
+      await user.keyboard(KEY_VALUES.SPACE)
       expect(onRowClick).toHaveBeenCalledWith(MOCK_BOOKMARK_1.id)
     })
 
@@ -97,7 +102,7 @@ describe('BookmarkItem', () => {
         name: new RegExp(MOCK_BOOKMARK_1.title),
       })
       item.focus()
-      await user.keyboard('{Escape}')
+      await user.keyboard(`{${KEY_VALUES.ESCAPE}}`)
       expect(onClose).toHaveBeenCalled()
     })
 
