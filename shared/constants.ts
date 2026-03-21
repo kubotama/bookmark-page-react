@@ -387,3 +387,14 @@ export const VALIDATION_MESSAGES = {
   REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
 } as const
+
+/**
+ * キーボードのキー名定数
+ */
+export const KEY_VALUES = {
+  ENTER: 'Enter',
+  ESCAPE: 'Escape',
+  SPACE: ' ',
+  ARROW_UP: 'ArrowUp',
+  ARROW_DOWN: 'ArrowDown',
+} as const

@@ -9,6 +9,7 @@ import {
   FIELD_LABELS,
   HTTP_STATUS,
   DEFAULT_API_URL,
+  KEY_VALUES,
 } from '@shared/constants'
 import {
   MOCK_BOOKMARK_1,
@@ -337,7 +338,7 @@ describe('App Integration', () => {
       expect(keywordBtn1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
 
       // 2. Enter キーを押下
-      fireEvent.keyDown(window, { key: 'Enter' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
 
       // 3. 一括起動の検証
       expect(window.open).toHaveBeenCalledTimes(2)
@@ -363,7 +364,7 @@ describe('App Integration', () => {
       expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
 
       // 2. Escape キーを押下
-      fireEvent.keyDown(window, { key: 'Escape' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
 
       // 3. 全ての選択が解除されていることを検証
       expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')

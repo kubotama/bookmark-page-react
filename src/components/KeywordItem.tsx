@@ -1,5 +1,10 @@
 import { memo } from 'react'
-import { ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
+import {
+  ARIA_ROLES,
+  ARIA_ATTRIBUTES,
+  HTML_ATTRIBUTES,
+  KEY_VALUES,
+} from '@shared/constants'
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
@@ -59,13 +64,13 @@ export const KeywordItem = memo(
             }
           }}
           onKeyDown={(e) => {
-            if (e.key === ' ') {
+            if (e.key === KEY_VALUES.SPACE) {
               // Space キーで選択（トグル）
               e.preventDefault()
               onClick(keyword.id)
-            } else if (e.key === 'Escape') {
+            } else if (e.key === KEY_VALUES.ESCAPE) {
               onClose?.()
-            } else if (e.key === 'Enter') {
+            } else if (e.key === KEY_VALUES.ENTER) {
               // Enter キーによるブラウザ標準の合成クリック発火を防止
               // これにより、HomePage の一括起動のみが実行されるようになる
               e.preventDefault()

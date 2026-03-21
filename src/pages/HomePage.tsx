@@ -1,4 +1,4 @@
-import { FIELD_LABELS } from '@shared/constants'
+import { FIELD_LABELS, KEY_VALUES } from '@shared/constants'
 import { BookmarkList } from '../components/BookmarkList'
 import { KeywordList } from '../components/KeywordList'
 import { useApp } from '../hooks/useApp'
@@ -28,7 +28,7 @@ export function HomePage({ appState }: HomePageProps) {
   // キーボードショートカットの設定
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === KEY_VALUES.ENTER) {
         // 入力フィールド（キーワード入力欄など）にフォーカスがある場合は、そちらを優先
         if (
           e.target instanceof HTMLInputElement ||
@@ -45,7 +45,7 @@ export function HomePage({ appState }: HomePageProps) {
         }
 
         handleOpen()
-      } else if (e.key === 'Escape') {
+      } else if (e.key === KEY_VALUES.ESCAPE) {
         // キーワードが選択されている場合、Escape で全解除
         if (selectedKeywordIds.length > 0) {
           e.preventDefault()
