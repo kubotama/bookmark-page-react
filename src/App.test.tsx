@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 
 import {
   API_PATHS,
@@ -40,7 +41,23 @@ vi.mock('@dnd-kit/core', async () => {
       <div
         data-testid="mock-dnd-context"
         onClick={(e) => {
-          // BookmarkList 内のモック DndContext のみが反応するようにフィルタリング（簡易的）
+          const target = e.target
+          // 1. セクションへのドロップ判定 (instanceof による型ガードを使用)
+          if (target instanceof HTMLElement) {
+            const section = target.closest('[data-testid^="droppable-"]')
+            if (section) {
+              const overId = section
+                .getAttribute('data-testid')
+                ?.replace('droppable-', '')
+              if (overId) {
+                // MOCK_BOOKMARK_2 (その他にある想定) を overId へドロップ
+                onDragEnd(createDragEndEvent(MOCK_BOOKMARK_2.id, overId))
+                return
+              }
+            }
+          }
+
+          // 2. 従来の BookmarkList 内での並び替え判定
           if (
             e.currentTarget.querySelector(
               '[aria-label="' + FIELD_LABELS.BOOKMARKS_LABEL + '"]',
@@ -369,6 +386,50 @@ describe('App Integration', () => {
       // 3. 全ての選択が解除されていることを検証
       expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
       expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+    })
+
+    it('「その他」のブックマークを「一致」セクションへ D&D すると、選択中のキーワードが関連付けられること', async () => {
+      let attachCalled = false
+      const kw1 = MOCK_KEYWORDS[0]
+      const b1 = { ...MOCK_BOOKMARK_1, keywords: [] } // 何も持っていない
+      const b2 = { ...MOCK_BOOKMARK_2, keywords: [] } // ターゲット
+
+      server.use(
+        http.post(
+          `${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}/:id/keywords`,
+          async ({ request, params }) => {
+            const body = await request.json()
+            const validation = z
+              .object({ keywordId: z.string() })
+              .safeParse(body)
+            if (
+              validation.success &&
+              params.id === b2.id &&
+              validation.data.keywordId === kw1.id
+            ) {
+              attachCalled = true
+            }
+            return HttpResponse.json({ success: true, data: null })
+          },
+        ),
+      )
+
+      const { user } = setup([b1, b2])
+
+      // 1. キーワード1を選択 (b1, b2 ともに「その他」セクションへ移動)
+      const keywordBtn = await screen.findByRole('button', { name: kw1.name })
+      await user.click(keywordBtn)
+
+      // 2. 「一致」セクションの見出し（DroppableTarget）を取得
+      const matchedSection = await screen.findByTestId(
+        `droppable-${FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}`,
+      )
+
+      // 3. 「その他」にある b2 を「一致」セクションへドロップ (モックの click でシミュレート)
+      await user.click(matchedSection)
+
+      // 4. API 呼び出しを検証
+      await waitFor(() => expect(attachCalled).toBe(true))
     })
   })
 })

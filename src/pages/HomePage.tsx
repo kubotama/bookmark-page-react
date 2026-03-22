@@ -3,9 +3,44 @@ import { BookmarkList } from '../components/BookmarkList'
 import { KeywordList } from '../components/KeywordList'
 import { useApp } from '../hooks/useApp'
 import { useEffect } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+} from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { BookmarkItem } from '../components/BookmarkItem'
 
 interface HomePageProps {
   appState: ReturnType<typeof useApp>
+}
+
+/**
+ * ドロップ可能なセクションラッパー
+ */
+function DroppableSection({
+  id,
+  children,
+  title,
+}: {
+  id: string
+  children: React.ReactNode
+  title: string
+}) {
+  const { setNodeRef } = useDroppable({ id })
+  return (
+    <div ref={setNodeRef} className="space-y-2" data-testid={`droppable-${id}`}>
+      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
+        {title}
+      </h3>
+      {children}
+    </div>
+  )
 }
 
 export function HomePage({ appState }: HomePageProps) {
@@ -15,6 +50,7 @@ export function HomePage({ appState }: HomePageProps) {
     keywords,
     selectedId,
     selectedKeywordIds,
+    activeBookmark,
     isLoading,
     error,
     handleRowClick,
@@ -23,7 +59,20 @@ export function HomePage({ appState }: HomePageProps) {
     handleReorder,
     toggleKeywordSelection,
     clearKeywordSelection,
+    handleDragStart,
+    handleDragEnd,
   } = appState
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
   // キーボードショートカットの設定
   useEffect(() => {
@@ -66,6 +115,7 @@ export function HomePage({ appState }: HomePageProps) {
     onOpen: handleOpen,
     onClose: handleClose,
     onReorder: handleReorder,
+    dndContext: false, // HomePage 側のコンテキストを使用
   }
 
   return (
@@ -89,54 +139,74 @@ export function HomePage({ appState }: HomePageProps) {
           {/* 右カラム: ブックマーク一覧 */}
           <section className="flex-1 flex flex-col h-full shadow-xl bg-white overflow-hidden">
             <div className="flex-1 overflow-y-auto pt-4 pb-4 px-4">
-              {isLoading || error ? (
-                /* ロード中またはエラー時は単一の BookmarkList で状態を表示 */
-                <BookmarkList
-                  bookmarks={[]}
-                  isLoading={isLoading}
-                  error={error}
-                  {...commonBookmarkListProps}
-                />
-              ) : selectedKeywordIds.length === 0 ? (
-                /* キーワード未選択時は全件をそのまま表示 */
-                <BookmarkList
-                  bookmarks={filteredBookmarks}
-                  isLoading={false}
-                  error={null}
-                  {...commonBookmarkListProps}
-                />
-              ) : (
-                /* キーワード選択時は「一致」と「その他」に分けて表示 */
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
-                      {FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
-                    </h3>
-                    <BookmarkList
-                      bookmarks={filteredBookmarks}
-                      isLoading={false}
-                      error={null}
-                      {...commonBookmarkListProps}
-                      ariaLabel={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
-                    />
-                  </div>
-
-                  {otherBookmarks.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
-                        {FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
-                      </h3>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                {isLoading || error ? (
+                  /* ロード中またはエラー時は単一の BookmarkList で状態を表示 */
+                  <BookmarkList
+                    bookmarks={[]}
+                    isLoading={isLoading}
+                    error={error}
+                    {...commonBookmarkListProps}
+                  />
+                ) : selectedKeywordIds.length === 0 ? (
+                  /* キーワード未選択時は全件をそのまま表示 */
+                  <BookmarkList
+                    bookmarks={filteredBookmarks}
+                    isLoading={false}
+                    error={null}
+                    {...commonBookmarkListProps}
+                  />
+                ) : (
+                  /* キーワード選択時は「一致」と「その他」に分けて表示 */
+                  <div className="space-y-8">
+                    <DroppableSection
+                      id={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
+                      title={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
+                    >
                       <BookmarkList
-                        bookmarks={otherBookmarks}
+                        bookmarks={filteredBookmarks}
                         isLoading={false}
                         error={null}
                         {...commonBookmarkListProps}
-                        ariaLabel={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                        ariaLabel={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
+                      />
+                    </DroppableSection>
+
+                    {otherBookmarks.length > 0 && (
+                      <DroppableSection
+                        id={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                        title={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                      >
+                        <BookmarkList
+                          bookmarks={otherBookmarks}
+                          isLoading={false}
+                          error={null}
+                          {...commonBookmarkListProps}
+                          ariaLabel={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                        />
+                      </DroppableSection>
+                    )}
+                  </div>
+                )}
+
+                <DragOverlay>
+                  {activeBookmark ? (
+                    <div className="w-full max-w-2xl opacity-80 cursor-grabbing">
+                      <BookmarkItem
+                        bookmark={activeBookmark}
+                        isSelected={false}
+                        isFocusable={false}
+                        isDragging={true}
                       />
                     </div>
-                  )}
-                </div>
-              )}
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </div>
           </section>
         </div>

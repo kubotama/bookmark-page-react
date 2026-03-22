@@ -15,15 +15,15 @@ interface BookmarkItemProps {
   bookmark: Bookmark
   isSelected: boolean
   isFocusable: boolean
-  onRowClick: (id: BookmarkId) => void
-  onOpen: () => void
-  onClose: () => void
+  onRowClick?: (id: BookmarkId) => void
+  onOpen?: () => void
+  onClose?: () => void
   // D&D Props
-  attributes: DraggableAttributes
-  listeners: DraggableSyntheticListeners
-  setNodeRef: (node: HTMLElement | null) => void
-  style: React.CSSProperties
-  isDragging: boolean
+  attributes?: DraggableAttributes
+  listeners?: DraggableSyntheticListeners
+  setNodeRef?: (node: HTMLElement | null) => void
+  style?: React.CSSProperties
+  isDragging?: boolean
 }
 
 export const BookmarkItem = memo(
@@ -56,15 +56,15 @@ export const BookmarkItem = memo(
           {...{ [HTML_ATTRIBUTES.TAB_INDEX]: isFocusable ? 0 : -1 }}
           {...{ [HTML_ATTRIBUTES.ROLE]: ARIA_ROLES.BUTTON }}
           {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
-          onClick={() => onRowClick(bookmark.id)}
+          onClick={() => onRowClick?.(bookmark.id)}
           onKeyDown={(e) => {
             if (e.key === KEY_VALUES.ENTER && isSelected) {
-              onOpen()
+              onOpen?.()
             } else if (e.key === KEY_VALUES.SPACE) {
               e.preventDefault()
-              onRowClick(bookmark.id)
+              onRowClick?.(bookmark.id)
             } else if (e.key === KEY_VALUES.ESCAPE) {
-              onClose()
+              onClose?.()
             }
           }}
         >
