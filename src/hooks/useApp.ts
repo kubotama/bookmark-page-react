@@ -1,10 +1,14 @@
-import { useBookmarks, useKeywords } from './useBookmarks'
+import { useBookmarks, useKeywords, useAttachKeyword } from './useBookmarks'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
 import { useKeywordListState } from './useKeywordListState'
 import { useBookmarkReorder } from './useBookmarkReorder'
 import { openUrlInNewTab } from '@shared/utils/url'
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
+import type { Bookmark } from '@shared/schemas/bookmark'
+import { FIELD_LABELS } from '@shared/constants'
 
 export const useApp = () => {
   // 1. 設定管理
@@ -71,6 +75,60 @@ export const useApp = () => {
 
   // 4. 操作ロジック
   const { handleReorder } = useBookmarkReorder()
+  const attachKeywordMutation = useAttachKeyword()
+
+  // ドラッグ中のアイテム管理
+  const [activeBookmark, setActiveBookmark] = useState<Bookmark | null>(null)
+
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event
+      const bookmark = bookmarks.find((b) => b.id === active.id)
+      if (bookmark) {
+        setActiveBookmark(bookmark)
+      }
+    },
+    [bookmarks],
+  )
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      setActiveBookmark(null)
+
+      if (!over) return
+
+      // セクションへのドロップ判定
+      if (over.id === FIELD_LABELS.MATCHED_BOOKMARKS_LABEL) {
+        const bookmark = bookmarks.find((b) => b.id === active.id)
+        if (bookmark && selectedKeywordIds.length > 0) {
+          // まだ持っていないキーワードのみを抽出して関連付け
+          const currentKeywordIds = new Set(bookmark.keywords.map((k) => k.id))
+          const keywordsToAttach = selectedKeywordIds.filter(
+            (id) => !currentKeywordIds.has(id),
+          )
+
+          keywordsToAttach.forEach((keywordId) => {
+            attachKeywordMutation.mutate({
+              bookmarkId: bookmark.id,
+              keywordId,
+            })
+          })
+        }
+        return
+      }
+
+      // 同一リスト内、またはアイテム上へのドロップ（並び替え）
+      if (active.id !== over.id) {
+        // ドロップ先が有効なブックマーク ID であることを確認（セクションヘッダーなどへのドロップによるクラッシュを防止）
+        const overIdResult = BookmarkIdSchema.safeParse(over.id)
+        if (overIdResult.success) {
+          handleReorder(BookmarkIdSchema.parse(active.id), overIdResult.data)
+        }
+      }
+    },
+    [bookmarks, selectedKeywordIds, attachKeywordMutation, handleReorder],
+  )
 
   const handleOpen = useCallback(() => {
     if (selectedKeywordIds.length > 0) {
@@ -90,7 +148,7 @@ export const useApp = () => {
   }, [setSelectedId])
 
   return {
-    bookmarks, // 全件（後方互換性のため維持）
+    bookmarks,
     filteredBookmarks,
     otherBookmarks,
     keywords,
@@ -98,6 +156,7 @@ export const useApp = () => {
     error,
     selectedId,
     selectedKeywordIds,
+    activeBookmark,
     showSettings,
     currentApiUrl,
     handleRowClick,
@@ -109,5 +168,7 @@ export const useApp = () => {
     handleReorder,
     toggleKeywordSelection,
     clearKeywordSelection,
+    handleDragStart,
+    handleDragEnd,
   }
 }

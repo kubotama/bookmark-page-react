@@ -22,7 +22,8 @@ export type BookmarkProps = {
   onOpen: () => void
   onClose: () => void
   onReorder: (activeId: BookmarkId, overId: BookmarkId) => void
-  ariaLabel?: string // 追加
+  ariaLabel?: string
+  dndContext?: boolean
 }
 
 export const BookmarkList = ({
@@ -34,7 +35,8 @@ export const BookmarkList = ({
   onOpen,
   onClose,
   onReorder,
-  ariaLabel = FIELD_LABELS.BOOKMARKS_LABEL, // デフォルト値
+  ariaLabel = FIELD_LABELS.BOOKMARKS_LABEL,
+  dndContext = true,
 }: BookmarkProps) => {
   if (isLoading) {
     return (
@@ -76,8 +78,9 @@ export const BookmarkList = ({
         items={bookmarks}
         idSchema={BookmarkIdSchema}
         listRole={ARIA_ROLES.LIST}
-        ariaLabel={ariaLabel} // プロパティを使用
+        ariaLabel={ariaLabel}
         onReorder={onReorder}
+        dndContext={dndContext}
         renderItem={(bookmark, index) => (
           <DraggableItem key={bookmark.id} item={bookmark}>
             {(dndProps) => (
