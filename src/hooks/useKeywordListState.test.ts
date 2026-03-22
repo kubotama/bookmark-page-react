@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '../test/utils'
 import { useKeywordListState } from './useKeywordListState'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 // URLSearchParams の状態を外部から覗き見るための変数
 let capturedParams = new URLSearchParams()
@@ -17,24 +17,28 @@ vi.mock('react-router-dom', async () => {
         capturedParams = initialParams
         return initialParams
       })
-      const updateParams = (
-        next:
-          | string
-          | URLSearchParams
-          | ((prev: URLSearchParams) => URLSearchParams),
-      ) => {
-        if (typeof next === 'function') {
-          setParams((prev: URLSearchParams) => {
-            const nextParams = next(new URLSearchParams(prev))
+
+      // 本物の useSearchParams が返す更新関数の参照が安定していることを再現するため、useCallback を使用する
+      const updateParams = useCallback(
+        (
+          next:
+            | string
+            | URLSearchParams
+            | ((prev: URLSearchParams) => URLSearchParams),
+        ) => {
+          setParams((prev) => {
+            const nextParams =
+              typeof next === 'function'
+                ? next(new URLSearchParams(prev))
+                : new URLSearchParams(next)
+
             capturedParams = nextParams
             return nextParams
           })
-        } else {
-          const nextParams = new URLSearchParams(next)
-          capturedParams = nextParams
-          setParams(nextParams)
-        }
-      }
+        },
+        [],
+      )
+
       return [params, updateParams]
     },
   }
