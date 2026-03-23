@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   APP_PATHS,
+  ARIA_ROLES,
   DROPPABLE_IDS,
   FIELD_LABELS,
+  KEY_VALUES,
   LOG_MESSAGES,
   UI_MESSAGES,
-  KEY_VALUES,
 } from '@shared/constants'
 import { updateBookmarkSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
@@ -100,7 +101,7 @@ describe('BookmarkPage Component', () => {
     fireEvent.change(titleInput, { target: { value: 'New Title' } })
     fireEvent.change(urlInput, { target: { value: 'https://new-url.com' } })
 
-    const updateButton = screen.getByRole('button', {
+    const updateButton = screen.getByRole(ARIA_ROLES.BUTTON, {
       name: FIELD_LABELS.BUTTON_UPDATE,
     })
     fireEvent.click(updateButton)
@@ -259,7 +260,7 @@ describe('BookmarkPage Component', () => {
     const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
     fireEvent.change(input, { target: { value: 'NewTag' } })
 
-    const addButton = screen.getByRole('button', {
+    const addButton = screen.getByRole(ARIA_ROLES.BUTTON, {
       name: FIELD_LABELS.BUTTON_ADD,
     })
     fireEvent.click(addButton)
@@ -301,7 +302,7 @@ describe('BookmarkPage Component', () => {
       APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
     )
 
-    const addButton = await screen.findByRole('button', {
+    const addButton = await screen.findByRole(ARIA_ROLES.BUTTON, {
       name: FIELD_LABELS.BUTTON_ADD,
     })
     expect(addButton).toBeDisabled()
@@ -366,7 +367,7 @@ describe('BookmarkPage Component', () => {
 
     const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
     fireEvent.change(input, { target: { value: 'ErrorTag' } })
-    const addButton = screen.getByRole('button', {
+    const addButton = screen.getByRole(ARIA_ROLES.BUTTON, {
       name: FIELD_LABELS.BUTTON_ADD,
     })
     fireEvent.click(addButton)
@@ -400,7 +401,7 @@ describe('BookmarkPage Component', () => {
     expect(await screen.findByText(/Bookmark not found/i)).toBeInTheDocument()
 
     // 閉じるボタンの動作確認
-    const closeButton = screen.getByRole('button', {
+    const closeButton = screen.getByRole(ARIA_ROLES.BUTTON, {
       name: FIELD_LABELS.BUTTON_CLOSE,
     })
     fireEvent.click(closeButton)
