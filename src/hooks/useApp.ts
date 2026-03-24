@@ -1,4 +1,9 @@
-import { useBookmarks, useKeywords, useAttachKeyword } from './useBookmarks'
+import {
+  useBookmarks,
+  useKeywords,
+  useAttachKeyword,
+  useDetachKeyword,
+} from './useBookmarks'
 import { useSettings } from './useSettings'
 import { useBookmarkListState } from './useBookmarkListState'
 import { useKeywordListState } from './useKeywordListState'
@@ -8,7 +13,8 @@ import { useMemo, useCallback, useState } from 'react'
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import type { Bookmark } from '@shared/schemas/bookmark'
-import { FIELD_LABELS } from '@shared/constants'
+import { DROPPABLE_IDS } from '@shared/constants'
+import { z } from 'zod'
 
 export const useApp = () => {
   // 1. 設定管理
@@ -53,9 +59,7 @@ export const useApp = () => {
     const unmatched: typeof bookmarks = []
 
     bookmarks.forEach((bookmark) => {
-      // パフォーマンス向上のため、ブックマークのキーワードIDをSetに変換
       const bookmarkKeywordIds = new Set(bookmark.keywords.map((k) => k.id))
-      // 全ての選択キーワードが含まれているか (AND検索)
       const isMatch = selectedKeywordIds.every((selectedId) =>
         bookmarkKeywordIds.has(selectedId),
       )
@@ -76,6 +80,7 @@ export const useApp = () => {
   // 4. 操作ロジック
   const { handleReorder } = useBookmarkReorder()
   const attachKeywordMutation = useAttachKeyword()
+  const detachKeywordMutation = useDetachKeyword()
 
   // ドラッグ中のアイテム管理
   const [activeBookmark, setActiveBookmark] = useState<Bookmark | null>(null)
@@ -98,11 +103,39 @@ export const useApp = () => {
 
       if (!over) return
 
-      // セクションへのドロップ判定
-      if (over.id === FIELD_LABELS.MATCHED_BOOKMARKS_LABEL) {
-        const bookmark = bookmarks.find((b) => b.id === active.id)
-        if (bookmark && selectedKeywordIds.length > 0) {
-          // まだ持っていないキーワードのみを抽出して関連付け
+      const activeId = active.id
+      const overId = over.id
+
+      // 1. ドロップ先のセクションを特定する
+      let targetSectionId: string | null = null
+
+      const droppableIdResult = z.string().safeParse(overId)
+      if (droppableIdResult.success) {
+        const id = droppableIdResult.data
+        if (
+          id === DROPPABLE_IDS.MATCHED_BOOKMARKS_SECTION ||
+          id === DROPPABLE_IDS.OTHER_BOOKMARKS_SECTION
+        ) {
+          targetSectionId = id
+        }
+      }
+
+      if (!targetSectionId) {
+        // アイテムの上にドロップされた場合、そのアイテムが所属するセクションを確認する
+        if (filteredBookmarks.some((b) => b.id === overId)) {
+          targetSectionId = DROPPABLE_IDS.MATCHED_BOOKMARKS_SECTION
+        } else if (otherBookmarks.some((b) => b.id === overId)) {
+          targetSectionId = DROPPABLE_IDS.OTHER_BOOKMARKS_SECTION
+        }
+      }
+
+      // 2. キーワード選択中（フィルタリング中）の処理
+      if (selectedKeywordIds.length > 0) {
+        const bookmark = bookmarks.find((b) => b.id === activeId)
+        if (!bookmark) return
+
+        if (targetSectionId === DROPPABLE_IDS.MATCHED_BOOKMARKS_SECTION) {
+          // --- キーワード関連付け (その他 -> 一致) ---
           const currentKeywordIds = new Set(bookmark.keywords.map((k) => k.id))
           const keywordsToAttach = selectedKeywordIds.filter(
             (id) => !currentKeywordIds.has(id),
@@ -114,28 +147,43 @@ export const useApp = () => {
               keywordId,
             })
           })
+        } else if (targetSectionId === DROPPABLE_IDS.OTHER_BOOKMARKS_SECTION) {
+          // --- キーワード解除 (一致 -> その他) ---
+          if (filteredBookmarks.some((b) => b.id === activeId)) {
+            selectedKeywordIds.forEach((keywordId) => {
+              detachKeywordMutation.mutate({
+                bookmarkId: bookmark.id,
+                keywordId,
+              })
+            })
+          }
         }
         return
       }
 
-      // 同一リスト内、またはアイテム上へのドロップ（並び替え）
-      if (active.id !== over.id) {
-        // ドロップ先が有効なブックマーク ID であることを確認（セクションヘッダーなどへのドロップによるクラッシュを防止）
-        const overIdResult = BookmarkIdSchema.safeParse(over.id)
+      // 3. 通常時（フィルタリングなし）の処理：並び替え
+      if (activeId !== overId) {
+        const overIdResult = BookmarkIdSchema.safeParse(overId)
         if (overIdResult.success) {
-          handleReorder(BookmarkIdSchema.parse(active.id), overIdResult.data)
+          handleReorder(BookmarkIdSchema.parse(activeId), overIdResult.data)
         }
       }
     },
-    [bookmarks, selectedKeywordIds, attachKeywordMutation, handleReorder],
+    [
+      bookmarks,
+      filteredBookmarks,
+      otherBookmarks,
+      selectedKeywordIds,
+      attachKeywordMutation,
+      detachKeywordMutation,
+      handleReorder,
+    ],
   )
 
   const handleOpen = useCallback(() => {
     if (selectedKeywordIds.length > 0) {
-      // キーワード選択時は一致するものを一括で開く
       filteredBookmarks.forEach((b) => openUrlInNewTab(b.url))
     } else {
-      // 未選択時は選択中のブックマーク（詳細画面遷移用）を開く
       const selected = bookmarks.find((b) => b.id === selectedId)
       if (selected) {
         openUrlInNewTab(selected.url)

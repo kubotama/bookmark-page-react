@@ -146,6 +146,7 @@ export const UI_MESSAGES = {
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
   DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
+  EMPTY_SECTION: (label: string) => `${label}は空です`,
 } as const
 
 /**
@@ -290,6 +291,8 @@ export const STORAGE_KEYS = {
 export const DROPPABLE_IDS = {
   ASSIGNED_LIST: 'assigned-list',
   UNASSIGNED_LIST: 'unassigned-list',
+  MATCHED_BOOKMARKS_SECTION: 'matched-bookmarks-section',
+  OTHER_BOOKMARKS_SECTION: 'other-bookmarks-section',
 } as const
 
 /**

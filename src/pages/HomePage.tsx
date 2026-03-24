@@ -1,4 +1,9 @@
-import { FIELD_LABELS, KEY_VALUES } from '@shared/constants'
+import {
+  FIELD_LABELS,
+  KEY_VALUES,
+  DROPPABLE_IDS,
+  UI_MESSAGES,
+} from '@shared/constants'
 import { BookmarkList } from '../components/BookmarkList'
 import { KeywordList } from '../components/KeywordList'
 import { useApp } from '../hooks/useApp'
@@ -32,9 +37,17 @@ function DroppableSection({
   children: React.ReactNode
   title: string
 }) {
-  const { setNodeRef } = useDroppable({ id })
+  const { setNodeRef, isOver } = useDroppable({ id })
+
+  // ドロップ対象の上にいるときに背景色を変えて視覚的フィードバックを与える
+  const bgClass = isOver ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : ''
+
   return (
-    <div ref={setNodeRef} className="space-y-2" data-testid={`droppable-${id}`}>
+    <div
+      ref={setNodeRef}
+      className={`space-y-2 p-2 rounded-lg transition-colors ${bgClass}`}
+      data-testid={`droppable-${id}`}
+    >
       <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
         {title}
       </h3>
@@ -165,7 +178,7 @@ export function HomePage({ appState }: HomePageProps) {
                   /* キーワード選択時は「一致」と「その他」に分けて表示 */
                   <div className="space-y-8">
                     <DroppableSection
-                      id={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
+                      id={DROPPABLE_IDS.MATCHED_BOOKMARKS_SECTION}
                       title={FIELD_LABELS.MATCHED_BOOKMARKS_LABEL}
                     >
                       <BookmarkList
@@ -177,11 +190,11 @@ export function HomePage({ appState }: HomePageProps) {
                       />
                     </DroppableSection>
 
-                    {otherBookmarks.length > 0 && (
-                      <DroppableSection
-                        id={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
-                        title={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
-                      >
+                    <DroppableSection
+                      id={DROPPABLE_IDS.OTHER_BOOKMARKS_SECTION}
+                      title={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
+                    >
+                      {otherBookmarks.length > 0 ? (
                         <BookmarkList
                           bookmarks={otherBookmarks}
                           isLoading={false}
@@ -189,8 +202,15 @@ export function HomePage({ appState }: HomePageProps) {
                           {...commonBookmarkListProps}
                           ariaLabel={FIELD_LABELS.OTHER_BOOKMARKS_LABEL}
                         />
-                      </DroppableSection>
-                    )}
+                      ) : (
+                        /* その他が空の場合でもドロップ領域を維持するためプレースホルダーを表示 */
+                        <div className="p-4 border-2 border-dashed border-gray-200 rounded-lg text-center text-sm text-gray-400">
+                          {UI_MESSAGES.EMPTY_SECTION(
+                            FIELD_LABELS.OTHER_BOOKMARKS_LABEL,
+                          )}
+                        </div>
+                      )}
+                    </DroppableSection>
                   </div>
                 )}
 
