@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { Routes, Route } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
+import { describe, expect, it } from 'vitest'
+
+import { APP_PATHS, ARIA_ROLES, FIELD_LABELS } from '@shared/constants'
+
 import { render, screen } from '../test/utils'
 import { KeywordPage } from './KeywordPage'
-import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 
 describe('KeywordPage', () => {
   it('URL パラメータから取得したキーワード ID が表示されること', () => {
@@ -29,7 +31,7 @@ describe('KeywordPage', () => {
 
   it('戻るリンクが表示されていること', () => {
     render(<KeywordPage />)
-    const link = screen.getByRole('link', {
+    const link = screen.getByRole(ARIA_ROLES.LINK, {
       name: new RegExp(FIELD_LABELS.BACK_TO_LIST, 'i'),
     })
     expect(link).toBeInTheDocument()

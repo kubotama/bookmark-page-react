@@ -20,7 +20,7 @@ import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'
-import { type BookmarkProps } from './BookmarkList'
+import type { BookmarkProps } from './BookmarkList'
 
 // DndContext をモック化して内部のイベントをトリガーしやすくする
 vi.mock('@dnd-kit/core', async () => {
@@ -252,7 +252,7 @@ describe('BookmarkList', () => {
     expect(otherItem).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
   })
 
-  it('正しい階層構造 (role="list" > role="listitem" > role="button") でレンダリングされること', () => {
+  it(`正しい階層構造 (${ARIA_ROLES.LIST} > ${ARIA_ROLES.LISTITEM} > ${ARIA_ROLES.BUTTON}) でレンダリングされること`, () => {
     render(<BookmarkList {...defaultProps} />)
 
     const list = screen.getByRole(ARIA_ROLES.LIST)

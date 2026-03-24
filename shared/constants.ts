@@ -233,6 +233,7 @@ export const ARIA_ROLES = {
   ALERT: 'alert',
   ROWGROUP: 'rowgroup',
   TABLE: 'table',
+  LINK: 'link',
 } as const
 
 export const ARIA_ATTRIBUTES = {

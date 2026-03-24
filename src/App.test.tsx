@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
@@ -7,9 +7,9 @@ import {
   API_PATHS,
   ARIA_ATTRIBUTES,
   ARIA_ROLES,
+  DEFAULT_API_URL,
   FIELD_LABELS,
   HTTP_STATUS,
-  DEFAULT_API_URL,
   KEY_VALUES,
 } from '@shared/constants'
 import {
@@ -17,12 +17,12 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
-import { render, screen, waitFor, within, fireEvent } from './test/utils'
-import { createDragEndEvent } from './test/dnd-utils'
 import userEvent from '@testing-library/user-event'
 
 import App from './App'
+import { createDragEndEvent } from './test/dnd-utils'
 import { server } from './test/setup'
+import { fireEvent, render, screen, waitFor, within } from './test/utils'
 
 import type { DragEndEvent } from '@dnd-kit/core'
 
@@ -279,10 +279,10 @@ describe('App Integration', () => {
       const { user } = setup()
 
       // キーワード一覧が表示されるのを待機
-      const keyword1 = await screen.findByRole('button', {
+      const keyword1 = await screen.findByRole(ARIA_ROLES.BUTTON, {
         name: MOCK_KEYWORDS[0].name,
       })
-      const keyword2 = await screen.findByRole('button', {
+      const keyword2 = await screen.findByRole(ARIA_ROLES.BUTTON, {
         name: MOCK_KEYWORDS[1].name,
       })
 
@@ -312,7 +312,7 @@ describe('App Integration', () => {
       const { user } = setup([b1, b2])
 
       // 1. キーワード1を選択
-      const keywordBtn1 = await screen.findByRole('button', {
+      const keywordBtn1 = await screen.findByRole(ARIA_ROLES.BUTTON, {
         name: kw1.name,
       })
       await user.click(keywordBtn1)
@@ -326,10 +326,10 @@ describe('App Integration', () => {
       ).toBeInTheDocument()
 
       // 3. 各セクションの内容を検証
-      const matchedSection = screen.getByRole('list', {
+      const matchedSection = screen.getByRole(ARIA_ROLES.LIST, {
         name: FIELD_LABELS.MATCHED_BOOKMARKS_LABEL,
       })
-      const otherSection = screen.getByRole('list', {
+      const otherSection = screen.getByRole(ARIA_ROLES.LIST, {
         name: FIELD_LABELS.OTHER_BOOKMARKS_LABEL,
       })
 
@@ -348,7 +348,7 @@ describe('App Integration', () => {
       const { user } = setup([b1, b2])
 
       // 1. キーワード1を選択
-      const keywordBtn1 = await screen.findByRole('button', {
+      const keywordBtn1 = await screen.findByRole(ARIA_ROLES.BUTTON, {
         name: kw1.name,
       })
       await user.click(keywordBtn1)
@@ -367,10 +367,10 @@ describe('App Integration', () => {
     it('キーワード選択中に Escape キーを押すと、すべての選択が解除されること', async () => {
       const { user } = setup()
 
-      const keyword1 = await screen.findByRole('button', {
+      const keyword1 = await screen.findByRole(ARIA_ROLES.BUTTON, {
         name: MOCK_KEYWORDS[0].name,
       })
-      const keyword2 = await screen.findByRole('button', {
+      const keyword2 = await screen.findByRole(ARIA_ROLES.BUTTON, {
         name: MOCK_KEYWORDS[1].name,
       })
 
@@ -417,7 +417,9 @@ describe('App Integration', () => {
       const { user } = setup([b1, b2])
 
       // 1. キーワード1を選択 (b1, b2 ともに「その他」セクションへ移動)
-      const keywordBtn = await screen.findByRole('button', { name: kw1.name })
+      const keywordBtn = await screen.findByRole(ARIA_ROLES.BUTTON, {
+        name: kw1.name,
+      })
       await user.click(keywordBtn)
 
       // 2. 「一致」セクションの見出し（DroppableTarget）を取得

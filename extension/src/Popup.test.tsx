@@ -1,14 +1,17 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Popup } from './Popup'
-import { usePopup } from './hooks/usePopup'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
+  ARIA_ROLES,
   COMMON_MESSAGES,
   FIELD_LABELS,
   UI_STATUS,
 } from '@shared/constants'
 import { VALID_URLS } from '@shared/test/fixtures'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+import { usePopup } from './hooks/usePopup'
+import { Popup } from './Popup'
 
 // usePopup フックをモック化
 vi.mock('./hooks/usePopup')
@@ -78,7 +81,7 @@ describe('Popup Component', () => {
     // ボタンとステータスエリアの両方に表示される
     const elements = screen.getAllByText(COMMON_MESSAGES.SAVING)
     expect(elements.length).toBe(2)
-    expect(screen.getByRole('button')).toBeDisabled()
+    expect(screen.getByRole(ARIA_ROLES.BUTTON)).toBeDisabled()
   })
 
   it('エラーメッセージが正しく表示されること', () => {
@@ -91,7 +94,7 @@ describe('Popup Component', () => {
     render(<Popup />)
 
     expect(screen.getByText(errorMessage)).toBeInTheDocument()
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(screen.getByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
   })
 
   it('成功メッセージが正しく表示されること', () => {
@@ -104,6 +107,6 @@ describe('Popup Component', () => {
     render(<Popup />)
 
     expect(screen.getByText(successMessage)).toBeInTheDocument()
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByRole(ARIA_ROLES.STATUS)).toBeInTheDocument()
   })
 })
