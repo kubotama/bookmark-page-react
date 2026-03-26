@@ -1,12 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  isHttpUrl,
-  getOrigin,
-  validateApiUrl,
-  openUrlInNewTab,
-  validatePort,
-  getPortFromUrl,
-} from './url'
+
 import {
   ERROR_MESSAGES,
   VALIDATION_MESSAGES,
@@ -15,6 +8,15 @@ import {
   DEFAULT_PORTS,
 } from '@shared/constants'
 import { VALID_URLS, INVALID_URLS } from '@shared/test/fixtures'
+
+import {
+  isHttpUrl,
+  getOrigin,
+  validateApiUrl,
+  openUrlInNewTab,
+  validatePort,
+  getPortFromUrl,
+} from './url'
 
 describe('url utilities', () => {
   describe('isHttpUrl', () => {

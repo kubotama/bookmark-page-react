@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { storage } from '../lib/storage'
+
 import {
   API_PATHS,
   COMMON_MESSAGES,
@@ -14,6 +14,8 @@ import {
 import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
+import { storage } from '../lib/storage'
+
 const DEFAULT_SETTINGS = {
   [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
 }
@@ -23,7 +25,10 @@ const apiResponseSchema = bookmarksResponseSchema
 
 export const useOptions = () => {
   const [apiUrl, setApiUrl] = useState('')
-  const [status, setStatus] = useState<StatusInfo>({ type: UI_STATUS.IDLE, message: '' })
+  const [status, setStatus] = useState<StatusInfo>({
+    type: UI_STATUS.IDLE,
+    message: '',
+  })
 
   // 初期値の読み込み
   useEffect(() => {
@@ -72,7 +77,10 @@ export const useOptions = () => {
       const sanitizedUrl = getOrigin(apiUrl)
       await storage.set({ [STORAGE_KEYS.API_URL]: sanitizedUrl })
       setApiUrl(sanitizedUrl)
-      setStatus({ type: UI_STATUS.SUCCESS, message: EXTENSION_MESSAGES.SETTINGS_SAVED })
+      setStatus({
+        type: UI_STATUS.SUCCESS,
+        message: EXTENSION_MESSAGES.SETTINGS_SAVED,
+      })
     } catch (err) {
       console.error(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, err)
       setStatus({

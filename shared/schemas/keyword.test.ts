@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+
 import {
   KeywordIdSchema,
   keywordSchema,
@@ -27,7 +28,9 @@ describe('Keyword Schemas', () => {
     })
 
     it('不正なデータを拒否すること', () => {
-      expect(() => keywordSchema.parse({ id: 'invalid', name: 'Test' })).toThrow()
+      expect(() =>
+        keywordSchema.parse({ id: 'invalid', name: 'Test' }),
+      ).toThrow()
       expect(() => keywordSchema.parse({ id: '1' })).toThrow() // name missing
     })
   })

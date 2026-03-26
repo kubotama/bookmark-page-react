@@ -1,5 +1,7 @@
 import { z } from 'zod'
+
 import { sqlite } from '../db'
+
 import type { Statement } from 'better-sqlite3'
 
 const BookmarkIdResultSchema = z.object({ bookmark_id: z.number() })

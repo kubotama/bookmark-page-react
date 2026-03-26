@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest'
+
 import {
   bookmarkSchema,
   createBookmarkSchema,
   reorderBookmarksSchema,
   updateBookmarkSchema,
 } from './bookmark'
-import { MOCK_BOOKMARK_1, INVALID_URLS, VALID_URLS } from '../test/fixtures'
 import { VALIDATION_MESSAGES } from '../constants'
+import { MOCK_BOOKMARK_1, INVALID_URLS, VALID_URLS } from '../test/fixtures'
 
 describe('bookmarkSchema', () => {
   it.each([

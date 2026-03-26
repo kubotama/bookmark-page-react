@@ -2,10 +2,9 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
+import type { BookmarkId } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import { renderHook, waitFor } from '../test/utils'
 
-import { server } from '../test/setup'
 import {
   BookmarkApiError,
   useBookmarks,
@@ -13,7 +12,8 @@ import {
   useReorderBookmarks,
   useUpdateBookmark,
 } from './useBookmarks'
-import type { BookmarkId } from '@shared/schemas/bookmark'
+import { server } from '../test/setup'
+import { renderHook, waitFor } from '../test/utils'
 
 describe('useBookmarks Hook', () => {
   it('useBookmarks が正常にデータを取得すること', async () => {
@@ -104,7 +104,10 @@ describe('useBookmarks Hook', () => {
     server.use(
       http.delete(`*${API_PATHS.BOOKMARKS}/:id`, () => {
         return HttpResponse.json(
-          { success: false, error: { message: 'Delete Failed', code: 'DELETE_ERROR' } },
+          {
+            success: false,
+            error: { message: 'Delete Failed', code: 'DELETE_ERROR' },
+          },
           { status: 400 },
         )
       }),

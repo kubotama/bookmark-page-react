@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { ARIA_ATTRIBUTES, ARIA_ROLES, UI_MESSAGES } from '@shared/constants'
 import { MOCK_KEYWORDS } from '@shared/test/fixtures'
 
-import { render, screen } from '../test/utils'
 import { KeywordList } from './KeywordList'
+import { render, screen } from '../test/utils'
 
 describe('KeywordList', () => {
   const defaultProps = {

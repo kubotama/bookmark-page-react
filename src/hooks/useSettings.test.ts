@@ -1,3 +1,4 @@
+import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -10,11 +11,10 @@ import {
   ERROR_MESSAGES,
 } from '@shared/constants'
 import { INVALID_URLS } from '@shared/test/fixtures'
-import { act } from '@testing-library/react'
 
-import { renderHook } from '../test/utils'
 import { useSettings } from './useSettings'
 import * as apiContext from '../contexts/ApiContext'
+import { renderHook } from '../test/utils'
 
 describe('useSettings Hook', () => {
   beforeEach(() => {

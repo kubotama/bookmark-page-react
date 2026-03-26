@@ -1,9 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useApp } from './useApp'
-import { TEST_MESSAGES } from '@shared/constants'
 import { http, HttpResponse } from 'msw'
-import { server } from '../test/setup'
-import { renderHook, waitFor, act } from '../test/utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+import { TEST_MESSAGES } from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_1,
@@ -12,6 +10,10 @@ import {
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
 import { openUrlInNewTab } from '@shared/utils/url'
+
+import { useApp } from './useApp'
+import { server } from '../test/setup'
+import { renderHook, waitFor, act } from '../test/utils'
 
 // openUrlInNewTab をモック化
 vi.mock('@shared/utils/url', async () => {

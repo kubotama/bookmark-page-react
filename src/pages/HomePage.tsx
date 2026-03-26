@@ -1,13 +1,5 @@
-import {
-  FIELD_LABELS,
-  KEY_VALUES,
-  DROPPABLE_IDS,
-  UI_MESSAGES,
-} from '@shared/constants'
-import { BookmarkList } from '../components/BookmarkList'
-import { KeywordList } from '../components/KeywordList'
-import { useApp } from '../hooks/useApp'
 import { useEffect } from 'react'
+
 import {
   DndContext,
   DragOverlay,
@@ -19,7 +11,18 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+
+import {
+  FIELD_LABELS,
+  KEY_VALUES,
+  DROPPABLE_IDS,
+  UI_MESSAGES,
+} from '@shared/constants'
+
 import { BookmarkItem } from '../components/BookmarkItem'
+import { BookmarkList } from '../components/BookmarkList'
+import { KeywordList } from '../components/KeywordList'
+import { useApp } from '../hooks/useApp'
 
 interface HomePageProps {
   appState: ReturnType<typeof useApp>

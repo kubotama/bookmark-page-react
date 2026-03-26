@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 
 import {
@@ -16,10 +17,10 @@ import {
   MOCK_BOOKMARKS,
   MOCK_BOOKMARK_TITLE_PREFIX,
 } from '@shared/test/fixtures'
-import { render, screen } from '../test/utils'
-import userEvent from '@testing-library/user-event'
 
 import { BookmarkList } from './BookmarkList'
+import { render, screen } from '../test/utils'
+
 import type { BookmarkProps } from './BookmarkList'
 
 // DndContext をモック化して内部のイベントをトリガーしやすくする

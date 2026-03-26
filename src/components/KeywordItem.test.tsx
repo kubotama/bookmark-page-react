@@ -1,13 +1,13 @@
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
-import userEvent from '@testing-library/user-event'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
-import { render, screen } from '../test/utils'
 import { KeywordItem } from './KeywordItem'
+import { render, screen } from '../test/utils'
 
 import type { DraggableAttributes } from '@dnd-kit/core'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 describe('KeywordItem', () => {
   const mockKeyword: Keyword = {

@@ -1,4 +1,6 @@
 import { type ReactNode } from 'react'
+
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
@@ -12,13 +14,12 @@ import {
   KEY_VALUES,
   DROPPABLE_IDS,
 } from '@shared/constants'
+import type { Bookmark } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
-import type { Bookmark } from '@shared/schemas/bookmark'
-import userEvent from '@testing-library/user-event'
 
 import App from './App'
 import { createDragEndEvent } from './test/dnd-utils'

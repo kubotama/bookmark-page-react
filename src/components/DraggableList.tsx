@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import {
   closestCenter,
   DndContext,
@@ -12,9 +11,12 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import type { DragEndEvent } from '@dnd-kit/core'
+import { z } from 'zod'
+
 import { ERROR_MESSAGES } from '@shared/constants'
 import type { DraggableEntity } from '@shared/schemas/draggable'
+
+import type { DragEndEvent } from '@dnd-kit/core'
 
 export type DraggableListProps<T extends DraggableEntity> = {
   items: T[]

@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from './utils'
 import { type ReactNode } from 'react'
+
+import { describe, it, expect } from 'vitest'
+
+import { render, screen } from './utils'
 
 describe('src/test/utils.tsx functional verification', () => {
   it('customRender supports additional wrapper', () => {
@@ -12,7 +14,9 @@ describe('src/test/utils.tsx functional verification', () => {
 
     expect(screen.getByTestId('custom-wrapper')).toBeInTheDocument()
     expect(screen.getByTestId('content')).toBeInTheDocument()
-    expect(screen.getByTestId('custom-wrapper')).toContainElement(screen.getByTestId('content'))
+    expect(screen.getByTestId('custom-wrapper')).toContainElement(
+      screen.getByTestId('content'),
+    )
   })
 
   it('customRender still provides AllTheProviders context', () => {

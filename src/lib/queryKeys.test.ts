@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { QUERY_KEYS } from './queryKeys'
 
 describe('QUERY_KEYS', () => {
@@ -38,13 +39,16 @@ describe('QUERY_KEYS', () => {
         { id: 0, expected: '0' },
         { id: '0', expected: '0' },
         { id: -1, expected: '-1' },
-      ])('エッジケース ($id) でも正しく文字列化されること', ({ id, expected }) => {
-        expect(QUERY_KEYS.BOOKMARKS.DETAIL(id)).toEqual([
-          'bookmarks',
-          'detail',
-          expected,
-        ])
-      })
+      ])(
+        'エッジケース ($id) でも正しく文字列化されること',
+        ({ id, expected }) => {
+          expect(QUERY_KEYS.BOOKMARKS.DETAIL(id)).toEqual([
+            'bookmarks',
+            'detail',
+            expected,
+          ])
+        },
+      )
     })
   })
 })

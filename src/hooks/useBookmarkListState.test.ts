@@ -1,8 +1,10 @@
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useBookmarkListState } from './useBookmarkListState'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+
 import { APP_PATHS } from '@shared/constants'
+import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+
+import { useBookmarkListState } from './useBookmarkListState'
 import { renderHook } from '../test/utils'
 
 // useNavigate のモック
