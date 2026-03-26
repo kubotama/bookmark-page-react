@@ -1,11 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '../test/utils'
-import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
-import { createKeyboardEvent } from '../test/event-utils'
-import { useBookmarkPage } from './useBookmarkPage'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { fireEvent } from '@testing-library/react'
 import { http, HttpResponse, delay } from 'msw'
-import { server } from '../test/setup'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 import {
   APP_PATHS,
   HTTP_STATUS,
@@ -13,8 +9,14 @@ import {
   DROPPABLE_IDS,
   KEY_VALUES,
 } from '@shared/constants'
-import { fireEvent } from '@testing-library/react'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
+
+import { useBookmarkPage } from './useBookmarkPage'
+import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
+import { createKeyboardEvent } from '../test/event-utils'
+import { server } from '../test/setup'
+import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
 const mockNavigate = vi.fn()

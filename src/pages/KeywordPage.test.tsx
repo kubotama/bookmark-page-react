@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { APP_PATHS, ARIA_ROLES, FIELD_LABELS } from '@shared/constants'
 
-import { render, screen } from '../test/utils'
 import { KeywordPage } from './KeywordPage'
+import { render, screen } from '../test/utils'
 
 describe('KeywordPage', () => {
   it('URL パラメータから取得したキーワード ID が表示されること', () => {

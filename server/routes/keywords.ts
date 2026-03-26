@@ -1,7 +1,7 @@
+import { zValidator } from '@hono/zod-validator'
 import { count, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 
-import { zValidator } from '@hono/zod-validator'
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import {
   createKeywordRequestSchema,

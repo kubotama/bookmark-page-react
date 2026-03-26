@@ -1,15 +1,17 @@
 import { memo } from 'react'
+
 import {
   ARIA_ROLES,
   ARIA_ATTRIBUTES,
   HTML_ATTRIBUTES,
   KEY_VALUES,
 } from '@shared/constants'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
 } from '@dnd-kit/core'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 interface KeywordItemProps {
   keyword: Keyword

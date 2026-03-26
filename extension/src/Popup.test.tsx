@@ -1,3 +1,5 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -7,8 +9,6 @@ import {
   UI_STATUS,
 } from '@shared/constants'
 import { VALID_URLS } from '@shared/test/fixtures'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 
 import { usePopup } from './hooks/usePopup'
 import { Popup } from './Popup'

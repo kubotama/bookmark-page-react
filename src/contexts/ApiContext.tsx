@@ -1,4 +1,3 @@
-import { hc } from 'hono/client'
 import {
   createContext,
   useCallback,
@@ -8,7 +7,14 @@ import {
   type ReactNode,
 } from 'react'
 
-import { DEFAULT_API_URL, STORAGE_KEYS, LOG_MESSAGES, ERROR_MESSAGES } from '@shared/constants'
+import { hc } from 'hono/client'
+
+import {
+  DEFAULT_API_URL,
+  STORAGE_KEYS,
+  LOG_MESSAGES,
+  ERROR_MESSAGES,
+} from '@shared/constants'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
 import type { AppType } from '../../server/app'
@@ -51,10 +57,7 @@ export const ApiProvider = ({ children, initialUrl }: ApiProviderProps) => {
         return savedUrl
       }
       // 不正な場合はログを出力してデフォルトへフォールバック
-      console.warn(
-        LOG_MESSAGES.INVALID_STORAGE_URL,
-        error,
-      )
+      console.warn(LOG_MESSAGES.INVALID_STORAGE_URL, error)
     }
 
     return DEFAULT_API_URL

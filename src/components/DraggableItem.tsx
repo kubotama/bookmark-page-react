@@ -1,10 +1,12 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+
+import type { DraggableEntity } from '@shared/schemas/draggable'
+
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
 } from '@dnd-kit/core'
-import type { DraggableEntity } from '@shared/schemas/draggable'
 
 export type DraggableItemProps<T extends DraggableEntity> = {
   item: T

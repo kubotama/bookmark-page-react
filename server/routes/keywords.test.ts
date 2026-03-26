@@ -10,8 +10,8 @@ import { VALID_URLS } from '@shared/test/fixtures'
 
 import app from '../app'
 import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
-import { API_ERROR_CODES } from '../utils/error'
 import { attachKeyword, createBookmark, createKeyword } from '../test/seedUtils'
+import { API_ERROR_CODES } from '../utils/error'
 
 describe(`GET ${API_PATHS.KEYWORDS}`, () => {
   beforeEach(() => {

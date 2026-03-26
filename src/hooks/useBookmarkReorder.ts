@@ -1,6 +1,8 @@
 import { arrayMove } from '@dnd-kit/sortable'
-import { useBookmarks, useReorderBookmarks } from './useBookmarks'
+
 import { LOG_MESSAGES } from '@shared/constants'
+
+import { useBookmarks, useReorderBookmarks } from './useBookmarks'
 
 /**
  * ブックマークの並び替えロジックを管理するフック
@@ -8,7 +10,7 @@ import { LOG_MESSAGES } from '@shared/constants'
  */
 export const useBookmarkReorder = (
   reorderHook = useReorderBookmarks,
-  bookmarksHook = useBookmarks
+  bookmarksHook = useBookmarks,
 ) => {
   const { mutate } = reorderHook()
   const { data } = bookmarksHook()
@@ -25,7 +27,7 @@ export const useBookmarkReorder = (
       if (oldIndex !== -1 && newIndex !== -1) {
         const newBookmarks = arrayMove(data.bookmarks, oldIndex, newIndex)
         const newIds = newBookmarks.map((b) => b.id)
-        
+
         // 全 ID リストを送信して整合性を保つ
         mutate({ ids: newIds })
       }

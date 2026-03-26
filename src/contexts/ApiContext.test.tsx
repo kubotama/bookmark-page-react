@@ -1,7 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook as renderHookOriginal } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+import {
+  STORAGE_KEYS,
+  DEFAULT_API_URL,
+  LOG_MESSAGES,
+  ERROR_MESSAGES,
+} from '@shared/constants'
+
 import { useApi } from './ApiContext'
-import { STORAGE_KEYS, DEFAULT_API_URL, LOG_MESSAGES, ERROR_MESSAGES } from '@shared/constants'
 import { renderHook } from '../test/utils'
 
 describe('ApiContext', () => {
@@ -37,7 +44,7 @@ describe('ApiContext', () => {
     expect(result.current.apiUrl).toBe(DEFAULT_API_URL)
     expect(console.warn).toHaveBeenCalledWith(
       LOG_MESSAGES.INVALID_STORAGE_URL,
-      expect.any(String)
+      expect.any(String),
     )
   })
 
@@ -80,14 +87,14 @@ describe('ApiContext', () => {
     expect(result.current.apiUrl).toBe(DEFAULT_API_URL)
     expect(consoleSpy).toHaveBeenCalledWith(
       ERROR_MESSAGES.UPDATE_API_URL_FAILED,
-      expect.any(String)
+      expect.any(String),
     )
   })
 
   it('ApiProvider 外で useApi を呼び出した場合にエラーを投げること', () => {
     // コンソール出力を抑制
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    
+
     // カスタムラッパーを介さず、本体の renderHook を使用
     expect(() => {
       renderHookOriginal(() => useApi())

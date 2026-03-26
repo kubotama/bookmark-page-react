@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
+
 import {
   createApiSuccessSchema,
   ApiErrorSchema,
@@ -21,8 +22,9 @@ describe('API Schemas', () => {
       expect(successSchema.safeParse({ success: true, data: {} }).success).toBe(
         false,
       )
-      expect(successSchema.safeParse({ success: false, data: { id: 1 } }).success)
-        .toBe(false)
+      expect(
+        successSchema.safeParse({ success: false, data: { id: 1 } }).success,
+      ).toBe(false)
     })
   })
 
@@ -36,9 +38,9 @@ describe('API Schemas', () => {
     })
 
     it('必須項目が欠けているエラーを拒否すること', () => {
-      expect(ApiErrorSchema.safeParse({ success: false, error: {} }).success).toBe(
-        false,
-      )
+      expect(
+        ApiErrorSchema.safeParse({ success: false, error: {} }).success,
+      ).toBe(false)
     })
   })
 

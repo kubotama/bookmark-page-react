@@ -1,3 +1,5 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -6,8 +8,6 @@ import {
   FIELD_LABELS,
   UI_STATUS,
 } from '@shared/constants'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 
 import { useOptions } from './hooks/useOptions'
 import { Options } from './Options'

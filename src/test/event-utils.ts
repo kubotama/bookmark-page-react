@@ -1,5 +1,6 @@
-import { vi } from 'vitest'
 import type React from 'react'
+
+import { vi } from 'vitest'
 
 /**
  * テスト用の KeyboardEvent を作成するユーティリティ

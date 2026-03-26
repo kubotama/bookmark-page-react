@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
+
 import {
   BOOKMARK_STATUS,
   EXTENSION_ICONS,
@@ -9,6 +10,7 @@ import {
 } from '@shared/constants'
 import type { Bookmark, BookmarksResponse } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
+
 import { QUERY_KEYS } from '../../src/lib/queryKeys'
 
 /**
