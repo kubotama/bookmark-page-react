@@ -8,9 +8,13 @@ import {
   LOG_MESSAGES,
   ALLOWED_ORIGINS,
 } from '@shared/constants'
-import type { Bookmark, BookmarksResponse } from '@shared/schemas/bookmark'
+import type { BookmarksResponse } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
+import {
+  findBookmarkByUrl,
+  determineBookmarkStatus,
+} from './lib/bookmark-utils'
 import { QUERY_KEYS } from '../../src/lib/queryKeys'
 
 /**
@@ -56,7 +60,7 @@ const updateIconStatus = async (
       return
     }
 
-    // 2. セキュリティバリデーション (Security fix)
+    // 2. セキュリティバリデーション
     const urlError = validateApiUrl(apiUrl)
     if (urlError) {
       console.warn(LOG_MESSAGES.INVALID_STORAGE_URL_BACKGROUND, urlError)
@@ -81,21 +85,13 @@ const updateIconStatus = async (
       },
     })
 
-    // 4. 状態判定
-    const bookmark = data.bookmarks.find((b: Bookmark) => b.url === url)
-
-    let status: keyof typeof BOOKMARK_STATUS = 'NONE'
-    if (!bookmark) {
-      status = 'NONE'
-    } else if (bookmark.title === title) {
-      status = 'REGISTERED'
-    } else {
-      status = 'MODIFIED'
-    }
+    // 4. 状態判定 (共通ユーティリティを使用)
+    const bookmark = findBookmarkByUrl(data.bookmarks, url)
+    const statusKey = determineBookmarkStatus(bookmark, title)
 
     chrome.action.setIcon({
       tabId,
-      path: EXTENSION_ICONS[BOOKMARK_STATUS[status]],
+      path: EXTENSION_ICONS[BOOKMARK_STATUS[statusKey]],
     })
   } catch (err) {
     console.error(LOG_MESSAGES.ICON_STATUS_UPDATE_FAILED, err)
