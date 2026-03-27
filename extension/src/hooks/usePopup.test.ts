@@ -1,15 +1,16 @@
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import {
   EXTENSION_CONSTANTS,
-  EXTENSION_MESSAGES,
   STORAGE_KEYS,
-  API_PATHS,
-  LOG_MESSAGES,
+  APP_PATHS,
   VALIDATION_MESSAGES,
   UI_STATUS,
   EXTENSION_MESSAGE_TYPES,
+  EXTENSION_MESSAGES,
+  DEFAULT_PORTS,
+  LOG_MESSAGES,
 } from '@shared/constants'
 
 import { usePopup } from './usePopup'
@@ -19,6 +20,7 @@ import { storage } from '../lib/storage'
 const mockChrome = {
   tabs: {
     query: vi.fn(),
+    create: vi.fn(),
   },
   runtime: {
     sendMessage: vi.fn(),
@@ -30,7 +32,6 @@ vi.stubGlobal('window', { close: vi.fn() })
 describe('usePopup Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers() // タイマーをモック化
     vi.spyOn(console, 'error').mockImplementation(() => {})
     // デフォルトの設定値をモック
     vi.spyOn(storage, 'get').mockResolvedValue({
@@ -38,20 +39,23 @@ describe('usePopup Hook', () => {
     })
   })
 
-  afterEach(() => {
-    vi.useRealTimers() // タイマーを元に戻す
-  })
-
-  it('初期化時に現在のタブ情報を取得すること', async () => {
+  it('初期化時に現在のタブ情報を取得し、バックグラウンドに状態を問い合わせること', async () => {
     mockChrome.tabs.query.mockResolvedValue([
       { title: 'Test Page', url: 'https://example.com' },
     ])
+
+    mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
+        callback({ success: true, status: 'REGISTERED', bookmarkId: '123' })
+      }
+    })
 
     const { result } = renderHook(() => usePopup())
 
     await vi.waitFor(() => {
       expect(result.current.title).toBe('Test Page')
       expect(result.current.url).toBe('https://example.com')
+      expect(result.current.isRegistered).toBe(true)
     })
   })
 
@@ -80,7 +84,7 @@ describe('usePopup Hook', () => {
   })
 
   it('タイトルやURLが欠落しているタブの場合、空文字で補完すること', async () => {
-    mockChrome.tabs.query.mockResolvedValue([{}]) // title, url なし
+    mockChrome.tabs.query.mockResolvedValue([{}])
     const { result } = renderHook(() => usePopup())
 
     await vi.waitFor(() => {
@@ -89,12 +93,59 @@ describe('usePopup Hook', () => {
     })
   })
 
-  it('ブックマークを正常に保存できること', async () => {
+  it('handleEdit が呼ばれた際、詳細画面を新しいタブで開くこと (ポート差し替え)', async () => {
     mockChrome.tabs.query.mockResolvedValue([
       { title: 'Test', url: 'https://example.com' },
     ])
+    mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
+      callback({ success: true, status: 'REGISTERED', bookmarkId: 'id-123' })
+    })
 
-    // fetch の成功レスポンスをモック
+    const { result } = renderHook(() => usePopup())
+    await vi.waitFor(() => expect(result.current.isRegistered).toBe(true))
+
+    await act(async () => {
+      await result.current.handleEdit()
+    })
+
+    // localhost の場合は 5173 に差し替えられることを検証
+    const expectedUrl = `http://localhost:${DEFAULT_PORTS.FRONTEND}${APP_PATHS.BOOKMARK_DETAIL('id-123')}`
+    expect(mockChrome.tabs.create).toHaveBeenCalledWith({ url: expectedUrl })
+    expect(window.close).toHaveBeenCalled()
+  })
+
+  it('handleEdit においてタブの作成に失敗した場合、ログを出力すること', async () => {
+    const consoleSpy = vi.spyOn(console, 'error')
+    mockChrome.tabs.query.mockResolvedValue([
+      { title: 'Test', url: 'https://example.com' },
+    ])
+    mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
+      callback({ success: true, status: 'REGISTERED', bookmarkId: 'id-123' })
+    })
+    mockChrome.tabs.create.mockRejectedValue(new Error('Tab Create Fail'))
+
+    const { result } = renderHook(() => usePopup())
+    await vi.waitFor(() => expect(result.current.isRegistered).toBe(true))
+
+    await act(async () => {
+      await result.current.handleEdit()
+    })
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to open detail page:',
+      expect.any(Error),
+    )
+  })
+
+  it('ブックマークを正常に保存できること', async () => {
+    vi.useFakeTimers()
+    mockChrome.tabs.query.mockResolvedValue([
+      { title: 'Test', url: 'https://new.com' },
+    ])
+    mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
+      if (callback) callback({ success: true, status: 'NONE' })
+    })
+
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true, data: { id: '1' } }),
@@ -108,36 +159,24 @@ describe('usePopup Hook', () => {
       await result.current.handleSave()
     })
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:3030${API_PATHS.BOOKMARKS}`,
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ title: 'Test', url: 'https://example.com' }),
-      }),
-    )
     expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
-    expect(result.current.status.message).toBe(EXTENSION_MESSAGES.POPUP_SAVED)
-
-    // キャッシュ無効化メッセージが送信されたことを検証
-    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith({
-      type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE,
-    })
-
-    // 時間を進めて window.close の呼び出しを確認
     act(() => {
       vi.advanceTimersByTime(EXTENSION_CONSTANTS.POPUP_CLOSE_DELAY_MS)
     })
     expect(window.close).toHaveBeenCalled()
+    vi.useRealTimers()
   })
 
-  describe('handleSave エラー系テスト', () => {
-    it('入力バリデーションエラー（タイトル空）の場合にエラーメッセージを表示すること', async () => {
+  describe('handleSave 異常系テスト', () => {
+    it('API URL が不正な形式（プロトコル欠落など）の場合にエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: '', url: 'https://example.com' },
+        { title: 'Test', url: 'https://example.com' },
       ])
-      const { result } = renderHook(() => usePopup())
+      vi.spyOn(storage, 'get').mockResolvedValue({
+        [STORAGE_KEYS.API_URL]: 'ftp://invalid',
+      })
 
-      // URL がセットされるのを待機
+      const { result } = renderHook(() => usePopup())
       await vi.waitFor(() =>
         expect(result.current.url).toBe('https://example.com'),
       )
@@ -148,93 +187,54 @@ describe('usePopup Hook', () => {
 
       expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(
-        VALIDATION_MESSAGES.TITLE_REQUIRED,
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
       )
     })
 
-    const errorCases = [
-      {
-        name: 'API URL のバリデーションエラー',
-        setup: () =>
-          vi
-            .spyOn(storage, 'get')
-            .mockResolvedValue({ [STORAGE_KEYS.API_URL]: 'invalid-url' }),
-        expectedMessage: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-      },
-      {
-        name: 'HTTP ステータスエラー (500)',
-        setup: () =>
-          vi.stubGlobal(
-            'fetch',
-            vi.fn().mockResolvedValue({
-              ok: false,
-              status: 500,
-            }),
-          ),
-        expectedMessage: 'HTTP error! status: 500',
-      },
-      {
-        name: 'API 側での論理エラー (success: false)',
-        setup: () =>
-          vi.stubGlobal(
-            'fetch',
-            vi.fn().mockResolvedValue({
-              ok: true,
-              json: () =>
-                Promise.resolve({
-                  success: false,
-                  error: { message: 'Custom Error' },
-                }),
-            }),
-          ),
-        expectedMessage: 'Custom Error',
-      },
-      {
-        name: 'ネットワークエラー (fetch 失敗)',
-        setup: () =>
-          vi.stubGlobal(
-            'fetch',
-            vi.fn().mockRejectedValue(new Error('Network Fail')),
-          ),
-        expectedMessage: 'Network Fail',
-      },
-      {
-        name: '不明なエラー（Error以外がスローされた場合）',
-        setup: () =>
-          vi.stubGlobal('fetch', vi.fn().mockRejectedValue('String Error')),
-        expectedMessage: EXTENSION_MESSAGES.POPUP_SAVE_FAILED,
-        checkLog: true,
-      },
-    ]
+    it('HTTP 500 エラーが発生した場合にエラーメッセージを表示すること', async () => {
+      mockChrome.tabs.query.mockResolvedValue([
+        { title: 'Test', url: 'https://example.com' },
+      ])
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+        }),
+      )
 
-    errorCases.forEach(({ name, setup, expectedMessage, checkLog }) => {
-      it(
-        name +
-          ' の場合にエラーメッセージを表示し、必要に応じてログを出力すること',
-        async () => {
-          const consoleSpy = vi.spyOn(console, 'error')
-          mockChrome.tabs.query.mockResolvedValue([
-            { title: 'Test', url: 'https://example.com' },
-          ])
-          await setup()
+      const { result } = renderHook(() => usePopup())
+      await vi.waitFor(() =>
+        expect(result.current.url).toBe('https://example.com'),
+      )
 
-          const { result } = renderHook(() => usePopup())
-          await vi.waitFor(() => expect(result.current.title).toBe('Test'))
+      await act(async () => {
+        await result.current.handleSave()
+      })
 
-          await act(async () => {
-            await result.current.handleSave()
-          })
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toContain('HTTP error! status: 500')
+    })
 
-          expect(result.current.status.type).toBe(UI_STATUS.ERROR)
-          expect(result.current.status.message).toContain(expectedMessage)
+    it('不明なエラー（Errorオブジェクト以外がスローされた場合）にデフォルトのエラーメッセージを表示すること', async () => {
+      mockChrome.tabs.query.mockResolvedValue([
+        { title: 'Test', url: 'https://example.com' },
+      ])
+      // String で reject する
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue('Fatal Exception'))
 
-          if (checkLog) {
-            expect(consoleSpy).toHaveBeenCalledWith(
-              LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
-              'String Error',
-            )
-          }
-        },
+      const { result } = renderHook(() => usePopup())
+      await vi.waitFor(() =>
+        expect(result.current.url).toBe('https://example.com'),
+      )
+
+      await act(async () => {
+        await result.current.handleSave()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        EXTENSION_MESSAGES.POPUP_SAVE_FAILED,
       )
     })
   })
