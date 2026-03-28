@@ -1,12 +1,19 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
+
 import { useParams, useNavigate } from 'react-router-dom'
+
 import {
   APP_PATHS,
   LOG_MESSAGES,
   DROPPABLE_IDS,
   ELEMENT_IDS,
+  KEY_VALUES,
 } from '@shared/constants'
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
+import { KeywordIdSchema } from '@shared/schemas/keyword'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+import { openUrlInNewTab } from '@shared/utils/url'
+
 import {
   useBookmarks,
   useKeywords,
@@ -16,10 +23,8 @@ import {
   useAttachKeyword,
   useDetachKeyword,
 } from './useBookmarks'
-import { openUrlInNewTab } from '@shared/utils/url'
+
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
-import { KeywordIdSchema } from '@shared/schemas/keyword'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 /**
  * ブックマーク詳細画面のロジックを管理するカスタムフック
@@ -176,7 +181,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
 
   const handleKeywordKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === KEY_VALUES.ENTER && !e.shiftKey) {
         e.preventDefault()
         handleAddKeyword()
       }
@@ -237,9 +242,9 @@ export const useBookmarkPage = (onBack?: () => void) => {
   // 5. キーボードショートカット
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === KEY_VALUES.ESCAPE) {
         handleBack()
-      } else if (e.key === 'Enter') {
+      } else if (e.key === KEY_VALUES.ENTER) {
         if (e.metaKey || e.ctrlKey) {
           handleUpdate()
         } else if (

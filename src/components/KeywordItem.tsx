@@ -1,10 +1,17 @@
 import { memo } from 'react'
-import { ARIA_ROLES, ARIA_ATTRIBUTES, HTML_ATTRIBUTES } from '@shared/constants'
+
+import {
+  ARIA_ROLES,
+  ARIA_ATTRIBUTES,
+  HTML_ATTRIBUTES,
+  KEY_VALUES,
+} from '@shared/constants'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
 } from '@dnd-kit/core'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 interface KeywordItemProps {
   keyword: Keyword
@@ -52,13 +59,23 @@ export const KeywordItem = memo(
           {...{ [HTML_ATTRIBUTES.TAB_INDEX]: isFocusable ? 0 : -1 }}
           {...{ [HTML_ATTRIBUTES.ROLE]: ARIA_ROLES.BUTTON }}
           {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
-          onClick={() => onClick(keyword.id)}
+          // マウスによる選択。合成イベント(Enter)の影響を受けないようMouseUpを使用。
+          onMouseUp={(e) => {
+            if (e.button === 0) {
+              onClick(keyword.id)
+            }
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === KEY_VALUES.SPACE) {
+              // Space キーで選択（トグル）
               e.preventDefault()
               onClick(keyword.id)
-            } else if (e.key === 'Escape') {
+            } else if (e.key === KEY_VALUES.ESCAPE) {
               onClose?.()
+            } else if (e.key === KEY_VALUES.ENTER) {
+              // Enter キーによるブラウザ標準の合成クリック発火を防止
+              // これにより、HomePage の一括起動のみが実行されるようになる
+              e.preventDefault()
             }
           }}
         >

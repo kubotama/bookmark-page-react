@@ -1,9 +1,8 @@
 import { z } from 'zod'
-import { isHttpUrl } from '../utils/url'
+
 import { VALIDATION_MESSAGES } from '../constants'
-import {
-  keywordSchema,
-} from './keyword'
+import { keywordSchema } from './keyword'
+import { isHttpUrl } from '../utils/url'
 
 export {
   KeywordIdSchema,

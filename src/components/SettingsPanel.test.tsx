@@ -1,8 +1,10 @@
-import { render, screen, fireEvent, act } from '../test/utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { SettingsPanel } from './SettingsPanel'
+
 import { FIELD_LABELS, COMMON_MESSAGES } from '@shared/constants'
+
+import { SettingsPanel } from './SettingsPanel'
 import { useExtensionSync } from '../hooks/useExtensionSync'
+import { render, screen, fireEvent, act } from '../test/utils'
 
 // useExtensionSync をモック化
 vi.mock('../hooks/useExtensionSync', () => ({
@@ -31,14 +33,18 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel {...defaultProps} />)
 
     expect(screen.getByText(FIELD_LABELS.SETTING_TITLE)).toBeInTheDocument()
-    expect(screen.getByDisplayValue(defaultProps.currentApiUrl)).toBeInTheDocument()
-    expect(screen.getByText(COMMON_MESSAGES.API_URL_DESCRIPTION)).toBeInTheDocument()
+    expect(
+      screen.getByDisplayValue(defaultProps.currentApiUrl),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(COMMON_MESSAGES.API_URL_DESCRIPTION),
+    ).toBeInTheDocument()
   })
 
   it('入力値を変更できること', () => {
     render(<SettingsPanel {...defaultProps} />)
     const input = screen.getByLabelText(FIELD_LABELS.URL)
-    
+
     const validUrl = 'http://127.0.0.1:4000'
     fireEvent.change(input, { target: { value: validUrl } })
     expect(input).toHaveValue(validUrl)
@@ -47,7 +53,7 @@ describe('SettingsPanel', () => {
   it('保存して適用ボタンで onSave が呼ばれること', () => {
     render(<SettingsPanel {...defaultProps} />)
     const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
-    
+
     fireEvent.click(saveButton)
     expect(defaultProps.onSave).toHaveBeenCalledWith(defaultProps.currentApiUrl)
   })
@@ -56,7 +62,7 @@ describe('SettingsPanel', () => {
     const errorMsg = 'Validation Error'
     const onSave = vi.fn(() => errorMsg)
     render(<SettingsPanel {...defaultProps} onSave={onSave} />)
-    
+
     const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
     fireEvent.click(saveButton)
 
@@ -77,7 +83,9 @@ describe('SettingsPanel', () => {
 
     expect(mockSyncFromExtension).toHaveBeenCalled()
     expect(screen.getByDisplayValue(syncedUrl)).toBeInTheDocument()
-    expect(screen.getByText(COMMON_MESSAGES.SETTINGS_SYNCED)).toBeInTheDocument()
+    expect(
+      screen.getByText(COMMON_MESSAGES.SETTINGS_SYNCED),
+    ).toBeInTheDocument()
   })
 
   it('同期エラー時にエラーメッセージが表示されること', () => {
@@ -95,7 +103,7 @@ describe('SettingsPanel', () => {
   it('閉じるボタンで onClose が呼ばれること', () => {
     render(<SettingsPanel {...defaultProps} />)
     const closeButton = screen.getByText(FIELD_LABELS.BUTTON_CLOSE)
-    
+
     fireEvent.click(closeButton)
     expect(defaultProps.onClose).toHaveBeenCalled()
   })

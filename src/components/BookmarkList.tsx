@@ -5,13 +5,12 @@ import {
   FIELD_LABELS,
   UI_MESSAGES,
 } from '@shared/constants'
-
-import { BookmarkItem } from './BookmarkItem'
-import { DraggableList } from './DraggableList'
-import { DraggableItem } from './DraggableItem'
-
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
+
+import { BookmarkItem } from './BookmarkItem'
+import { DraggableItem } from './DraggableItem'
+import { DraggableList } from './DraggableList'
 
 export type BookmarkProps = {
   bookmarks: Bookmark[]
@@ -22,7 +21,8 @@ export type BookmarkProps = {
   onOpen: () => void
   onClose: () => void
   onReorder: (activeId: BookmarkId, overId: BookmarkId) => void
-  ariaLabel?: string // 追加
+  ariaLabel?: string
+  dndContext?: boolean
 }
 
 export const BookmarkList = ({
@@ -34,7 +34,8 @@ export const BookmarkList = ({
   onOpen,
   onClose,
   onReorder,
-  ariaLabel = FIELD_LABELS.BOOKMARKS_LABEL, // デフォルト値
+  ariaLabel = FIELD_LABELS.BOOKMARKS_LABEL,
+  dndContext = true,
 }: BookmarkProps) => {
   if (isLoading) {
     return (
@@ -76,8 +77,9 @@ export const BookmarkList = ({
         items={bookmarks}
         idSchema={BookmarkIdSchema}
         listRole={ARIA_ROLES.LIST}
-        ariaLabel={ariaLabel} // プロパティを使用
+        ariaLabel={ariaLabel}
         onReorder={onReorder}
+        dndContext={dndContext}
         renderItem={(bookmark, index) => (
           <DraggableItem key={bookmark.id} item={bookmark}>
             {(dndProps) => (

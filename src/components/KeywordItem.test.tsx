@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
-import { ARIA_ROLES } from '@shared/constants'
-import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
-import type { DraggableAttributes } from '@dnd-kit/core'
+import { describe, expect, it, vi } from 'vitest'
+
+import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
 import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 import { KeywordItem } from './KeywordItem'
+import { render, screen } from '../test/utils'
+
+import type { DraggableAttributes } from '@dnd-kit/core'
 
 describe('KeywordItem', () => {
   const mockKeyword: Keyword = {
@@ -40,15 +42,26 @@ describe('KeywordItem', () => {
     expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
   })
 
-  it('Enter キーで onClick が呼ばれること', async () => {
+  it('Space キーで onClick が呼ばれること', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()
     render(<KeywordItem {...defaultProps} onClick={onClick} />)
 
     const item = screen.getByRole(ARIA_ROLES.BUTTON)
     item.focus()
-    await user.keyboard('{Enter}')
+    await user.keyboard(KEY_VALUES.SPACE)
     expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
+  })
+
+  it('Enter キーでは onClick が呼ばれないこと（一括起動に譲るため）', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(<KeywordItem {...defaultProps} onClick={onClick} />)
+
+    const item = screen.getByRole(ARIA_ROLES.BUTTON)
+    item.focus()
+    await user.keyboard(`{${KEY_VALUES.ENTER}}`)
+    expect(onClick).not.toHaveBeenCalled()
   })
 
   it('Escape キーで onClose が呼ばれること', async () => {
@@ -58,11 +71,11 @@ describe('KeywordItem', () => {
 
     const item = screen.getByRole(ARIA_ROLES.BUTTON)
     item.focus()
-    await user.keyboard('{Escape}')
+    await user.keyboard(`{${KEY_VALUES.ESCAPE}}`)
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('正しい階層構造 (role="listitem" > role="button") でレンダリングされること', () => {
+  it(`正しい階層構造 (${ARIA_ROLES.LISTITEM} > ${ARIA_ROLES.BUTTON}) でレンダリングされること`, () => {
     render(<KeywordItem {...defaultProps} />)
 
     const listItem = screen.getByRole(ARIA_ROLES.LISTITEM)

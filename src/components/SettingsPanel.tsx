@@ -1,8 +1,14 @@
 import { useState } from 'react'
-import { useExtensionSync } from '../hooks/useExtensionSync'
+
+import {
+  COMMON_MESSAGES,
+  FIELD_LABELS,
+  DEFAULT_API_URL,
+} from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
-import { COMMON_MESSAGES, FIELD_LABELS, DEFAULT_API_URL } from '@shared/constants'
+
+import { useExtensionSync } from '../hooks/useExtensionSync'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -40,7 +46,7 @@ export const SettingsPanel = ({
       setValidationError(error)
       return
     }
-    
+
     // 成功時は親コンポーネント側で閉じられる
   }
 

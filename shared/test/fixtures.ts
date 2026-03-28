@@ -1,6 +1,7 @@
 import { BookmarkIdSchema } from '../schemas/bookmark'
-import type { Bookmark } from '../schemas/bookmark'
 import { KeywordIdSchema } from '../schemas/keyword'
+
+import type { Bookmark } from '../schemas/bookmark'
 import type { Keyword } from '../schemas/keyword'
 
 export const MOCK_BOOKMARK_TITLE_PREFIX = 'Test Bookmark'

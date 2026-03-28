@@ -146,6 +146,7 @@ export const UI_MESSAGES = {
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
   DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
+  EMPTY_SECTION: (label: string) => `${label}は空です`,
 } as const
 
 /**
@@ -220,6 +221,7 @@ export const EXTENSION_CONSTANTS = {
 export const EXTENSION_MESSAGE_TYPES = {
   GET_API_CONFIG: 'GET_API_CONFIG',
   INVALIDATE_CACHE: 'INVALIDATE_CACHE',
+  CHECK_BOOKMARK_STATUS: 'CHECK_BOOKMARK_STATUS',
 } as const
 
 /**
@@ -233,6 +235,7 @@ export const ARIA_ROLES = {
   ALERT: 'alert',
   ROWGROUP: 'rowgroup',
   TABLE: 'table',
+  LINK: 'link',
 } as const
 
 export const ARIA_ATTRIBUTES = {
@@ -289,6 +292,8 @@ export const STORAGE_KEYS = {
 export const DROPPABLE_IDS = {
   ASSIGNED_LIST: 'assigned-list',
   UNASSIGNED_LIST: 'unassigned-list',
+  MATCHED_BOOKMARKS_SECTION: 'matched-bookmarks-section',
+  OTHER_BOOKMARKS_SECTION: 'other-bookmarks-section',
 } as const
 
 /**
@@ -386,4 +391,15 @@ export const VALIDATION_MESSAGES = {
     'タイトルまたは URL の少なくとも一方は指定する必要があります',
   REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
+} as const
+
+/**
+ * キーボードのキー名定数
+ */
+export const KEY_VALUES = {
+  ENTER: 'Enter',
+  ESCAPE: 'Escape',
+  SPACE: ' ',
+  ARROW_UP: 'ArrowUp',
+  ARROW_DOWN: 'ArrowDown',
 } as const

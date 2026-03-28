@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+
 import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 
 export function KeywordPage() {

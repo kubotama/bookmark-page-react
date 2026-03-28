@@ -1,4 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
+import { z } from 'zod'
+
 import {
   BOOKMARK_STATUS,
   EXTENSION_ICONS,
@@ -7,8 +9,13 @@ import {
   LOG_MESSAGES,
   ALLOWED_ORIGINS,
 } from '@shared/constants'
-import type { Bookmark, BookmarksResponse } from '@shared/schemas/bookmark'
+import type { BookmarksResponse } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
+
+import {
+  findBookmarkByUrl,
+  determineBookmarkStatus,
+} from './lib/bookmark-utils'
 import { QUERY_KEYS } from '../../src/lib/queryKeys'
 
 /**
@@ -24,6 +31,29 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+/**
+ * ブックマーク一覧をキャッシュまたは API から取得する内部関数
+ */
+const getBookmarksData = async (apiUrl: string) => {
+  const urlError = validateApiUrl(apiUrl)
+  if (urlError) {
+    throw new Error(urlError)
+  }
+
+  const sanitizedBaseUrl = getOrigin(apiUrl)
+
+  return await queryClient.fetchQuery<BookmarksResponse>({
+    queryKey: [...QUERY_KEYS.BOOKMARKS.ALL, sanitizedBaseUrl],
+    queryFn: async () => {
+      const res = await fetch(`${sanitizedBaseUrl}/api/bookmarks`)
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
+      const result = await res.json()
+      if (!result.success) throw new Error(result.error?.message || 'Failed')
+      return result.data
+    },
+  })
+}
 
 /**
  * 指定された URL のブックマーク状態を判定し、アイコンを更新する
@@ -54,52 +84,73 @@ const updateIconStatus = async (
       return
     }
 
-    // 2. セキュリティバリデーション (Security fix)
-    const urlError = validateApiUrl(apiUrl)
-    if (urlError) {
-      console.warn(LOG_MESSAGES.INVALID_STORAGE_URL_BACKGROUND, urlError)
-      chrome.action.setIcon({
-        tabId,
-        path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
-      })
-      return
-    }
+    const data = await getBookmarksData(apiUrl)
 
-    const sanitizedBaseUrl = getOrigin(apiUrl)
-
-    // 3. ブックマーク一覧を取得
-    const data = await queryClient.fetchQuery<BookmarksResponse>({
-      queryKey: [...QUERY_KEYS.BOOKMARKS.ALL, sanitizedBaseUrl],
-      queryFn: async () => {
-        const res = await fetch(`${sanitizedBaseUrl}/api/bookmarks`)
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
-        const result = await res.json()
-        if (!result.success) throw new Error(result.error?.message || 'Failed')
-        return result.data
-      },
-    })
-
-    // 4. 状態判定
-    const bookmark = data.bookmarks.find((b: Bookmark) => b.url === url)
-
-    let status: keyof typeof BOOKMARK_STATUS = 'NONE'
-    if (!bookmark) {
-      status = 'NONE'
-    } else if (bookmark.title === title) {
-      status = 'REGISTERED'
-    } else {
-      status = 'MODIFIED'
-    }
+    // 状態判定 (共通ユーティリティを使用)
+    const bookmark = findBookmarkByUrl(data.bookmarks, url)
+    const statusKey = determineBookmarkStatus(bookmark, title)
 
     chrome.action.setIcon({
       tabId,
-      path: EXTENSION_ICONS[BOOKMARK_STATUS[status]],
+      path: EXTENSION_ICONS[BOOKMARK_STATUS[statusKey]],
     })
   } catch (err) {
     console.error(LOG_MESSAGES.ICON_STATUS_UPDATE_FAILED, err)
     chrome.action.setIcon({
       tabId,
       path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
+    })
+  }
+}
+
+/**
+ * ブックマークの登録状態をチェックし、結果を返送するメッセージハンドラ
+ */
+const handleCheckBookmarkStatus = async (
+  message: unknown,
+  sendResponse: (response: unknown) => void,
+) => {
+  // 1. メッセージの型と内容を Zod で厳格に検証
+  const checkStatusSchema = z.object({
+    type: z.literal(EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS),
+    url: z.string().url(),
+    title: z.string().optional(),
+  })
+
+  const validation = checkStatusSchema.safeParse(message)
+  if (!validation.success) {
+    sendResponse({
+      success: false,
+      error: `Invalid message payload: ${validation.error.message}`,
+    })
+    return
+  }
+
+  const { url, title } = validation.data
+
+  try {
+    // 2. 設定とデータの取得
+    const storage = await chrome.storage.sync.get(STORAGE_KEYS.API_URL)
+    const apiUrl = storage[STORAGE_KEYS.API_URL]
+
+    if (!apiUrl || typeof apiUrl !== 'string') {
+      throw new Error('API URL not configured')
+    }
+
+    const data = await getBookmarksData(apiUrl)
+    const bookmark = findBookmarkByUrl(data.bookmarks, url)
+    const status = determineBookmarkStatus(bookmark, title)
+
+    // 3. 結果の返送
+    sendResponse({
+      success: true,
+      status,
+      bookmarkId: bookmark?.id,
+    })
+  } catch (err) {
+    sendResponse({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
     })
   }
 }
@@ -182,14 +233,22 @@ chrome.runtime.onMessageExternal.addListener(
 )
 
 /**
- * 内部メッセージ（キャッシュ無効化）を処理
+ * 内部メッセージを処理
  */
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE) {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.ALL })
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0]
       if (tab?.id) updateIconStatus(tab.id, tab.url, tab.title)
     })
+    return false
   }
+
+  if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
+    handleCheckBookmarkStatus(message, sendResponse)
+    return true // 非同期レスポンスのために true を返す
+  }
+
+  return false
 })

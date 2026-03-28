@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+
 import { EXTENSION_MESSAGE_TYPES, UI_MESSAGES } from '@shared/constants'
 
 /**
@@ -18,7 +19,7 @@ interface ChromeWindow {
       sendMessage: (
         extensionId: string,
         message: unknown,
-        callback: (response: ExtensionResponse) => void
+        callback: (response: ExtensionResponse) => void,
       ) => void
       lastError?: {
         message?: string
@@ -71,7 +72,9 @@ export const useExtensionSync = () => {
 
           if (lastError) {
             if (isMounted.current) {
-              setSyncError(lastError.message || UI_MESSAGES.SYNC_CONNECTION_FAILED)
+              setSyncError(
+                lastError.message || UI_MESSAGES.SYNC_CONNECTION_FAILED,
+              )
             }
           } else if (response?.success && response.apiUrl) {
             result = response.apiUrl
@@ -85,7 +88,7 @@ export const useExtensionSync = () => {
             setIsSyncing(false)
           }
           resolve(result)
-        }
+        },
       )
     })
   }, [])

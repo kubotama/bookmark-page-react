@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fs from 'fs'
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 import { syncVersion } from './sync-version'
 import { LOG_MESSAGES } from '../shared/constants'
 
