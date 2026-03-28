@@ -1,7 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 
 import { DEFAULT_PORTS } from './shared/constants'
 import { getPortFromUrl } from './shared/utils/port'
@@ -13,7 +12,10 @@ export default defineConfig(({ mode }) => {
   const port = getPortFromUrl(frontendUrl, DEFAULT_PORTS.FRONTEND)
 
   return {
-    plugins: [react(), tailwindcss(), tsconfigPaths()],
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      tsconfigPaths: true,
+    },
     server: {
       port,
       proxy: {
