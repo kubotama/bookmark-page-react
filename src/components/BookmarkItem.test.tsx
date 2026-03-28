@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -7,11 +8,11 @@ import {
   KEY_VALUES,
 } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
-import { render, screen } from '../test/utils'
-import userEvent from '@testing-library/user-event'
-import type { DraggableAttributes } from '@dnd-kit/core'
 
 import { BookmarkItem } from './BookmarkItem'
+import { render, screen } from '../test/utils'
+
+import type { DraggableAttributes } from '@dnd-kit/core'
 
 describe('BookmarkItem', () => {
   const defaultProps = {

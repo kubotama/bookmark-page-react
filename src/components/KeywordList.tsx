@@ -1,9 +1,10 @@
 import { ARIA_ROLES, FIELD_LABELS, UI_MESSAGES } from '@shared/constants'
-import { DraggableList } from './DraggableList'
-import { DraggableItem } from './DraggableItem'
-import { KeywordItem } from './KeywordItem'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+
+import { DraggableItem } from './DraggableItem'
+import { DraggableList } from './DraggableList'
+import { KeywordItem } from './KeywordItem'
 
 interface KeywordListProps {
   keywords: Keyword[]

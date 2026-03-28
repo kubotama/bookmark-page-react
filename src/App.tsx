@@ -1,10 +1,12 @@
 import { Routes, Route } from 'react-router-dom'
+
 import './App.css'
+import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
+
 import { SettingsPanel } from './components/SettingsPanel'
 import { useApp } from './hooks/useApp'
-import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
-import { HomePage } from './pages/HomePage'
 import { BookmarkPage } from './pages/BookmarkPage'
+import { HomePage } from './pages/HomePage'
 import { KeywordPage } from './pages/KeywordPage'
 
 function App() {

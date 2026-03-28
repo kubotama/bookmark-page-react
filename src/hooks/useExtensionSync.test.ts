@@ -1,7 +1,9 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useExtensionSync } from './useExtensionSync'
+
 import { UI_MESSAGES } from '@shared/constants'
+
+import { useExtensionSync } from './useExtensionSync'
 
 describe('useExtensionSync Hook', () => {
   const mockExtensionId = 'test-extension-id'
@@ -42,7 +44,7 @@ describe('useExtensionSync Hook', () => {
     ;(window as unknown as { chrome: unknown }).chrome = undefined
 
     const { result } = renderHook(() => useExtensionSync())
-    
+
     await act(async () => {
       const syncedUrl = await result.current.syncFromExtension()
       expect(syncedUrl).toBeNull()
@@ -53,9 +55,9 @@ describe('useExtensionSync Hook', () => {
 
   it('VITE_EXTENSION_ID が設定されていない場合にエラーを返すこと', async () => {
     vi.stubEnv('VITE_EXTENSION_ID', '')
-    
+
     const { result } = renderHook(() => useExtensionSync())
-    
+
     await act(async () => {
       const syncedUrl = await result.current.syncFromExtension()
       expect(syncedUrl).toBeNull()
@@ -66,7 +68,9 @@ describe('useExtensionSync Hook', () => {
 
   it('拡張機能側でエラーが発生した場合にエラーを返すこと', async () => {
     const mockSendMessage = vi.fn((_id, _msg, callback) => {
-      const win = window as unknown as { chrome: { runtime: { lastError: unknown } } }
+      const win = window as unknown as {
+        chrome: { runtime: { lastError: unknown } }
+      }
       win.chrome.runtime.lastError = { message: 'Extension error' }
       callback({ success: false })
     })
@@ -79,7 +83,7 @@ describe('useExtensionSync Hook', () => {
     }
 
     const { result } = renderHook(() => useExtensionSync())
-    
+
     await act(async () => {
       const syncedUrl = await result.current.syncFromExtension()
       expect(syncedUrl).toBeNull()
@@ -101,7 +105,7 @@ describe('useExtensionSync Hook', () => {
     }
 
     const { result } = renderHook(() => useExtensionSync())
-    
+
     await act(async () => {
       const syncedUrl = await result.current.syncFromExtension()
       expect(syncedUrl).toBeNull()

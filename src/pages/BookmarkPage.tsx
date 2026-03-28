@@ -1,21 +1,23 @@
 import {
+  DndContext,
+  closestCorners,
+  useDroppable,
+  DragOverlay,
+} from '@dnd-kit/core'
+
+import {
   FIELD_LABELS,
   PLACEHOLDERS,
   UI_MESSAGES,
   DROPPABLE_IDS,
   ELEMENT_IDS,
 } from '@shared/constants'
-import {
-  DndContext,
-  closestCorners,
-  useDroppable,
-  DragOverlay,
-} from '@dnd-kit/core'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
-import { useBookmarkPage } from '../hooks/useBookmarkPage'
-import { KeywordList } from '../components/KeywordList'
+
 import { KeywordItem } from '../components/KeywordItem'
+import { KeywordList } from '../components/KeywordList'
+import { useBookmarkPage } from '../hooks/useBookmarkPage'
 
 interface BookmarkPageProps {
   onBack?: () => void

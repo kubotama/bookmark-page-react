@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
-import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
-import { render, screen } from '../test/utils'
 import userEvent from '@testing-library/user-event'
-import type { DraggableAttributes } from '@dnd-kit/core'
+import { describe, expect, it, vi } from 'vitest'
+
+import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
 import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 import { KeywordItem } from './KeywordItem'
+import { render, screen } from '../test/utils'
+
+import type { DraggableAttributes } from '@dnd-kit/core'
 
 describe('KeywordItem', () => {
   const mockKeyword: Keyword = {
@@ -73,7 +75,7 @@ describe('KeywordItem', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('正しい階層構造 (role="listitem" > role="button") でレンダリングされること', () => {
+  it(`正しい階層構造 (${ARIA_ROLES.LISTITEM} > ${ARIA_ROLES.BUTTON}) でレンダリングされること`, () => {
     render(<KeywordItem {...defaultProps} />)
 
     const listItem = screen.getByRole(ARIA_ROLES.LISTITEM)

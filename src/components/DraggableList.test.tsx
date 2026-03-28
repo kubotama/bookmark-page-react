@@ -1,11 +1,14 @@
+import * as sortable from '@dnd-kit/sortable'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { z } from 'zod'
-import { render, screen } from '../test/utils'
-import { DraggableList } from './DraggableList'
-import { DraggableItem } from './DraggableItem'
-import * as sortable from '@dnd-kit/sortable'
-import { createDragEndEvent } from 'src/test/dnd-utils'
+
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
+
+import { createDragEndEvent } from 'src/test/dnd-utils'
+
+import { DraggableItem } from './DraggableItem'
+import { DraggableList } from './DraggableList'
+import { render, screen } from '../test/utils'
 
 const mockIdSchema = z.string()
 

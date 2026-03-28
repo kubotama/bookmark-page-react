@@ -1,3 +1,4 @@
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -15,12 +16,10 @@ import {
   MOCK_BOOKMARK_2,
   VALID_URLS,
 } from '@shared/test/fixtures'
-import { act, renderHook, waitFor } from '@testing-library/react'
 
 import { useOptions } from './useOptions'
 
 import type { ErrorTestCase } from '../../test/setup'
-
 import type { MockInstance } from 'vitest'
 
 describe('useOptions Hook', () => {

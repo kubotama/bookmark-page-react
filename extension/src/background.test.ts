@@ -10,6 +10,8 @@ import {
 } from '@shared/constants'
 
 describe('background service worker', () => {
+  const mockApiUrl = 'http://localhost:3030'
+
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.clearAllMocks()
@@ -41,6 +43,20 @@ describe('background service worker', () => {
       },
     })
 
+    // chrome.storage.sync.get の共通モック実装 (型定義を Chrome API に合わせる)
+    vi.mocked(chrome.storage.sync.get).mockImplementation(
+      (
+        _keys?: string | string[] | Record<string, unknown> | null,
+        callback?: (items: Record<string, unknown>) => void,
+      ) => {
+        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
+        if (callback) {
+          callback(data)
+        }
+        return Promise.resolve(data)
+      },
+    )
+
     // background.ts を再読み込み
     vi.resetModules()
   })
@@ -59,21 +75,11 @@ describe('background service worker', () => {
   })
 
   describe('アイコン状態更新 (updateIconStatus)', () => {
-    const mockApiUrl = 'http://localhost:3030'
     const mockBookmarks = {
       bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
     }
 
     beforeEach(() => {
-      // chrome.storage.sync.get のモック
-      vi.mocked(chrome.storage.sync.get).mockImplementation(
-        (_keys, callback) => {
-          const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-          if (callback) (callback as unknown as (data: unknown) => void)(data)
-          return Promise.resolve(data)
-        },
-      )
-
       // fetch のグローバルモック
       vi.stubGlobal(
         'fetch',
@@ -139,9 +145,13 @@ describe('background service worker', () => {
     })
 
     it('不正な API URL がストレージにある場合、ERROR アイコンをセットすること', async () => {
-      vi.mocked(chrome.storage.sync.get).mockImplementation(() => {
-        return Promise.resolve({ [STORAGE_KEYS.API_URL]: 'ftp://invalid' })
-      })
+      vi.mocked(chrome.storage.sync.get).mockImplementation(
+        (_keys, callback) => {
+          const data = { [STORAGE_KEYS.API_URL]: 'ftp://invalid' }
+          if (callback) callback(data)
+          return Promise.resolve(data)
+        },
+      )
       const onUpdatedMock = vi.mocked(chrome.tabs.onUpdated.addListener)
       await import('./background')
 
@@ -200,9 +210,13 @@ describe('background service worker', () => {
     })
 
     it('API URL が未設定（undefined）の場合に NONE アイコンをセットすること', async () => {
-      vi.mocked(chrome.storage.sync.get).mockImplementation(() => {
-        return Promise.resolve({ [STORAGE_KEYS.API_URL]: undefined })
-      })
+      vi.mocked(chrome.storage.sync.get).mockImplementation(
+        (_keys, callback) => {
+          const data = { [STORAGE_KEYS.API_URL]: undefined }
+          if (callback) callback(data)
+          return Promise.resolve(data)
+        },
+      )
       const onUpdatedMock = vi.mocked(chrome.tabs.onUpdated.addListener)
       await import('./background')
 
@@ -222,6 +236,20 @@ describe('background service worker', () => {
   })
 
   describe('イベントリスナーとメッセージ', () => {
+    const mockBookmarks = {
+      bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ success: true, data: mockBookmarks }),
+        }),
+      )
+    })
+
     it('API URL 設定変更時にキャッシュをクリアし全タブのアイコンを更新すること', async () => {
       const onChangedMock = vi.mocked(chrome.storage.onChanged.addListener)
       vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
@@ -244,7 +272,6 @@ describe('background service worker', () => {
 
     it('内部メッセージ INVALIDATE_CACHE でアイコンを再更新すること', async () => {
       const onMessageMock = vi.mocked(chrome.runtime.onMessage.addListener)
-      // query の戻り値を空にしないことで内部パスをカバー
       vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
         ;(callback as unknown as (tabs: unknown[]) => void)([
           { id: 1, url: 'https://example.com', title: 'Example' },
@@ -272,29 +299,6 @@ describe('background service worker', () => {
         return Promise.resolve(tabData as unknown as chrome.tabs.Tab)
       })
 
-      const mockApiUrl = 'http://localhost:3030'
-      const mockBookmarks = {
-        bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
-      }
-
-      // storage.sync.get のモック
-      vi.mocked(chrome.storage.sync.get).mockImplementation(
-        (_keys, callback) => {
-          const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-          if (callback) (callback as unknown as (data: unknown) => void)(data)
-          return Promise.resolve(data)
-        },
-      )
-
-      // fetch のモック
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({ success: true, data: mockBookmarks }),
-        }),
-      )
-
       await import('./background')
 
       const handler = onActivatedMock.mock.calls[0][0]
@@ -302,7 +306,6 @@ describe('background service worker', () => {
 
       expect(chrome.tabs.get).toHaveBeenCalledWith(1)
 
-      // updateIconStatus が呼び出され、適切なアイコンがセットされたことを検証
       await vi.waitFor(() => {
         expect(chrome.action.setIcon).toHaveBeenCalledWith({
           tabId: 1,
@@ -318,7 +321,6 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onActivatedMock.mock.calls[0][0]
-      // 例外が catch されて正常に終了することを期待
       await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
     })
 
@@ -357,15 +359,6 @@ describe('background service worker', () => {
       const addListenerMock = vi.mocked(
         chrome.runtime.onMessageExternal.addListener,
       )
-      const mockApiUrl = 'http://localhost:3030'
-      vi.mocked(chrome.storage.sync.get).mockImplementation(
-        (_key, callback) => {
-          const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-          if (callback) (callback as unknown as (data: unknown) => void)(data)
-          return Promise.resolve(data)
-        },
-      )
-
       await import('./background')
 
       const messageHandler = addListenerMock.mock.calls[0][0]
@@ -381,6 +374,179 @@ describe('background service worker', () => {
       expect(sendResponse).toHaveBeenCalledWith({
         success: true,
         apiUrl: mockApiUrl,
+      })
+    })
+
+    describe('CHECK_BOOKMARK_STATUS', () => {
+      it('メッセージを受信した際に判定結果を返すこと (正常系)', async () => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        const mockBookmarksResult = {
+          bookmarks: [
+            { id: '123', title: 'Example', url: 'https://example.com' },
+          ],
+        }
+
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue({
+            ok: true,
+            json: () =>
+              Promise.resolve({ success: true, data: mockBookmarksResult }),
+          }),
+        )
+
+        await import('./background')
+
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
+
+        const result = messageHandler(
+          {
+            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+            url: 'https://example.com',
+            title: 'Example',
+          },
+          {},
+          sendResponse,
+        )
+
+        expect(result).toBe(true)
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: true,
+              status: 'REGISTERED',
+              bookmarkId: '123',
+            }),
+          )
+        })
+      })
+
+      it('不正なペイロード (URL形式エラー) の場合にエラーを返すこと', async () => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        await import('./background')
+
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
+
+        const result = messageHandler(
+          {
+            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+            url: 'invalid-url', // 不正なURL
+          },
+          {},
+          sendResponse,
+        )
+
+        expect(result).toBe(true)
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: expect.stringContaining('Invalid message payload'),
+            }),
+          )
+        })
+      })
+
+      it('API エラーの場合にエラーを返すこと', async () => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+          }),
+        )
+
+        await import('./background')
+
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
+
+        messageHandler(
+          {
+            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+            url: 'https://example.com',
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: expect.stringContaining('HTTP Error: 500'),
+            }),
+          )
+        })
+      })
+
+      it('ネットワークエラーの場合にエラーを返すこと', async () => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockRejectedValue(new Error('Network Fail')),
+        )
+
+        await import('./background')
+
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
+
+        messageHandler(
+          {
+            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+            url: 'https://example.com',
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: 'Network Fail',
+            }),
+          )
+        })
+      })
+
+      it('API URL が未設定の場合にエラーを返すこと', async () => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        vi.mocked(chrome.storage.sync.get).mockImplementation(
+          (_keys, callback) => {
+            const data = { [STORAGE_KEYS.API_URL]: undefined }
+            if (callback) callback(data)
+            return Promise.resolve(data)
+          },
+        )
+
+        await import('./background')
+
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
+
+        messageHandler(
+          {
+            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+            url: 'https://example.com',
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: 'API URL not configured',
+            }),
+          )
+        })
       })
     })
   })

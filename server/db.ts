@@ -1,9 +1,12 @@
+import path from 'path'
+
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import path from 'path'
 import { z } from 'zod'
+
 import { LOG_MESSAGES, DB_CONSTANTS, ENV_NAMES } from '@shared/constants'
+
 import * as schema from './db/schema'
 
 const isTestEnvironment = () => process.env.NODE_ENV === ENV_NAMES.TEST
