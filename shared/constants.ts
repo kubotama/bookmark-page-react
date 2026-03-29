@@ -222,6 +222,7 @@ export const EXTENSION_MESSAGE_TYPES = {
   GET_API_CONFIG: 'GET_API_CONFIG',
   INVALIDATE_CACHE: 'INVALIDATE_CACHE',
   CHECK_BOOKMARK_STATUS: 'CHECK_BOOKMARK_STATUS',
+  SET_FRONTEND_URL: 'SET_FRONTEND_URL',
 } as const
 
 /**
@@ -284,6 +285,7 @@ export const HTTP_STATUS = {
  */
 export const STORAGE_KEYS = {
   API_URL: 'apiUrl',
+  FRONTEND_URL: 'frontendUrl',
 } as const
 
 /**

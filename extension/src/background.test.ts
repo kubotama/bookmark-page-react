@@ -35,6 +35,7 @@ describe('background service worker', () => {
       storage: {
         sync: {
           get: vi.fn(),
+          set: vi.fn(),
         },
         onChanged: { addListener: vi.fn() },
       },
@@ -375,6 +376,69 @@ describe('background service worker', () => {
         success: true,
         apiUrl: mockApiUrl,
       })
+    })
+
+    describe('SET_FRONTEND_URL', () => {
+      let messageHandler: (
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response: unknown) => void,
+      ) => void | boolean
+      const sendResponse = vi.fn()
+
+      beforeEach(async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
+        await import('./background')
+        messageHandler = addListenerMock.mock.calls[0][0]
+        sendResponse.mockClear()
+      })
+
+      it('メッセージを受信した際に URL をストレージに保存すること', async () => {
+        const setMock = vi.mocked(chrome.storage.sync.set)
+
+        const result = messageHandler(
+          {
+            type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
+            url: 'http://localhost:5173',
+          },
+          { origin: ALLOWED_ORIGINS[0] },
+          sendResponse,
+        )
+
+        expect(result).toBe(true)
+        expect(setMock).toHaveBeenCalledWith({
+          [STORAGE_KEYS.FRONTEND_URL]: 'http://localhost:5173',
+        })
+        expect(sendResponse).toHaveBeenCalledWith({ success: true })
+      })
+
+      it.each([
+        { name: '不正なプロトコル', url: 'ftp://localhost' },
+        { name: '不正な形式', url: 'not-a-url' },
+        { name: '空文字列', url: '' },
+      ])(
+        '不正な URL $name ($url) を受信した際に保存を拒否すること',
+        async ({ url }) => {
+          const setMock = vi.mocked(chrome.storage.sync.set)
+
+          const result = messageHandler(
+            {
+              type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
+              url,
+            },
+            { origin: ALLOWED_ORIGINS[0] },
+            sendResponse,
+          )
+
+          expect(result).toBe(true)
+          expect(setMock).not.toHaveBeenCalled()
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false }),
+          )
+        },
+      )
     })
 
     describe('CHECK_BOOKMARK_STATUS', () => {

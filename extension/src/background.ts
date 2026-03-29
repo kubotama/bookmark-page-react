@@ -228,6 +228,33 @@ chrome.runtime.onMessageExternal.addListener(
       })
       return true
     }
+
+    if (message?.type === EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL) {
+      // 外部入力の厳格な検証
+      const schema = z.object({
+        type: z.literal(EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL),
+        url: z.string().url(),
+      })
+      const validation = schema.safeParse(message)
+
+      if (!validation.success) {
+        sendResponse({ success: false, error: 'Invalid message structure' })
+        return true
+      }
+
+      const { url } = validation.data
+      const urlError = validateApiUrl(url)
+
+      if (urlError) {
+        sendResponse({ success: false, error: urlError })
+      } else {
+        const sanitizedUrl = getOrigin(url)
+        chrome.storage.sync.set({ [STORAGE_KEYS.FRONTEND_URL]: sanitizedUrl })
+        sendResponse({ success: true })
+      }
+      return true
+    }
+
     return false
   },
 )
