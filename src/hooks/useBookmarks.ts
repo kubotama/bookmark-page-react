@@ -53,7 +53,7 @@ const parseResponse = async <T>(
     if (err instanceof BookmarkApiError) throw err
 
     // パース失敗時などのデバッグ情報をログ出力
-    console.error(`Failed to parse API response (Status: ${res.status}):`, err)
+    console.error(LOG_MESSAGES.API_RESPONSE_PARSE_FAILED(res.status), err)
   }
 
   throw new Error(defaultMessage)

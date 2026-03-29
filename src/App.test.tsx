@@ -13,6 +13,7 @@ import {
   FIELD_LABELS,
   KEY_VALUES,
   DROPPABLE_IDS,
+  LOG_MESSAGES,
 } from '@shared/constants'
 import type { Bookmark } from '@shared/schemas/bookmark'
 import {
@@ -52,6 +53,7 @@ vi.mock('@dnd-kit/core', async () => {
 describe('App Integration', () => {
   beforeEach(() => {
     vi.stubGlobal('open', vi.fn())
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     localStorage.clear()
     lastOnDragEnd = null
 
@@ -102,6 +104,8 @@ describe('App Integration', () => {
   })
 
   it('ブックマーク取得失敗時にエラーメッセージが表示されること', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
     server.use(
       http.get(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}`, () => {
         return new HttpResponse(null, { status: 500 })
@@ -109,6 +113,11 @@ describe('App Integration', () => {
     )
     setup()
     expect(await screen.findByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
+
+    expect(console.error).toHaveBeenCalledWith(
+      LOG_MESSAGES.API_RESPONSE_PARSE_FAILED(500),
+      expect.any(Error),
+    )
   })
 
   it('ブックマークをクリックすると詳細画面に遷移すること', async () => {
