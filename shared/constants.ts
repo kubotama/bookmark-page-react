@@ -366,6 +366,8 @@ export const LOG_MESSAGES = {
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
+  API_RESPONSE_PARSE_FAILED: (status: number) =>
+    `Failed to parse API response (Status: ${status}):`,
 } as const
 
 /**
