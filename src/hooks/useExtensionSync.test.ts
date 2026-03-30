@@ -38,7 +38,6 @@ describe('useExtensionSync Hook', () => {
       mockExtensionId,
       {
         type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
-        url: 'http://localhost:5173',
       },
       expect.any(Function),
     )

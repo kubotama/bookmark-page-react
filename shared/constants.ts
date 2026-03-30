@@ -370,6 +370,9 @@ export const LOG_MESSAGES = {
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
+  ORIGIN_MISMATCH: 'Origin mismatch or unauthorized sender',
+  INVALID_URL_FORMAT: 'Invalid URL format',
+  INVALID_MESSAGE_STRUCTURE: 'Invalid message structure',
 } as const
 
 /**

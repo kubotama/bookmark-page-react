@@ -379,31 +379,23 @@ describe('background service worker', () => {
     })
 
     describe('SET_FRONTEND_URL', () => {
-      let messageHandler: (
-        message: unknown,
-        sender: chrome.runtime.MessageSender,
-        sendResponse: (response: unknown) => void,
-      ) => void | boolean
       const sendResponse = vi.fn()
 
       beforeEach(async () => {
-        const addListenerMock = vi.mocked(
-          chrome.runtime.onMessageExternal.addListener,
-        )
-        await import('./background')
-        messageHandler = addListenerMock.mock.calls[0][0]
         sendResponse.mockClear()
       })
 
-      it('メッセージを受信した際に URL をストレージに保存すること', async () => {
+      it('メッセージを受信した際に sender.origin をストレージに保存すること', async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
         const setMock = vi.mocked(chrome.storage.sync.set)
+        await import('./background')
+        const messageHandler = addListenerMock.mock.calls[0][0]
 
         const result = messageHandler(
-          {
-            type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
-            url: 'http://localhost:5173',
-          },
-          { origin: ALLOWED_ORIGINS[0] },
+          { type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL },
+          { origin: 'http://localhost:5173' },
           sendResponse,
         )
 
@@ -414,31 +406,45 @@ describe('background service worker', () => {
         expect(sendResponse).toHaveBeenCalledWith({ success: true })
       })
 
-      it.each([
-        { name: '不正なプロトコル', url: 'ftp://localhost' },
-        { name: '不正な形式', url: 'not-a-url' },
-        { name: '空文字列', url: '' },
-      ])(
-        '不正な URL $name ($url) を受信した際に保存を拒否すること',
-        async ({ url }) => {
-          const setMock = vi.mocked(chrome.storage.sync.set)
+      it('sender.origin が欠落している場合に保存を拒否すること', async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
+        const setMock = vi.mocked(chrome.storage.sync.set)
+        await import('./background')
+        const messageHandler = addListenerMock.mock.calls[0][0]
 
-          const result = messageHandler(
-            {
-              type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
-              url,
-            },
-            { origin: ALLOWED_ORIGINS[0] },
-            sendResponse,
-          )
+        const result = messageHandler(
+          { type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL },
+          { origin: undefined }, // origin 欠落
+          sendResponse,
+        )
 
-          expect(result).toBe(true)
-          expect(setMock).not.toHaveBeenCalled()
-          expect(sendResponse).toHaveBeenCalledWith(
-            expect.objectContaining({ success: false }),
-          )
-        },
-      )
+        expect(result).toBe(true)
+        expect(setMock).not.toHaveBeenCalled()
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error: LOG_MESSAGES.ORIGIN_MISMATCH,
+          }),
+        )
+      })
+
+      it('不正なメッセージ構造（type 違いなど）を受信した際にエラーを返すこと', async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
+        await import('./background')
+        const messageHandler = addListenerMock.mock.calls[0][0]
+
+        const result = messageHandler(
+          { type: 'INVALID_TYPE' },
+          { origin: ALLOWED_ORIGINS[0] },
+          sendResponse,
+        )
+
+        expect(result).toBe(false) // 共通ガードで type チェックまでは行かないが、ハンドラ自体も false を返す
+      })
     })
 
     describe('CHECK_BOOKMARK_STATUS', () => {
