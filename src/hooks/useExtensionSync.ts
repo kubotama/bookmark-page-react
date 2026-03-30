@@ -83,7 +83,6 @@ export const useExtensionSync = () => {
         extensionId,
         {
           type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
-          url: window.location.origin,
         },
         () => {
           if (chrome.runtime.lastError) {
