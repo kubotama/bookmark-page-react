@@ -230,27 +230,29 @@ chrome.runtime.onMessageExternal.addListener(
     }
 
     if (message?.type === EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL) {
-      // 外部入力の厳格な検証
+      // 構造の検証
       const schema = z.object({
         type: z.literal(EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL),
-        url: z.string().url(),
       })
       const validation = schema.safeParse(message)
 
       if (!validation.success) {
-        sendResponse({ success: false, error: 'Invalid message structure' })
+        sendResponse({
+          success: false,
+          error: LOG_MESSAGES.INVALID_MESSAGE_STRUCTURE,
+        })
         return true
       }
 
-      const { url } = validation.data
-      const urlError = validateApiUrl(url)
-
-      if (urlError) {
-        sendResponse({ success: false, error: urlError })
-      } else {
-        const sanitizedUrl = getOrigin(url)
-        chrome.storage.sync.set({ [STORAGE_KEYS.FRONTEND_URL]: sanitizedUrl })
+      // 既に ALLOWED_ORIGINS で検証済みの sender.origin を直接使用
+      if (sender.origin) {
+        chrome.storage.sync.set({ [STORAGE_KEYS.FRONTEND_URL]: sender.origin })
         sendResponse({ success: true })
+      } else {
+        sendResponse({
+          success: false,
+          error: LOG_MESSAGES.ORIGIN_MISMATCH,
+        })
       }
       return true
     }
