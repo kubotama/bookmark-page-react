@@ -9,7 +9,6 @@ import {
   UI_STATUS,
   EXTENSION_MESSAGE_TYPES,
   EXTENSION_MESSAGES,
-  DEFAULT_PORTS,
   LOG_MESSAGES,
 } from '@shared/constants'
 
@@ -30,12 +29,16 @@ vi.stubGlobal('chrome', mockChrome)
 vi.stubGlobal('window', { close: vi.fn() })
 
 describe('usePopup Hook', () => {
+  const mockApiUrl = 'http://localhost:3030'
+  const mockFrontendUrl = 'http://localhost:5173'
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     // デフォルトの設定値をモック
     vi.spyOn(storage, 'get').mockResolvedValue({
-      [STORAGE_KEYS.API_URL]: 'http://localhost:3030',
+      [STORAGE_KEYS.API_URL]: mockApiUrl,
+      [STORAGE_KEYS.FRONTEND_URL]: mockFrontendUrl,
     })
   })
 
@@ -93,7 +96,14 @@ describe('usePopup Hook', () => {
     })
   })
 
-  it('handleEdit が呼ばれた際、詳細画面を新しいタブで開くこと (ポート差し替え)', async () => {
+  it('handleEdit が呼ばれた際、ストレージに保存された frontendUrl を使用して詳細画面を開くこと', async () => {
+    // バリデーションをパスするように localhost のカスタムポートをシミュレート
+    const customFrontendUrl = 'http://localhost:8080'
+    vi.spyOn(storage, 'get').mockResolvedValue({
+      [STORAGE_KEYS.API_URL]: mockApiUrl,
+      [STORAGE_KEYS.FRONTEND_URL]: customFrontendUrl,
+    })
+
     mockChrome.tabs.query.mockResolvedValue([
       { title: 'Test', url: 'https://example.com' },
     ])
@@ -108,8 +118,8 @@ describe('usePopup Hook', () => {
       await result.current.handleEdit()
     })
 
-    // localhost の場合は 5173 に差し替えられることを検証
-    const expectedUrl = `http://localhost:${DEFAULT_PORTS.FRONTEND}${APP_PATHS.BOOKMARK_DETAIL('id-123')}`
+    // 保存された URL が正しく反映されることを検証
+    const expectedUrl = `${customFrontendUrl}${APP_PATHS.BOOKMARK_DETAIL('id-123')}`
     expect(mockChrome.tabs.create).toHaveBeenCalledWith({ url: expectedUrl })
     expect(window.close).toHaveBeenCalled()
   })
@@ -174,6 +184,7 @@ describe('usePopup Hook', () => {
       ])
       vi.spyOn(storage, 'get').mockResolvedValue({
         [STORAGE_KEYS.API_URL]: 'ftp://invalid',
+        [STORAGE_KEYS.FRONTEND_URL]: mockFrontendUrl,
       })
 
       const { result } = renderHook(() => usePopup())

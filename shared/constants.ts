@@ -51,6 +51,7 @@ export const DEFAULT_PORTS = {
  * プロダクト全体で共有されるデフォルト設定
  */
 export const DEFAULT_API_URL = `http://localhost:${DEFAULT_PORTS.BACKEND}`
+export const DEFAULT_FRONTEND_URL = `http://localhost:${DEFAULT_PORTS.FRONTEND}`
 export const DEFAULT_SERVER_PORT = DEFAULT_PORTS.BACKEND
 
 /**

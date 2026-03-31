@@ -5,7 +5,7 @@ import {
   APP_PATHS,
   COMMON_MESSAGES,
   DEFAULT_API_URL,
-  DEFAULT_PORTS,
+  DEFAULT_FRONTEND_URL,
   EXTENSION_CONSTANTS,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
@@ -21,6 +21,7 @@ import { storage } from '../lib/storage'
 
 const DEFAULT_SETTINGS = {
   [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
+  [STORAGE_KEYS.FRONTEND_URL]: DEFAULT_FRONTEND_URL,
 }
 
 export const usePopup = () => {
@@ -137,31 +138,16 @@ export const usePopup = () => {
 
     try {
       const settings = await storage.get(DEFAULT_SETTINGS)
-      const baseUrl = String(settings[STORAGE_KEYS.API_URL])
+      const frontendUrl = String(settings[STORAGE_KEYS.FRONTEND_URL])
 
       // セキュリティバリデーションを追加
-      const urlError = validateApiUrl(baseUrl)
+      const urlError = validateApiUrl(frontendUrl)
       if (urlError) throw new Error(urlError)
 
-      const sanitizedBaseUrl = getOrigin(baseUrl)
-
-      // 暫定対応: API URL が localhost の場合はポートをフロントエンドに向ける
-      let frontendBaseUrl = sanitizedBaseUrl
-      try {
-        const urlObj = new URL(sanitizedBaseUrl)
-        const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(
-          urlObj.hostname,
-        )
-
-        if (isLocalhost) {
-          urlObj.port = String(DEFAULT_PORTS.FRONTEND)
-          frontendBaseUrl = urlObj.origin
-        }
-      } catch (err) {
-        console.error('Failed to parse frontend URL:', err, sanitizedBaseUrl)
-      }
-
-      const detailUrl = `${frontendBaseUrl}${APP_PATHS.BOOKMARK_DETAIL(registeredId)}`
+      const sanitizedBaseUrl = getOrigin(frontendUrl)
+      const detailUrl = `${sanitizedBaseUrl}${APP_PATHS.BOOKMARK_DETAIL(
+        registeredId,
+      )}`
 
       // 新しいタブで詳細画面を開く
       await chrome.tabs.create({ url: detailUrl })
