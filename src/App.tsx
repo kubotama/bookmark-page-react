@@ -14,7 +14,9 @@ function App() {
   const {
     showSettings,
     currentApiUrl,
+    connectionStatus,
     handleSaveSettings,
+    testConnection,
     toggleSettings,
     closeSettings,
   } = appState
@@ -56,7 +58,9 @@ function App() {
         <SettingsPanel
           onClose={closeSettings}
           onSave={handleSaveSettings}
+          onTest={testConnection}
           currentApiUrl={currentApiUrl}
+          connectionStatus={connectionStatus}
         />
       )}
 

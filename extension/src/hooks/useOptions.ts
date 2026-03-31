@@ -95,7 +95,7 @@ export const useOptions = () => {
 
     setStatus({
       type: UI_STATUS.LOADING,
-      message: EXTENSION_MESSAGES.CONNECTION_TESTING,
+      message: COMMON_MESSAGES.CONNECTION_TESTING,
     })
 
     const controller = new AbortController()
@@ -127,7 +127,7 @@ export const useOptions = () => {
       if (validation.success) {
         setStatus({
           type: UI_STATUS.SUCCESS,
-          message: EXTENSION_MESSAGES.CONNECTION_SUCCESS(
+          message: COMMON_MESSAGES.CONNECTION_SUCCESS(
             validation.data.bookmarks.length,
           ),
         })
@@ -139,16 +139,16 @@ export const useOptions = () => {
       let detail: string
       if (err instanceof Error) {
         if (err.name === 'AbortError') {
-          detail = EXTENSION_MESSAGES.CONNECTION_TIMEOUT
+          detail = COMMON_MESSAGES.CONNECTION_TIMEOUT
         } else {
-          detail = `${err.message} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`
+          detail = `${err.message} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`
         }
       } else {
         detail = COMMON_MESSAGES.UNKNOWN_ERROR
       }
       setStatus({
         type: UI_STATUS.ERROR,
-        message: EXTENSION_MESSAGES.CONNECTION_FAILED(detail),
+        message: COMMON_MESSAGES.CONNECTION_FAILED(detail),
       })
     } finally {
       clearTimeout(timeoutId)

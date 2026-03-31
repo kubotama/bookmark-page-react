@@ -25,9 +25,11 @@ export const useApp = () => {
   const {
     showSettings,
     currentApiUrl,
+    connectionStatus,
     toggleSettings,
     closeSettings,
     handleSaveSettings,
+    testConnection,
   } = useSettings()
 
   // 2. 一覧の状態管理
@@ -211,12 +213,14 @@ export const useApp = () => {
     activeBookmark,
     showSettings,
     currentApiUrl,
+    connectionStatus,
     handleRowClick,
     handleOpen,
     handleClose,
     toggleSettings,
     closeSettings,
     handleSaveSettings,
+    testConnection,
     handleReorder,
     toggleKeywordSelection,
     clearKeywordSelection,

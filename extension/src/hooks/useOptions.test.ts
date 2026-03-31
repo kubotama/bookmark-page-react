@@ -202,7 +202,7 @@ describe('useOptions Hook', () => {
             status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           } as Response)
         },
-        expectedMessage: `HTTP error! status: ${HTTP_STATUS.INTERNAL_SERVER_ERROR} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `HTTP error! status: ${HTTP_STATUS.INTERNAL_SERVER_ERROR} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -217,7 +217,7 @@ describe('useOptions Hook', () => {
             }),
           } as Response)
         },
-        expectedMessage: `${errorMessage} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${errorMessage} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -229,7 +229,7 @@ describe('useOptions Hook', () => {
             json: async () => ({ success: true, data: { wrongKey: [] } }),
           } as Response)
         },
-        expectedMessage: `${COMMON_MESSAGES.UNEXPECTED_RESPONSE} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${COMMON_MESSAGES.UNEXPECTED_RESPONSE} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -240,7 +240,7 @@ describe('useOptions Hook', () => {
           abortError.name = 'AbortError'
           vi.mocked(fetch).mockRejectedValue(abortError)
         },
-        expectedMessage: EXTENSION_MESSAGES.CONNECTION_TIMEOUT,
+        expectedMessage: COMMON_MESSAGES.CONNECTION_TIMEOUT,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -270,7 +270,7 @@ describe('useOptions Hook', () => {
         expect(result.current.status.type).toBe(UI_STATUS.ERROR)
         if (expectedMessage) {
           expect(result.current.status.message).toBe(
-            EXTENSION_MESSAGES.CONNECTION_FAILED(expectedMessage as string),
+            COMMON_MESSAGES.CONNECTION_FAILED(expectedMessage as string),
           )
         }
         if (expectedLog) {
