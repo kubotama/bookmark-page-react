@@ -12,8 +12,7 @@ export const FIELD_LABELS = {
   BUTTON_SAVE: '保存',
   BUTTON_TEST: '接続確認',
   BUTTON_SAVE_AND_APPLY: '保存して適用',
-  BUTTON_SYNCHRONIZE: '同期',
-  BUTTON_SYNCHRONIZING: '同期中...',
+  BUTTON_ADD: '追加',
   OPTIONS_TITLE: '拡張機能の設定',
   POPUP_TITLE: 'ページをブックマーク',
   SETTING_TITLE: '設定',
@@ -30,7 +29,6 @@ export const FIELD_LABELS = {
   ASSIGNED_KEYWORDS_LABEL: '割り当て済みのキーワード',
   UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
   ADD_KEYWORD_LABEL: '追加するキーワード',
-  BUTTON_ADD: '追加',
 } as const
 
 export const PLACEHOLDERS = {
@@ -102,7 +100,6 @@ export const COMMON_MESSAGES = {
   LOADING_LABEL: '読み込み中...',
   API_URL_DESCRIPTION:
     'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
-  SETTINGS_SYNCED: '拡張機能から設定を読み込みました',
 } as const
 
 /**
@@ -138,10 +135,6 @@ export const UI_MESSAGES = {
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
-  SYNC_ID_NOT_CONFIGURED: '拡張機能 ID が設定されていません',
-  SYNC_NOT_DETECTED: '拡張機能環境が検出されませんでした',
-  SYNC_INVALID_RESPONSE: '拡張機能から不正なレスポンスが返されました',
-  SYNC_CONNECTION_FAILED: '拡張機能との接続に失敗しました',
   FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',

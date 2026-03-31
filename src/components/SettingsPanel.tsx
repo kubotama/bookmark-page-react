@@ -8,8 +8,6 @@ import {
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
-import { useExtensionSync } from '../hooks/useExtensionSync'
-
 interface SettingsPanelProps {
   onClose: () => void
   onSave: (apiUrl: string) => string | null
@@ -22,22 +20,9 @@ export const SettingsPanel = ({
   currentApiUrl,
 }: SettingsPanelProps) => {
   const [url, setUrl] = useState(currentApiUrl)
-  const { syncFromExtension, isSyncing, syncError } = useExtensionSync()
-  const [localMessage, setLocalMessage] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
 
-  const handleSync = async () => {
-    setLocalMessage(null)
-    setValidationError(null)
-    const syncedUrl = await syncFromExtension()
-    if (syncedUrl) {
-      setUrl(syncedUrl)
-      setLocalMessage(COMMON_MESSAGES.SETTINGS_SYNCED)
-    }
-  }
-
   const handleSave = () => {
-    setLocalMessage(null)
     setValidationError(null)
 
     // フック側のバリデーション付き保存を実行
@@ -71,27 +56,11 @@ export const SettingsPanel = ({
           {COMMON_MESSAGES.API_URL_DESCRIPTION}
         </p>
 
-        {(syncError || localMessage || validationError) && (
-          <p
-            className={`text-sm ${
-              syncError || validationError ? 'text-red-600' : 'text-green-600'
-            }`}
-          >
-            {syncError || validationError || localMessage}
-          </p>
+        {validationError && (
+          <p className="text-sm text-red-600">{validationError}</p>
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button
-            variant="secondary"
-            onClick={handleSync}
-            disabled={isSyncing}
-            size="small"
-          >
-            {isSyncing
-              ? FIELD_LABELS.BUTTON_SYNCHRONIZING
-              : FIELD_LABELS.BUTTON_SYNCHRONIZE}
-          </Button>
           <Button variant="primary" onClick={handleSave}>
             {FIELD_LABELS.BUTTON_SAVE_AND_APPLY}
           </Button>
