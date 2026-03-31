@@ -1,6 +1,12 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 
-import { EXTENSION_MESSAGE_TYPES, UI_MESSAGES } from '@shared/constants'
+import { z } from 'zod'
+
+import {
+  EXTENSION_MESSAGE_TYPES,
+  UI_MESSAGES,
+  LOG_MESSAGES,
+} from '@shared/constants'
 
 /**
  * 拡張機能からのレスポンス型
@@ -11,22 +17,47 @@ interface ExtensionResponse {
 }
 
 /**
- * Chrome 拡張機能の型定義 (Web アプリ側での最小構成)
+ * Chrome 拡張機能の最小限の型定義
  */
-interface ChromeWindow {
-  chrome?: {
-    runtime: {
-      sendMessage: (
-        extensionId: string,
-        message: unknown,
-        callback: (response: ExtensionResponse) => void,
-      ) => void
-      lastError?: {
-        message?: string
-      }
-    }
+interface ChromeInterface {
+  runtime: {
+    sendMessage: (
+      extensionId: string,
+      message: unknown,
+      callback: (response: ExtensionResponse) => void,
+    ) => void
+    lastError?: {
+      message?: string
+    } | null
   }
 }
+
+/**
+ * window.chrome の構造を定義する Zod スキーマ
+ */
+const chromeSchema = z.object({
+  runtime: z.object({
+    sendMessage: z.function(),
+  }),
+})
+
+const windowSchema = z.object({
+  chrome: chromeSchema,
+})
+
+/**
+ * window.chrome が有効かどうかを判定する型ガード
+ */
+const isChromeAvailable = (
+  win: unknown,
+): win is z.infer<typeof windowSchema> => {
+  return windowSchema.safeParse(win).success
+}
+
+/**
+ * extensionId が有効かどうかを判定するスキーマ
+ */
+const extensionIdSchema = z.string().min(1)
 
 export const useExtensionSync = () => {
   const [isSyncing, setIsSyncing] = useState(false)
@@ -40,22 +71,61 @@ export const useExtensionSync = () => {
     }
   }, [])
 
+  // 拡張機能インターフェースを取得（一度だけ判定して安全にキャスト）
+  const chrome = useMemo(() => {
+    if (isChromeAvailable(window)) {
+      // 内部では定義済みの型として扱う（as unknown as をここで一度だけ許容し、他での重複を避ける）
+      return (window as unknown as { chrome: ChromeInterface }).chrome
+    }
+    return null
+  }, [])
+
+  // 1. 起動時に拡張機能へ自身の URL を通知する
+  useEffect(() => {
+    const rawExtensionId = import.meta.env.VITE_EXTENSION_ID
+    const idValidation = extensionIdSchema.safeParse(rawExtensionId)
+    if (!idValidation.success || !chrome) return
+
+    const extensionId = idValidation.data
+
+    try {
+      chrome.runtime.sendMessage(
+        extensionId,
+        {
+          type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
+        },
+        () => {
+          // 拡張機能がなくても lastError がセットされるだけでアプリは壊れない
+          if (chrome.runtime.lastError) {
+            console.error(
+              LOG_MESSAGES.NOTIFY_FRONTEND_URL_FAILED,
+              chrome.runtime.lastError.message,
+            )
+          }
+        },
+      )
+    } catch (err) {
+      // 指摘事項: サイレント失敗を防止するためにログを出力
+      console.error(LOG_MESSAGES.NOTIFY_FRONTEND_URL_FAILED, err)
+    }
+  }, [chrome])
+
   const syncFromExtension = useCallback(async () => {
     setIsSyncing(true)
     setSyncError(null)
 
-    const extensionId = import.meta.env.VITE_EXTENSION_ID
+    const rawExtensionId = import.meta.env.VITE_EXTENSION_ID
+    const idValidation = extensionIdSchema.safeParse(rawExtensionId)
 
-    if (!extensionId) {
+    if (!idValidation.success) {
       setSyncError(UI_MESSAGES.SYNC_ID_NOT_CONFIGURED)
       setIsSyncing(false)
       return null
     }
 
-    // window を ChromeWindow 型としてキャスト
-    const chrome = (window as unknown as ChromeWindow).chrome
+    const extensionId = idValidation.data
 
-    if (!chrome?.runtime?.sendMessage) {
+    if (!chrome) {
       setSyncError(UI_MESSAGES.SYNC_NOT_DETECTED)
       setIsSyncing(false)
       return null
@@ -66,7 +136,6 @@ export const useExtensionSync = () => {
         extensionId,
         { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
         (response: ExtensionResponse) => {
-          // アンマウントされていても Promise は解決させる（リーク防止）
           const lastError = chrome.runtime.lastError
           let result: string | null = null
 
@@ -91,7 +160,7 @@ export const useExtensionSync = () => {
         },
       )
     })
-  }, [])
+  }, [chrome])
 
   return { syncFromExtension, isSyncing, syncError }
 }

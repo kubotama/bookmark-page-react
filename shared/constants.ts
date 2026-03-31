@@ -222,6 +222,7 @@ export const EXTENSION_MESSAGE_TYPES = {
   GET_API_CONFIG: 'GET_API_CONFIG',
   INVALIDATE_CACHE: 'INVALIDATE_CACHE',
   CHECK_BOOKMARK_STATUS: 'CHECK_BOOKMARK_STATUS',
+  SET_FRONTEND_URL: 'SET_FRONTEND_URL',
 } as const
 
 /**
@@ -284,6 +285,7 @@ export const HTTP_STATUS = {
  */
 export const STORAGE_KEYS = {
   API_URL: 'apiUrl',
+  FRONTEND_URL: 'frontendUrl',
 } as const
 
 /**
@@ -368,6 +370,11 @@ export const LOG_MESSAGES = {
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
+  ORIGIN_MISMATCH: 'Origin mismatch or unauthorized sender',
+  INVALID_URL_FORMAT: 'Invalid URL format',
+  INVALID_MESSAGE_STRUCTURE: 'Invalid message structure',
+  NOTIFY_FRONTEND_URL_FAILED: 'Failed to notify extension of frontend URL:',
+  STORAGE_SET_FAILED: 'Failed to set storage data:',
 } as const
 
 /**

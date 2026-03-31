@@ -35,6 +35,7 @@ describe('background service worker', () => {
       storage: {
         sync: {
           get: vi.fn(),
+          set: vi.fn(),
         },
         onChanged: { addListener: vi.fn() },
       },
@@ -374,6 +375,79 @@ describe('background service worker', () => {
       expect(sendResponse).toHaveBeenCalledWith({
         success: true,
         apiUrl: mockApiUrl,
+      })
+    })
+
+    describe('SET_FRONTEND_URL', () => {
+      const sendResponse = vi.fn()
+
+      beforeEach(async () => {
+        sendResponse.mockClear()
+      })
+
+      it('メッセージを受信した際に sender.origin をストレージに保存すること', async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
+        const setMock = vi.mocked(chrome.storage.sync.set)
+        await import('./background')
+        const messageHandler = addListenerMock.mock.calls[0][0]
+
+        const result = messageHandler(
+          { type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL },
+          { origin: 'http://localhost:5173' },
+          sendResponse,
+        )
+
+        expect(result).toBe(true)
+        await vi.waitFor(() => {
+          expect(setMock).toHaveBeenCalledWith({
+            [STORAGE_KEYS.FRONTEND_URL]: 'http://localhost:5173',
+          })
+          expect(sendResponse).toHaveBeenCalledWith({ success: true })
+        })
+      })
+
+      it('sender.origin が欠落している場合に保存を拒否すること', async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
+        const setMock = vi.mocked(chrome.storage.sync.set)
+        await import('./background')
+        const messageHandler = addListenerMock.mock.calls[0][0]
+
+        const result = messageHandler(
+          { type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL },
+          { origin: undefined }, // origin 欠落
+          sendResponse,
+        )
+
+        expect(result).toBe(true)
+        await vi.waitFor(() => {
+          expect(setMock).not.toHaveBeenCalled()
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: LOG_MESSAGES.ORIGIN_MISMATCH,
+            }),
+          )
+        })
+      })
+
+      it('不正なメッセージ構造（type 違いなど）を受信した際にエラーを返すこと', async () => {
+        const addListenerMock = vi.mocked(
+          chrome.runtime.onMessageExternal.addListener,
+        )
+        await import('./background')
+        const messageHandler = addListenerMock.mock.calls[0][0]
+
+        const result = messageHandler(
+          { type: 'INVALID_TYPE' },
+          { origin: ALLOWED_ORIGINS[0] },
+          sendResponse,
+        )
+
+        expect(result).toBe(false) // 共通ガードで type チェックまでは行かないが、ハンドラ自体も false を返す
       })
     })
 
