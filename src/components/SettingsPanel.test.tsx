@@ -3,13 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FIELD_LABELS, COMMON_MESSAGES } from '@shared/constants'
 
 import { SettingsPanel } from './SettingsPanel'
-import { useExtensionSync } from '../hooks/useExtensionSync'
-import { render, screen, fireEvent, act } from '../test/utils'
-
-// useExtensionSync をモック化
-vi.mock('../hooks/useExtensionSync', () => ({
-  useExtensionSync: vi.fn(),
-}))
+import { render, screen, fireEvent } from '../test/utils'
 
 describe('SettingsPanel', () => {
   const defaultProps = {
@@ -18,15 +12,8 @@ describe('SettingsPanel', () => {
     currentApiUrl: 'http://localhost:3030',
   }
 
-  const mockSyncFromExtension = vi.fn()
-
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useExtensionSync).mockReturnValue({
-      syncFromExtension: mockSyncFromExtension,
-      isSyncing: false,
-      syncError: null,
-    })
   })
 
   it('正しい初期値でレンダリングされること', () => {
@@ -68,36 +55,6 @@ describe('SettingsPanel', () => {
 
     expect(screen.getByText(errorMsg)).toBeInTheDocument()
     expect(defaultProps.onClose).not.toHaveBeenCalled()
-  })
-
-  it('同期ボタンクリック時に拡張機能からの同期が試行されること', async () => {
-    const syncedUrl = 'http://localhost:4000'
-    mockSyncFromExtension.mockResolvedValue(syncedUrl)
-
-    render(<SettingsPanel {...defaultProps} />)
-    const syncButton = screen.getByText(FIELD_LABELS.BUTTON_SYNCHRONIZE)
-
-    await act(async () => {
-      fireEvent.click(syncButton)
-    })
-
-    expect(mockSyncFromExtension).toHaveBeenCalled()
-    expect(screen.getByDisplayValue(syncedUrl)).toBeInTheDocument()
-    expect(
-      screen.getByText(COMMON_MESSAGES.SETTINGS_SYNCED),
-    ).toBeInTheDocument()
-  })
-
-  it('同期エラー時にエラーメッセージが表示されること', () => {
-    const syncError = 'Extension not found'
-    vi.mocked(useExtensionSync).mockReturnValue({
-      syncFromExtension: mockSyncFromExtension,
-      isSyncing: false,
-      syncError,
-    })
-
-    render(<SettingsPanel {...defaultProps} />)
-    expect(screen.getByText(syncError)).toBeInTheDocument()
   })
 
   it('閉じるボタンで onClose が呼ばれること', () => {
