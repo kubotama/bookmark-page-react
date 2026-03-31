@@ -1,8 +1,12 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 
 import { z } from 'zod'
 
-import { EXTENSION_MESSAGE_TYPES, UI_MESSAGES } from '@shared/constants'
+import {
+  EXTENSION_MESSAGE_TYPES,
+  UI_MESSAGES,
+  LOG_MESSAGES,
+} from '@shared/constants'
 
 /**
  * 拡張機能からのレスポンス型
@@ -14,7 +18,6 @@ interface ExtensionResponse {
 
 /**
  * Chrome 拡張機能の最小限の型定義
- * (実際にコード内でプロパティへアクセスするために使用)
  */
 interface ChromeInterface {
   runtime: {
@@ -29,6 +32,9 @@ interface ChromeInterface {
   }
 }
 
+/**
+ * window.chrome の構造を定義する Zod スキーマ
+ */
 const chromeSchema = z.object({
   runtime: z.object({
     sendMessage: z.function(),
@@ -65,18 +71,22 @@ export const useExtensionSync = () => {
     }
   }, [])
 
+  // 拡張機能インターフェースを取得（一度だけ判定して安全にキャスト）
+  const chrome = useMemo(() => {
+    if (isChromeAvailable(window)) {
+      // 内部では定義済みの型として扱う（as unknown as をここで一度だけ許容し、他での重複を避ける）
+      return (window as unknown as { chrome: ChromeInterface }).chrome
+    }
+    return null
+  }, [])
+
   // 1. 起動時に拡張機能へ自身の URL を通知する
   useEffect(() => {
     const rawExtensionId = import.meta.env.VITE_EXTENSION_ID
     const idValidation = extensionIdSchema.safeParse(rawExtensionId)
-    if (!idValidation.success) return
+    if (!idValidation.success || !chrome) return
 
     const extensionId = idValidation.data
-
-    if (!isChromeAvailable(window)) return
-
-    // Zod で存在を確認した後、アクセス可能な型にキャストする
-    const chrome = (window as unknown as { chrome: ChromeInterface }).chrome
 
     try {
       chrome.runtime.sendMessage(
@@ -85,15 +95,20 @@ export const useExtensionSync = () => {
           type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL,
         },
         () => {
+          // 拡張機能がなくても lastError がセットされるだけでアプリは壊れない
           if (chrome.runtime.lastError) {
-            // ログ出力などは必要に応じて
+            console.error(
+              LOG_MESSAGES.NOTIFY_FRONTEND_URL_FAILED,
+              chrome.runtime.lastError.message,
+            )
           }
         },
       )
-    } catch {
-      // 予期せぬ例外も安全に無視
+    } catch (err) {
+      // 指摘事項: サイレント失敗を防止するためにログを出力
+      console.error(LOG_MESSAGES.NOTIFY_FRONTEND_URL_FAILED, err)
     }
-  }, [])
+  }, [chrome])
 
   const syncFromExtension = useCallback(async () => {
     setIsSyncing(true)
@@ -110,13 +125,11 @@ export const useExtensionSync = () => {
 
     const extensionId = idValidation.data
 
-    if (!isChromeAvailable(window)) {
+    if (!chrome) {
       setSyncError(UI_MESSAGES.SYNC_NOT_DETECTED)
       setIsSyncing(false)
       return null
     }
-
-    const chrome = (window as unknown as { chrome: ChromeInterface }).chrome
 
     return new Promise<string | null>((resolve) => {
       chrome.runtime.sendMessage(
@@ -147,7 +160,7 @@ export const useExtensionSync = () => {
         },
       )
     })
-  }, [])
+  }, [chrome])
 
   return { syncFromExtension, isSyncing, syncError }
 }

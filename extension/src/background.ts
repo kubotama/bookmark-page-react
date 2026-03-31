@@ -246,8 +246,21 @@ chrome.runtime.onMessageExternal.addListener(
 
       // 既に ALLOWED_ORIGINS で検証済みの sender.origin を直接使用
       if (sender.origin) {
-        chrome.storage.sync.set({ [STORAGE_KEYS.FRONTEND_URL]: sender.origin })
-        sendResponse({ success: true })
+        const origin = sender.origin
+        ;(async () => {
+          try {
+            await chrome.storage.sync.set({
+              [STORAGE_KEYS.FRONTEND_URL]: origin,
+            })
+            sendResponse({ success: true })
+          } catch (err) {
+            console.error(LOG_MESSAGES.STORAGE_SET_FAILED, err)
+            sendResponse({
+              success: false,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          }
+        })()
       } else {
         sendResponse({
           success: false,

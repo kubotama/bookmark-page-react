@@ -373,6 +373,8 @@ export const LOG_MESSAGES = {
   ORIGIN_MISMATCH: 'Origin mismatch or unauthorized sender',
   INVALID_URL_FORMAT: 'Invalid URL format',
   INVALID_MESSAGE_STRUCTURE: 'Invalid message structure',
+  NOTIFY_FRONTEND_URL_FAILED: 'Failed to notify extension of frontend URL:',
+  STORAGE_SET_FAILED: 'Failed to set storage data:',
 } as const
 
 /**

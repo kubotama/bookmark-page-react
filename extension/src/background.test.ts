@@ -400,10 +400,12 @@ describe('background service worker', () => {
         )
 
         expect(result).toBe(true)
-        expect(setMock).toHaveBeenCalledWith({
-          [STORAGE_KEYS.FRONTEND_URL]: 'http://localhost:5173',
+        await vi.waitFor(() => {
+          expect(setMock).toHaveBeenCalledWith({
+            [STORAGE_KEYS.FRONTEND_URL]: 'http://localhost:5173',
+          })
+          expect(sendResponse).toHaveBeenCalledWith({ success: true })
         })
-        expect(sendResponse).toHaveBeenCalledWith({ success: true })
       })
 
       it('sender.origin が欠落している場合に保存を拒否すること', async () => {
@@ -421,13 +423,15 @@ describe('background service worker', () => {
         )
 
         expect(result).toBe(true)
-        expect(setMock).not.toHaveBeenCalled()
-        expect(sendResponse).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            error: LOG_MESSAGES.ORIGIN_MISMATCH,
-          }),
-        )
+        await vi.waitFor(() => {
+          expect(setMock).not.toHaveBeenCalled()
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: LOG_MESSAGES.ORIGIN_MISMATCH,
+            }),
+          )
+        })
       })
 
       it('不正なメッセージ構造（type 違いなど）を受信した際にエラーを返すこと', async () => {
