@@ -37,8 +37,9 @@ export const Options = () => {
             value={apiUrl}
             onChange={(e) => setApiUrl(e.target.value)}
             placeholder={DEFAULT_API_URL}
+            width="w-32"
           />
-          <p className="mt-2 text-xs text-gray-500 ml-14">
+          <p className="mt-2 text-xs text-gray-500 ml-36">
             {COMMON_MESSAGES.API_URL_DESCRIPTION}
           </p>
         </div>
@@ -50,13 +51,14 @@ export const Options = () => {
             value={frontendUrl}
             onChange={(e) => setFrontendUrl(e.target.value)}
             placeholder={DEFAULT_FRONTEND_URL}
+            width="w-32"
           />
-          <p className="mt-2 text-xs text-gray-500 ml-14">
+          <p className="mt-2 text-xs text-gray-500 ml-36">
             {COMMON_MESSAGES.FRONTEND_URL_DESCRIPTION}
           </p>
         </div>
 
-        <div className="flex space-x-3 ml-14">
+        <div className="flex space-x-3 ml-36">
           <Button
             onClick={handleSave}
             size="medium"
@@ -81,7 +83,7 @@ export const Options = () => {
                 ? ARIA_ROLES.ALERT
                 : ARIA_ROLES.STATUS
             }
-            className={`ml-14 p-3 rounded-md text-sm ${STATUS_STYLES[status.type]}`}
+            className={`ml-36 p-3 rounded-md text-sm ${STATUS_STYLES[status.type]}`}
           >
             {status.message}
           </div>
