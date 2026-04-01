@@ -98,7 +98,15 @@ describe('useSettings Hook', () => {
 
   describe('testConnection', () => {
     it('接続確認が成功した場合、成功ステータスになること', async () => {
-      const mockBookmarks = [{ id: '1', title: 'Test', url: 'http://test.com' }]
+      const mockBookmarks = [
+        {
+          id: '1',
+          title: 'Test',
+          url: 'http://test.com',
+          sortOrder: 1,
+          keywords: [],
+        },
+      ]
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
@@ -117,8 +125,27 @@ describe('useSettings Hook', () => {
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.SUCCESS)
-      expect(result.current.connectionStatus.message).toContain('接続成功')
-      expect(result.current.connectionStatus.message).toContain('1 件')
+      expect(result.current.connectionStatus.message).toBe(
+        COMMON_MESSAGES.CONNECTION_SUCCESS(mockBookmarks.length),
+      )
+    })
+
+    it('タイムアウト時に失敗ステータスになること', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new DOMException('Aborted', 'AbortError')),
+      )
+
+      const { result } = renderHook(() => useSettings(), { wrapper })
+
+      await act(async () => {
+        await result.current.testConnection('http://localhost:3030')
+      })
+
+      expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.connectionStatus.message).toBe(
+        COMMON_MESSAGES.CONNECTION_FAILED(COMMON_MESSAGES.CONNECTION_TIMEOUT),
+      )
     })
 
     it('不正な形式の URL の場合、バリデーションエラーになること', async () => {
@@ -150,17 +177,20 @@ describe('useSettings Hook', () => {
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
-      expect(result.current.connectionStatus.message).toContain(
-        '接続失敗: HTTP Error: 500',
+      expect(result.current.connectionStatus.message).toBe(
+        COMMON_MESSAGES.CONNECTION_FAILED('HTTP Error: 500'),
       )
     })
 
-    it('レスポンス形式が不正な場合、エラーになること', async () => {
+    it('レスポンスのスキーマが不正な場合、エラーになること', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
           ok: true,
-          json: async () => ({ success: true, data: {} }), // bookmarks が欠落
+          json: async () => ({
+            success: true,
+            data: { bookmarks: [{ id: 'invalid', title: 123 }] }, // 不正なデータ
+          }),
         }),
       )
 
@@ -171,8 +201,8 @@ describe('useSettings Hook', () => {
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
-      expect(result.current.connectionStatus.message).toContain(
-        COMMON_MESSAGES.UNEXPECTED_RESPONSE,
+      expect(result.current.connectionStatus.message).toBe(
+        COMMON_MESSAGES.CONNECTION_FAILED(COMMON_MESSAGES.UNEXPECTED_RESPONSE),
       )
     })
 
@@ -189,8 +219,8 @@ describe('useSettings Hook', () => {
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
-      expect(result.current.connectionStatus.message).toContain(
-        '接続失敗: Network Fail',
+      expect(result.current.connectionStatus.message).toBe(
+        COMMON_MESSAGES.CONNECTION_FAILED('Network Fail'),
       )
     })
   })

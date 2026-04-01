@@ -6,8 +6,11 @@ import {
   COMMON_MESSAGES,
   LOG_MESSAGES,
   UI_STATUS,
+  API_PATHS,
+  EXTENSION_CONSTANTS,
   type StatusInfo,
 } from '@shared/constants'
+import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
 import { useApi } from '../contexts/ApiContext'
@@ -72,30 +75,51 @@ export const useSettings = () => {
       return
     }
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      EXTENSION_CONSTANTS.CONNECTION_TIMEOUT_MS,
+    )
+
     try {
       const sanitizedUrl = getOrigin(url)
-      const response = await fetch(`${sanitizedUrl}/api/bookmarks`, {
+      const response = await fetch(`${sanitizedUrl}${API_PATHS.BOOKMARKS}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`HTTP Error: ${response.status}`)
       }
 
       const result = await response.json()
-      if (result.success && Array.isArray(result.data.bookmarks)) {
+      // Zod スキーマを使用してレスポンス形式を厳格に検証
+      const parsed = bookmarksResponseSchema.safeParse(result.data)
+
+      if (result.success && parsed.success) {
         setConnectionStatus({
           type: UI_STATUS.SUCCESS,
           message: COMMON_MESSAGES.CONNECTION_SUCCESS(
-            result.data.bookmarks.length,
+            parsed.data.bookmarks.length,
           ),
         })
       } else {
         throw new Error(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
       }
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err)
+      clearTimeout(timeoutId)
+      let detail = err instanceof Error ? err.message : String(err)
+
+      // タイムアウトエラーの場合は専用のメッセージを表示
+      // 環境によって DOMException が Error を継承していない場合があるため name を直接確認
+      const errorName = (err as { name?: string })?.name
+      if (errorName === 'AbortError') {
+        detail = COMMON_MESSAGES.CONNECTION_TIMEOUT
+      }
+
       setConnectionStatus({
         type: UI_STATUS.ERROR,
         message: COMMON_MESSAGES.CONNECTION_FAILED(detail),
