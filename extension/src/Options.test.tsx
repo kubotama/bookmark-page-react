@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   ARIA_ROLES,
+  COMMON_MESSAGES,
   DEFAULT_API_URL,
   DEFAULT_FRONTEND_URL,
   FIELD_LABELS,
@@ -42,6 +43,32 @@ describe('Options Component', () => {
 
     expect(screen.getByLabelText(FIELD_LABELS.FRONTEND_URL)).toBeInTheDocument()
     expect(screen.getByDisplayValue(DEFAULT_FRONTEND_URL)).toBeInTheDocument()
+
+    // ラベルの幅が適切に設定されているか（改行防止）
+    const apiUrlLabel = screen.getByText(FIELD_LABELS.URL)
+    const frontendUrlLabel = screen.getByText(FIELD_LABELS.FRONTEND_URL)
+
+    expect(apiUrlLabel).toHaveClass('w-32')
+    expect(frontendUrlLabel).toHaveClass('w-32')
+  })
+
+  it('説明文やボタンのインデントがラベル幅と揃っていること', () => {
+    render(<Options />)
+
+    // 説明文のコンテナが ml-36 クラスを持っているか確認
+    const descriptions = [
+      COMMON_MESSAGES.API_URL_DESCRIPTION,
+      COMMON_MESSAGES.FRONTEND_URL_DESCRIPTION,
+    ]
+    descriptions.forEach((text) => {
+      const p = screen.getByText(text)
+      expect(p).toHaveClass('ml-36')
+    })
+
+    // ボタンコンテナも同様に ml-36 を持っているか確認
+    const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE)
+    const buttonContainer = saveButton.parentElement
+    expect(buttonContainer).toHaveClass('ml-36')
   })
 
   it('入力欄の値を変更したときに setApiUrl が呼ばれること', async () => {
