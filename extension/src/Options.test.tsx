@@ -24,8 +24,10 @@ describe('Options Component', () => {
     frontendUrl: DEFAULT_FRONTEND_URL,
     setFrontendUrl: vi.fn(),
     status: { type: UI_STATUS.IDLE, message: '' },
-    handleSave: vi.fn(),
-    handleTestConnection: vi.fn(),
+    handleSaveApiUrl: vi.fn(),
+    handleSaveFrontendUrl: vi.fn(),
+    handleTestApiConnection: vi.fn(),
+    handleTestFrontendConnection: vi.fn(),
   }
 
   beforeEach(() => {
@@ -65,12 +67,49 @@ describe('Options Component', () => {
       expect(p).toHaveClass('ml-36')
     })
 
-    // ボタンコンテナも同様に ml-36 を持っているか確認
-    const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE)
-    const buttonContainer = saveButton.parentElement
-    expect(buttonContainer).toHaveClass('ml-36')
+    // ボタンコンテナが 2 箇所あり、それぞれ ml-36 を持っているか確認
+    const buttonContainers = screen
+      .getAllByRole('button', { name: FIELD_LABELS.BUTTON_SAVE })
+      .map((btn) => btn.parentElement)
+
+    buttonContainers.forEach((container) => {
+      expect(container).toHaveClass('ml-36')
+    })
   })
 
+  it('API 設定セクションの保存ボタンをクリックしたときに handleSaveApiUrl が呼ばれること', async () => {
+    const user = userEvent.setup()
+    render(<Options />)
+
+    // API セクション（最初の保存ボタン）をクリック
+    const saveButtons = screen.getAllByText(FIELD_LABELS.BUTTON_SAVE)
+    await user.click(saveButtons[0])
+
+    expect(baseMockUseOptions.handleSaveApiUrl).toHaveBeenCalled()
+    expect(baseMockUseOptions.handleSaveFrontendUrl).not.toHaveBeenCalled()
+  })
+
+  it('Web アプリ設定セクションの保存ボタンをクリックしたときに handleSaveFrontendUrl が呼ばれること', async () => {
+    const user = userEvent.setup()
+    render(<Options />)
+
+    // Frontend セクション（2番目の保存ボタン）をクリック
+    const saveButtons = screen.getAllByText(FIELD_LABELS.BUTTON_SAVE)
+    await user.click(saveButtons[1])
+
+    expect(baseMockUseOptions.handleSaveFrontendUrl).toHaveBeenCalled()
+    expect(baseMockUseOptions.handleSaveApiUrl).not.toHaveBeenCalled()
+  })
+
+  it('API 設定セクションの接続確認ボタンをクリックしたときに handleTestApiConnection が呼ばれること', async () => {
+    const user = userEvent.setup()
+    render(<Options />)
+
+    const testButtons = screen.getAllByText(FIELD_LABELS.BUTTON_TEST)
+    await user.click(testButtons[0])
+
+    expect(baseMockUseOptions.handleTestApiConnection).toHaveBeenCalled()
+  })
   it('入力欄の値を変更したときに setApiUrl が呼ばれること', async () => {
     const user = userEvent.setup()
     render(<Options />)
@@ -95,11 +134,15 @@ describe('Options Component', () => {
     )
   })
 
-  it('保存ボタンと接続確認ボタンが表示されること', () => {
+  it('保存ボタンと接続確認ボタンが複数表示されること', () => {
     render(<Options />)
 
-    expect(screen.getByText(FIELD_LABELS.BUTTON_SAVE)).toBeInTheDocument()
-    expect(screen.getByText(FIELD_LABELS.BUTTON_TEST)).toBeInTheDocument()
+    expect(
+      screen.getAllByText(FIELD_LABELS.BUTTON_SAVE).length,
+    ).toBeGreaterThanOrEqual(2)
+    expect(
+      screen.getAllByText(FIELD_LABELS.BUTTON_TEST).length,
+    ).toBeGreaterThanOrEqual(2)
   })
 
   it('ステータスメッセージがある場合に正しく表示されること', () => {

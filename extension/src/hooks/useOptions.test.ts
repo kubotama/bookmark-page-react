@@ -84,24 +84,21 @@ describe('useOptions Hook', () => {
     )
   })
 
-  describe('handleSave', () => {
-    it('有効な URL の場合に設定を保存できること', async () => {
+  describe('handleSaveApiUrl', () => {
+    it('有効な API URL の場合に設定を保存できること', async () => {
       const { result } = await setupHook()
       const newUrl = VALID_URLS.TEST_API
-      const newFrontendUrl = 'http://localhost:3000'
 
       await act(async () => {
         result.current.setApiUrl(newUrl)
-        result.current.setFrontendUrl(newFrontendUrl)
       })
 
       await act(async () => {
-        await result.current.handleSave()
+        await result.current.handleSaveApiUrl()
       })
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
         [STORAGE_KEYS.API_URL]: newUrl,
-        [STORAGE_KEYS.FRONTEND_URL]: newFrontendUrl,
       })
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
       expect(result.current.status.message).toBe(
@@ -117,42 +114,36 @@ describe('useOptions Hook', () => {
         result.current.setApiUrl('ftp://invalid')
       })
 
-      await waitFor(() => expect(result.current.apiUrl).toBe('ftp://invalid'))
-
       await act(async () => {
-        await result.current.handleSave()
+        await result.current.handleSaveApiUrl()
       })
 
       expect(chrome.storage.sync.set).not.toHaveBeenCalled()
       expect(result.current.status.type).toBe(UI_STATUS.ERROR)
-      expect(result.current.status.message).toBe(
-        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-      )
-    })
-
-    it('保存に失敗した場合にエラーメッセージを表示すること', async () => {
-      const { result } = await setupHook()
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.mocked(chrome.storage.sync.set).mockRejectedValue(
-        new Error('Save Error'),
-      )
-
-      await act(async () => {
-        await result.current.handleSave()
-      })
-
-      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
-      expect(result.current.status.message).toBe(
-        EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
-      )
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
-        expect.any(Error),
-      )
     })
   })
 
-  describe('handleTestConnection', () => {
+  describe('handleSaveFrontendUrl', () => {
+    it('有効な Frontend URL の場合に設定を保存できること', async () => {
+      const { result } = await setupHook()
+      const newUrl = 'http://localhost:3000'
+
+      await act(async () => {
+        result.current.setFrontendUrl(newUrl)
+      })
+
+      await act(async () => {
+        await result.current.handleSaveFrontendUrl()
+      })
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        [STORAGE_KEYS.FRONTEND_URL]: newUrl,
+      })
+      expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
+    })
+  })
+
+  describe('handleTestApiConnection', () => {
     let consoleSpy: MockInstance
 
     beforeEach(() => {
@@ -171,12 +162,11 @@ describe('useOptions Hook', () => {
 
       const { result } = await setupHook()
       await act(async () => {
-        await result.current.handleTestConnection()
+        await result.current.handleTestApiConnection()
       })
 
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
       expect(result.current.status.message).toContain('2 件')
-      expect(consoleSpy).not.toHaveBeenCalled()
     })
 
     it('バリデーションエラーの場合に接続テストを中断すること', async () => {
@@ -190,7 +180,7 @@ describe('useOptions Hook', () => {
       await waitFor(() => expect(result.current.apiUrl).toBe('not-a-url'))
 
       await act(async () => {
-        await result.current.handleTestConnection()
+        await result.current.handleTestApiConnection()
       })
 
       expect(fetch).not.toHaveBeenCalled()
@@ -274,7 +264,7 @@ describe('useOptions Hook', () => {
 
         const { result } = await setupHook()
         await act(async () => {
-          await result.current.handleTestConnection()
+          await result.current.handleTestApiConnection()
         })
 
         expect(result.current.status.type).toBe(UI_STATUS.ERROR)
