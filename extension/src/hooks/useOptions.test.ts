@@ -24,6 +24,7 @@ import type { MockInstance } from 'vitest'
 
 describe('useOptions Hook', () => {
   const defaultUrl = DEFAULT_API_URL
+  const defaultFrontendUrl = VALID_URLS.LOOPBACK // Use a valid URL for testing
 
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -32,6 +33,7 @@ describe('useOptions Hook', () => {
     vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
       Promise.resolve({
         [STORAGE_KEYS.API_URL]: defaultUrl,
+        [STORAGE_KEYS.FRONTEND_URL]: defaultFrontendUrl,
       }),
     )
     vi.mocked(chrome.storage.sync.set).mockImplementation(() =>
@@ -46,14 +48,19 @@ describe('useOptions Hook', () => {
   const setupHook = async () => {
     const hook = renderHook(() => useOptions())
     await waitFor(() => expect(hook.result.current.apiUrl).toBe(defaultUrl))
+    await waitFor(() =>
+      expect(hook.result.current.frontendUrl).toBe(defaultFrontendUrl),
+    )
     return hook
   }
 
   it('初期化時にストレージから設定を読み込むこと', async () => {
     const { result } = renderHook(() => useOptions())
     expect(result.current.apiUrl).toBe('')
+    expect(result.current.frontendUrl).toBe('')
     await waitFor(() => {
       expect(result.current.apiUrl).toBe(defaultUrl)
+      expect(result.current.frontendUrl).toBe(defaultFrontendUrl)
     })
   })
 
@@ -81,9 +88,11 @@ describe('useOptions Hook', () => {
     it('有効な URL の場合に設定を保存できること', async () => {
       const { result } = await setupHook()
       const newUrl = VALID_URLS.TEST_API
+      const newFrontendUrl = 'http://localhost:3000'
 
       await act(async () => {
         result.current.setApiUrl(newUrl)
+        result.current.setFrontendUrl(newFrontendUrl)
       })
 
       await act(async () => {
@@ -92,6 +101,7 @@ describe('useOptions Hook', () => {
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
         [STORAGE_KEYS.API_URL]: newUrl,
+        [STORAGE_KEYS.FRONTEND_URL]: newFrontendUrl,
       })
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
       expect(result.current.status.message).toBe(

@@ -29,6 +29,7 @@ export const FIELD_LABELS = {
   ASSIGNED_KEYWORDS_LABEL: '割り当て済みのキーワード',
   UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
   ADD_KEYWORD_LABEL: '追加するキーワード',
+  FRONTEND_URL: 'Web アプリ URL',
 } as const
 
 export const PLACEHOLDERS = {
@@ -100,6 +101,8 @@ export const COMMON_MESSAGES = {
   LOADING_LABEL: '読み込み中...',
   API_URL_DESCRIPTION:
     'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
+  FRONTEND_URL_DESCRIPTION:
+    '詳細画面を開く際に使用する Web アプリのベース URL を入力してください。',
   CONNECTION_TESTING: '接続確認中...',
   CONNECTION_SUCCESS: (count: number) =>
     `接続成功: ${count} 件のブックマークが見つかりました`,
