@@ -4,6 +4,7 @@ import {
   FIELD_LABELS,
   COMMON_MESSAGES,
   ERROR_MESSAGES,
+  UI_STATUS,
 } from '@shared/constants'
 
 import { SettingsPanel } from './SettingsPanel'
@@ -12,8 +13,10 @@ import { render, screen, fireEvent } from '../test/utils'
 describe('SettingsPanel', () => {
   const defaultProps = {
     onClose: vi.fn(),
-    onSave: vi.fn(() => null), // デフォルトは成功を返す
+    onSave: vi.fn(() => null),
+    onTest: vi.fn(async () => {}),
     currentApiUrl: 'http://localhost:3030',
+    connectionStatus: { type: UI_STATUS.IDLE, message: '' },
   }
 
   beforeEach(() => {
@@ -50,7 +53,6 @@ describe('SettingsPanel', () => {
   })
 
   it('不正な形式の URL（非 localhost など）を入力して保存しようとした際、バリデーションエラーが表示されること', () => {
-    // 実際の validateApiUrl の挙動をシミュレート
     const invalidUrl = 'https://remote-api.com'
     const validationError = ERROR_MESSAGES.INVALID_HOST
     const onSave = vi.fn((url: string) => {
@@ -62,15 +64,72 @@ describe('SettingsPanel', () => {
     const input = screen.getByLabelText(FIELD_LABELS.URL)
     const saveButton = screen.getByText(FIELD_LABELS.BUTTON_SAVE_AND_APPLY)
 
-    // 不正な URL を入力して保存を実行
     fireEvent.change(input, { target: { value: invalidUrl } })
     fireEvent.click(saveButton)
 
-    // エラーメッセージの表示を検証
     expect(screen.getByText(validationError)).toBeInTheDocument()
-    // 保存処理が呼ばれたが、パネルは閉じられていない（onCloseが呼ばれていない）ことを確認
     expect(onSave).toHaveBeenCalledWith(invalidUrl)
     expect(defaultProps.onClose).not.toHaveBeenCalled()
+  })
+
+  it('接続確認ボタンで onTest が呼ばれること', () => {
+    render(<SettingsPanel {...defaultProps} />)
+    const testButton = screen.getByText(FIELD_LABELS.BUTTON_TEST)
+
+    fireEvent.click(testButton)
+    expect(defaultProps.onTest).toHaveBeenCalledWith(defaultProps.currentApiUrl)
+  })
+
+  it('接続確認中の状態が表示されること', () => {
+    render(
+      <SettingsPanel
+        {...defaultProps}
+        connectionStatus={{
+          type: UI_STATUS.LOADING,
+          message: COMMON_MESSAGES.CONNECTION_TESTING,
+        }}
+      />,
+    )
+
+    const statusElements = screen.getAllByText(
+      COMMON_MESSAGES.CONNECTION_TESTING,
+    )
+    expect(statusElements).toHaveLength(2)
+    // ボタン要素が無効化されていることを確認
+    const testButton = screen.getByRole('button', {
+      name: COMMON_MESSAGES.CONNECTION_TESTING,
+    })
+    expect(testButton).toBeDisabled()
+  })
+
+  it('接続成功時のメッセージが表示されること', () => {
+    const successMsg = COMMON_MESSAGES.CONNECTION_SUCCESS(10)
+    render(
+      <SettingsPanel
+        {...defaultProps}
+        connectionStatus={{
+          type: UI_STATUS.SUCCESS,
+          message: successMsg,
+        }}
+      />,
+    )
+
+    expect(screen.getByText(successMsg)).toBeInTheDocument()
+  })
+
+  it('接続失敗時のメッセージが表示されること', () => {
+    const errorMsg = COMMON_MESSAGES.CONNECTION_FAILED('Network Error')
+    render(
+      <SettingsPanel
+        {...defaultProps}
+        connectionStatus={{
+          type: UI_STATUS.ERROR,
+          message: errorMsg,
+        }}
+      />,
+    )
+
+    expect(screen.getByText(errorMsg)).toBeInTheDocument()
   })
 
   it('閉じるボタンで onClose が呼ばれること', () => {

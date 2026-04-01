@@ -4,6 +4,8 @@ import {
   COMMON_MESSAGES,
   FIELD_LABELS,
   DEFAULT_API_URL,
+  UI_STATUS,
+  type StatusInfo,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
@@ -11,16 +13,24 @@ import { InputField } from '@shared/ui/InputField'
 interface SettingsPanelProps {
   onClose: () => void
   onSave: (apiUrl: string) => string | null
+  onTest: (apiUrl: string) => Promise<void>
   currentApiUrl: string
+  connectionStatus: StatusInfo
 }
 
 export const SettingsPanel = ({
   onClose,
   onSave,
+  onTest,
   currentApiUrl,
+  connectionStatus,
 }: SettingsPanelProps) => {
   const [url, setUrl] = useState(currentApiUrl)
   const [validationError, setValidationError] = useState<string | null>(null)
+
+  const isTesting = connectionStatus.type === UI_STATUS.LOADING
+  const isTestSuccess = connectionStatus.type === UI_STATUS.SUCCESS
+  const isTestError = connectionStatus.type === UI_STATUS.ERROR
 
   const handleSave = () => {
     setValidationError(null)
@@ -33,6 +43,11 @@ export const SettingsPanel = ({
     }
 
     // 成功時は親コンポーネント側で閉じられる
+  }
+
+  const handleTest = () => {
+    setValidationError(null)
+    onTest(url)
   }
 
   return (
@@ -48,23 +63,40 @@ export const SettingsPanel = ({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={DEFAULT_API_URL}
+              disabled={isTesting}
             />
           </div>
+          <Button
+            variant="secondary"
+            onClick={handleTest}
+            disabled={isTesting}
+            className="mb-[2px] w-auto h-9 px-4 whitespace-nowrap"
+          >
+            {isTesting
+              ? COMMON_MESSAGES.CONNECTION_TESTING
+              : FIELD_LABELS.BUTTON_TEST}
+          </Button>
         </div>
 
         <p className="mt-2 text-xs text-gray-500 ml-14">
           {COMMON_MESSAGES.API_URL_DESCRIPTION}
         </p>
 
-        {validationError && (
-          <p className="text-sm text-red-600">{validationError}</p>
+        {(validationError || isTestSuccess || isTestError || isTesting) && (
+          <p
+            className={`text-sm ${
+              validationError || isTestError ? 'text-red-600' : 'text-green-600'
+            }`}
+          >
+            {validationError || connectionStatus.message}
+          </p>
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="primary" onClick={handleSave}>
+          <Button variant="primary" onClick={handleSave} disabled={isTesting}>
             {FIELD_LABELS.BUTTON_SAVE_AND_APPLY}
           </Button>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isTesting}>
             {FIELD_LABELS.BUTTON_CLOSE}
           </Button>
         </div>

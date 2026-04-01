@@ -100,6 +100,13 @@ export const COMMON_MESSAGES = {
   LOADING_LABEL: '読み込み中...',
   API_URL_DESCRIPTION:
     'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
+  CONNECTION_TESTING: '接続確認中...',
+  CONNECTION_SUCCESS: (count: number) =>
+    `接続成功: ${count} 件のブックマークが見つかりました`,
+  CONNECTION_FAILED: (detail: string) => `接続失敗: ${detail}`,
+  CONNECTION_TIMEOUT: 'リクエストがタイムアウトしました',
+  CONNECTION_FAILED_HINT:
+    'サーバーが起動しているか、URLが正しいか確認してください。',
 } as const
 
 /**
@@ -150,13 +157,6 @@ export const EXTENSION_MESSAGES = {
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
-  CONNECTION_TESTING: '接続確認中...',
-  CONNECTION_SUCCESS: (count: number) =>
-    `接続成功: ${count} 件のブックマークが見つかりました`,
-  CONNECTION_FAILED: (detail: string) => `接続失敗: ${detail}`,
-  CONNECTION_TIMEOUT: 'リクエストがタイムアウトしました',
-  CONNECTION_FAILED_HINT:
-    'サーバーが起動しているか、URLが正しいか確認してください。',
   POPUP_SAVED: 'ブックマークを保存しました',
   POPUP_SAVE_FAILED: '保存に失敗しました',
 } as const
