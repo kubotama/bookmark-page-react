@@ -9,7 +9,9 @@ import {
   UI_STATUS,
   VALIDATION_MESSAGES,
   ERROR_MESSAGES,
+  DEFAULT_API_URL,
 } from '@shared/constants'
+import { MOCK_BOOKMARKS, VALID_URLS } from '@shared/test/fixtures'
 
 import { useSettings } from './useSettings'
 import { useApi } from '../contexts/ApiContext'
@@ -33,7 +35,7 @@ describe('useSettings Hook', () => {
     vi.clearAllMocks()
     queryClient.clear()
     vi.mocked(useApi).mockReturnValue({
-      apiUrl: 'http://localhost:3030',
+      apiUrl: DEFAULT_API_URL,
       updateApiUrl: mockUpdateApiUrl,
       client: {} as never, // 内部ロジックで client は使用しないため一旦維持
     })
@@ -53,11 +55,11 @@ describe('useSettings Hook', () => {
 
       let error: string | null = 'init'
       act(() => {
-        error = result.current.handleSaveSettings('http://localhost:4000')
+        error = result.current.handleSaveSettings(VALID_URLS.TEST_API)
       })
 
       expect(error).toBeNull()
-      expect(mockUpdateApiUrl).toHaveBeenCalledWith('http://localhost:4000')
+      expect(mockUpdateApiUrl).toHaveBeenCalledWith(VALID_URLS.TEST_API)
       expect(result.current.showSettings).toBe(false)
     })
 
@@ -98,22 +100,13 @@ describe('useSettings Hook', () => {
 
   describe('testConnection', () => {
     it('接続確認が成功した場合、成功ステータスになること', async () => {
-      const mockBookmarks = [
-        {
-          id: '1',
-          title: 'Test',
-          url: 'http://test.com',
-          sortOrder: 1,
-          keywords: [],
-        },
-      ]
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
           ok: true,
           json: async () => ({
             success: true,
-            data: { bookmarks: mockBookmarks },
+            data: { bookmarks: MOCK_BOOKMARKS },
           }),
         }),
       )
@@ -121,12 +114,12 @@ describe('useSettings Hook', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
 
       await act(async () => {
-        await result.current.testConnection('http://localhost:3030')
+        await result.current.testConnection(DEFAULT_API_URL)
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.SUCCESS)
       expect(result.current.connectionStatus.message).toBe(
-        COMMON_MESSAGES.CONNECTION_SUCCESS(mockBookmarks.length),
+        COMMON_MESSAGES.CONNECTION_SUCCESS(MOCK_BOOKMARKS.length),
       )
     })
 
@@ -139,7 +132,7 @@ describe('useSettings Hook', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
 
       await act(async () => {
-        await result.current.testConnection('http://localhost:3030')
+        await result.current.testConnection(DEFAULT_API_URL)
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
@@ -152,7 +145,7 @@ describe('useSettings Hook', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
 
       await act(async () => {
-        await result.current.testConnection('https://remote-api.com')
+        await result.current.testConnection(VALID_URLS.HTTPS)
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
@@ -173,7 +166,7 @@ describe('useSettings Hook', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
 
       await act(async () => {
-        await result.current.testConnection('http://localhost:3030')
+        await result.current.testConnection(DEFAULT_API_URL)
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
@@ -197,7 +190,7 @@ describe('useSettings Hook', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
 
       await act(async () => {
-        await result.current.testConnection('http://localhost:3030')
+        await result.current.testConnection(DEFAULT_API_URL)
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
@@ -215,7 +208,7 @@ describe('useSettings Hook', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
 
       await act(async () => {
-        await result.current.testConnection('http://localhost:3030')
+        await result.current.testConnection(DEFAULT_API_URL)
       })
 
       expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
