@@ -72,7 +72,9 @@ export const SettingsPanel = ({
             disabled={isTesting}
             className="mb-[2px] w-auto h-9 px-4 whitespace-nowrap"
           >
-            {isTesting ? COMMON_MESSAGES.SAVING : FIELD_LABELS.BUTTON_TEST}
+            {isTesting
+              ? COMMON_MESSAGES.CONNECTION_TESTING
+              : FIELD_LABELS.BUTTON_TEST}
           </Button>
         </div>
 

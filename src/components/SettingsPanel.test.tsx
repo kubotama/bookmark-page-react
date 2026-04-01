@@ -91,10 +91,15 @@ describe('SettingsPanel', () => {
       />,
     )
 
-    expect(
-      screen.getByText(COMMON_MESSAGES.CONNECTION_TESTING),
-    ).toBeInTheDocument()
-    expect(screen.getByText(COMMON_MESSAGES.SAVING)).toBeDisabled() // ボタン上のテキスト
+    const statusElements = screen.getAllByText(
+      COMMON_MESSAGES.CONNECTION_TESTING,
+    )
+    expect(statusElements).toHaveLength(2)
+    // ボタン要素が無効化されていることを確認
+    const testButton = screen.getByRole('button', {
+      name: COMMON_MESSAGES.CONNECTION_TESTING,
+    })
+    expect(testButton).toBeDisabled()
   })
 
   it('接続成功時のメッセージが表示されること', () => {
