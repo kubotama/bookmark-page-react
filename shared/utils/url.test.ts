@@ -171,12 +171,17 @@ describe('url utilities', () => {
         message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
       },
       {
-        name: '特権ポート(80)を拒否すること',
+        name: '特権ポート(80)を許可すること',
         url: 'http://example.com:80',
-        message: ERROR_MESSAGES.INVALID_PORT,
+        message: null,
       },
       {
-        name: '有効範囲外のポート番号を拒否すること',
+        name: '外部ホスト (example.com:443) を許可すること',
+        url: 'https://example.com:443',
+        message: null,
+      },
+      {
+        name: '有効範囲外のポート番号(65536)の場合に INVALID_URL を返すこと',
         url: 'http://example.com:65536',
         message: ERROR_MESSAGES.INVALID_URL,
       },

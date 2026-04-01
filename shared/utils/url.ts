@@ -42,20 +42,15 @@ export const getOrigin = (url: string): string => {
 }
 
 /**
- * URL の妥当性を検証する
+ * URL の妥当性を検証する (基本チェック)
  */
 export const validateUrl = (url: string): string | null => {
   if (!isHttpUrl(url)) {
     return VALIDATION_MESSAGES.URL_INVALID_PROTOCOL
   }
   try {
-    const parsed = new URL(url)
-
-    // ポート番号の取得 (明示的な指定がない場合はプロトコルから推測)
-    const portString =
-      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
-
-    return validatePort(portString)
+    new URL(url)
+    return null
   } catch {
     return ERROR_MESSAGES.INVALID_URL
   }
@@ -80,7 +75,11 @@ export const validateApiUrl = (apiUrl: string): string | null => {
       return ERROR_MESSAGES.INVALID_HOST
     }
 
-    return null
+    // ポート番号の取得 (明示的な指定がない場合はプロトコルから推測)
+    const portString =
+      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
+
+    return validatePort(portString)
   } catch {
     return ERROR_MESSAGES.INVALID_URL
   }
