@@ -199,6 +199,31 @@ describe('useSettings Hook', () => {
       )
     })
 
+    it('API が success: false を返した場合、サーバー側のエラーメッセージを表示すること', async () => {
+      const serverErrorMessage = ERROR_MESSAGES.INTERNAL_SERVER_ERROR
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true, // 通信自体は成功
+          json: async () => ({
+            success: false,
+            error: { message: serverErrorMessage },
+          }),
+        }),
+      )
+
+      const { result } = renderHook(() => useSettings(), { wrapper })
+
+      await act(async () => {
+        await result.current.testConnection(DEFAULT_API_URL)
+      })
+
+      expect(result.current.connectionStatus.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.connectionStatus.message).toBe(
+        COMMON_MESSAGES.CONNECTION_FAILED(serverErrorMessage),
+      )
+    })
+
     it('ネットワークエラー時に失敗ステータスになること', async () => {
       vi.stubGlobal(
         'fetch',

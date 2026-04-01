@@ -83,40 +83,51 @@ export const useSettings = () => {
 
     try {
       const sanitizedUrl = getOrigin(url)
-      const response = await fetch(`${sanitizedUrl}${API_PATHS.BOOKMARKS}`, {
+      // URL の結合に new URL() を使用し、堅牢性を向上
+      const fetchUrl = new URL(API_PATHS.BOOKMARKS, sanitizedUrl).toString()
+
+      const response = await fetch(fetchUrl, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
       })
-
-      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`HTTP Error: ${response.status}`)
       }
 
       const result = await response.json()
-      // Zod スキーマを使用してレスポンス形式を厳格に検証
-      const parsed = bookmarksResponseSchema.safeParse(result.data)
 
-      if (result.success && parsed.success) {
-        setConnectionStatus({
-          type: UI_STATUS.SUCCESS,
-          message: COMMON_MESSAGES.CONNECTION_SUCCESS(
-            parsed.data.bookmarks.length,
-          ),
-        })
+      if (result.success) {
+        // Zod スキーマを使用してレスポンス形式を厳格に検証
+        const parsed = bookmarksResponseSchema.safeParse(result.data)
+        if (parsed.success) {
+          setConnectionStatus({
+            type: UI_STATUS.SUCCESS,
+            message: COMMON_MESSAGES.CONNECTION_SUCCESS(
+              parsed.data.bookmarks.length,
+            ),
+          })
+        } else {
+          throw new Error(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
+        }
       } else {
-        throw new Error(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
+        // API が成功フラグを false で返した場合、提供されたエラーメッセージを表示
+        throw new Error(
+          result.error?.message || COMMON_MESSAGES.UNEXPECTED_RESPONSE,
+        )
       }
     } catch (err) {
-      clearTimeout(timeoutId)
       let detail = err instanceof Error ? err.message : String(err)
 
-      // タイムアウトエラーの場合は専用のメッセージを表示
-      // 環境によって DOMException が Error を継承していない場合があるため name を直接確認
-      const errorName = (err as { name?: string })?.name
-      if (errorName === 'AbortError') {
+      // タイムアウトエラーの判定を型安全に実施
+      const isAbortError =
+        (err instanceof Error && err.name === 'AbortError') ||
+        (typeof DOMException !== 'undefined' &&
+          err instanceof DOMException &&
+          err.name === 'AbortError')
+
+      if (isAbortError) {
         detail = COMMON_MESSAGES.CONNECTION_TIMEOUT
       }
 
@@ -124,6 +135,9 @@ export const useSettings = () => {
         type: UI_STATUS.ERROR,
         message: COMMON_MESSAGES.CONNECTION_FAILED(detail),
       })
+    } finally {
+      // 成功・失敗に関わらず確実にタイマーを解除
+      clearTimeout(timeoutId)
     }
   }, [])
 
