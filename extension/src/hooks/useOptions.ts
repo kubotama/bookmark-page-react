@@ -13,7 +13,7 @@ import {
   type StatusInfo,
 } from '@shared/constants'
 import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
-import { validateApiUrl, getOrigin } from '@shared/utils/url'
+import { validateApiUrl, validateUrl, getOrigin } from '@shared/utils/url'
 
 import { storage } from '../lib/storage'
 
@@ -77,7 +77,7 @@ export const useOptions = () => {
       return false
     }
 
-    const frontendErrorMessage = validateApiUrl(frontendUrl)
+    const frontendErrorMessage = validateUrl(frontendUrl)
     if (frontendErrorMessage) {
       setStatus({ type: UI_STATUS.ERROR, message: frontendErrorMessage })
       return false

@@ -16,6 +16,7 @@ import {
   openUrlInNewTab,
   validatePort,
   getPortFromUrl,
+  validateUrl,
 } from './url'
 
 describe('url utilities', () => {
@@ -145,6 +146,45 @@ describe('url utilities', () => {
         expect(getPortFromUrl(url, port)).toBe(port)
       },
     )
+  })
+
+  describe('validateUrl', () => {
+    const validateUrlTestData = [
+      {
+        name: '正しい localhost URL の場合に null を返すこと',
+        url: VALID_URLS.HTTP,
+        message: null,
+      },
+      {
+        name: '正しい 127.0.0.1 URL の場合に null を返すこと',
+        url: VALID_URLS.LOOPBACK,
+        message: null,
+      },
+      {
+        name: '外部ホスト (example.com:3000) を許可すること',
+        url: 'http://example.com:3000',
+        message: null,
+      },
+      {
+        name: 'プロトコルが不正な場合にエラーメッセージを返すこと',
+        url: INVALID_URLS.FTP,
+        message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      },
+      {
+        name: '特権ポート(80)を拒否すること',
+        url: 'http://example.com:80',
+        message: ERROR_MESSAGES.INVALID_PORT,
+      },
+      {
+        name: '有効範囲外のポート番号を拒否すること',
+        url: 'http://example.com:65536',
+        message: ERROR_MESSAGES.INVALID_URL,
+      },
+    ]
+
+    it.each(validateUrlTestData)('$name', ({ url, message }) => {
+      expect(validateUrl(url)).toBe(message)
+    })
   })
 
   describe('validateApiUrl', () => {

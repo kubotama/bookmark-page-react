@@ -42,12 +42,32 @@ export const getOrigin = (url: string): string => {
 }
 
 /**
+ * URL の妥当性を検証する
+ */
+export const validateUrl = (url: string): string | null => {
+  if (!isHttpUrl(url)) {
+    return VALIDATION_MESSAGES.URL_INVALID_PROTOCOL
+  }
+  try {
+    const parsed = new URL(url)
+
+    // ポート番号の取得 (明示的な指定がない場合はプロトコルから推測)
+    const portString =
+      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
+
+    return validatePort(portString)
+  } catch {
+    return ERROR_MESSAGES.INVALID_URL
+  }
+}
+
+/**
  * API URL の妥当性を検証する (SSRF対策を含む)
  */
 export const validateApiUrl = (apiUrl: string): string | null => {
-  if (!isHttpUrl(apiUrl)) {
-    return VALIDATION_MESSAGES.URL_INVALID_PROTOCOL
-  }
+  const commonError = validateUrl(apiUrl)
+  if (commonError) return commonError
+
   try {
     const parsed = new URL(apiUrl)
     const hostname = parsed.hostname.toLowerCase()
@@ -60,14 +80,7 @@ export const validateApiUrl = (apiUrl: string): string | null => {
       return ERROR_MESSAGES.INVALID_HOST
     }
 
-    // ポート番号の取得 (明示的な指定がない場合はプロトコルから推測)
-    const portString =
-      parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
-
-    // validatePort は './port' から re-export されているためそのまま使用可能
-    // ただし内部的に利用するため、このファイル内では validatePort を定義するかインポートが必要
-    // re-export しているので、同じディレクトリ内の port.ts からインポートする
-    return validatePort(portString)
+    return null
   } catch {
     return ERROR_MESSAGES.INVALID_URL
   }
