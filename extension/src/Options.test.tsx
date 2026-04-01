@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ARIA_ROLES,
   DEFAULT_API_URL,
+  DEFAULT_FRONTEND_URL,
   FIELD_LABELS,
   UI_STATUS,
 } from '@shared/constants'
@@ -19,6 +20,8 @@ describe('Options Component', () => {
   const baseMockUseOptions = {
     apiUrl: DEFAULT_API_URL,
     setApiUrl: vi.fn(),
+    frontendUrl: DEFAULT_FRONTEND_URL,
+    setFrontendUrl: vi.fn(),
     status: { type: UI_STATUS.IDLE, message: '' },
     handleSave: vi.fn(),
     handleTestConnection: vi.fn(),
@@ -36,6 +39,9 @@ describe('Options Component', () => {
     expect(screen.getByText(FIELD_LABELS.OPTIONS_TITLE)).toBeInTheDocument()
     expect(screen.getByLabelText(FIELD_LABELS.URL)).toBeInTheDocument()
     expect(screen.getByDisplayValue(DEFAULT_API_URL)).toBeInTheDocument()
+
+    expect(screen.getByLabelText(FIELD_LABELS.FRONTEND_URL)).toBeInTheDocument()
+    expect(screen.getByDisplayValue(DEFAULT_FRONTEND_URL)).toBeInTheDocument()
   })
 
   it('入力欄の値を変更したときに setApiUrl が呼ばれること', async () => {
@@ -43,13 +49,22 @@ describe('Options Component', () => {
     render(<Options />)
 
     const input = screen.getByLabelText(FIELD_LABELS.URL)
-    // 1文字入力し、フックが「初期値 + 1文字」で呼ばれることを確認する
-    // フックをモックしているため、入力欄の内容は初期値にリセットされ続けるが、
-    // コンポーネントからフックへのデータの受け渡し自体はこれで検証可能。
     await user.type(input, 's')
 
     expect(baseMockUseOptions.setApiUrl).toHaveBeenCalledWith(
       DEFAULT_API_URL + 's',
+    )
+  })
+
+  it('WebアプリURLの入力欄を変更したときに setFrontendUrl が呼ばれること', async () => {
+    const user = userEvent.setup()
+    render(<Options />)
+
+    const input = screen.getByLabelText(FIELD_LABELS.FRONTEND_URL)
+    await user.type(input, 's')
+
+    expect(baseMockUseOptions.setFrontendUrl).toHaveBeenCalledWith(
+      DEFAULT_FRONTEND_URL + 's',
     )
   })
 

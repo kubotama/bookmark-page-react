@@ -7,6 +7,7 @@ import {
   LOG_MESSAGES,
   STORAGE_KEYS,
   DEFAULT_API_URL,
+  DEFAULT_FRONTEND_URL,
   EXTENSION_CONSTANTS,
   UI_STATUS,
   type StatusInfo,
@@ -18,6 +19,7 @@ import { storage } from '../lib/storage'
 
 const DEFAULT_SETTINGS = {
   [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
+  [STORAGE_KEYS.FRONTEND_URL]: DEFAULT_FRONTEND_URL,
 }
 
 // レスポンス全体のスキーマを定義
@@ -25,6 +27,7 @@ const apiResponseSchema = bookmarksResponseSchema
 
 export const useOptions = () => {
   const [apiUrl, setApiUrl] = useState('')
+  const [frontendUrl, setFrontendUrl] = useState('')
   const [status, setStatus] = useState<StatusInfo>({
     type: UI_STATUS.IDLE,
     message: '',
@@ -37,11 +40,18 @@ export const useOptions = () => {
       try {
         const result = await storage.get(DEFAULT_SETTINGS)
         if (isMounted) {
-          const storedUrl = result[STORAGE_KEYS.API_URL]
+          const storedApiUrl = result[STORAGE_KEYS.API_URL]
+          const storedFrontendUrl = result[STORAGE_KEYS.FRONTEND_URL]
+
           setApiUrl(
-            typeof storedUrl === 'string'
-              ? storedUrl
+            typeof storedApiUrl === 'string'
+              ? storedApiUrl
               : DEFAULT_SETTINGS[STORAGE_KEYS.API_URL],
+          )
+          setFrontendUrl(
+            typeof storedFrontendUrl === 'string'
+              ? storedFrontendUrl
+              : DEFAULT_SETTINGS[STORAGE_KEYS.FRONTEND_URL],
           )
         }
       } catch (err) {
@@ -61,22 +71,37 @@ export const useOptions = () => {
   }, [])
 
   const runValidation = useCallback((): boolean => {
-    const errorMessage = validateApiUrl(apiUrl)
-    if (errorMessage) {
-      setStatus({ type: UI_STATUS.ERROR, message: errorMessage })
+    const apiErrorMessage = validateApiUrl(apiUrl)
+    if (apiErrorMessage) {
+      setStatus({ type: UI_STATUS.ERROR, message: apiErrorMessage })
       return false
     }
+
+    const frontendErrorMessage = validateApiUrl(frontendUrl)
+    if (frontendErrorMessage) {
+      setStatus({ type: UI_STATUS.ERROR, message: frontendErrorMessage })
+      return false
+    }
+
     return true
-  }, [apiUrl])
+  }, [apiUrl, frontendUrl])
 
   const handleSave = useCallback(async () => {
     if (!runValidation()) return
 
     setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
     try {
-      const sanitizedUrl = getOrigin(apiUrl)
-      await storage.set({ [STORAGE_KEYS.API_URL]: sanitizedUrl })
-      setApiUrl(sanitizedUrl)
+      const sanitizedApiUrl = getOrigin(apiUrl)
+      const sanitizedFrontendUrl = getOrigin(frontendUrl)
+
+      await storage.set({
+        [STORAGE_KEYS.API_URL]: sanitizedApiUrl,
+        [STORAGE_KEYS.FRONTEND_URL]: sanitizedFrontendUrl,
+      })
+
+      setApiUrl(sanitizedApiUrl)
+      setFrontendUrl(sanitizedFrontendUrl)
+
       setStatus({
         type: UI_STATUS.SUCCESS,
         message: EXTENSION_MESSAGES.SETTINGS_SAVED,
@@ -88,7 +113,7 @@ export const useOptions = () => {
         message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
       })
     }
-  }, [apiUrl, runValidation])
+  }, [apiUrl, frontendUrl, runValidation])
 
   const handleTestConnection = useCallback(async () => {
     if (!runValidation()) return
@@ -158,6 +183,8 @@ export const useOptions = () => {
   return {
     apiUrl,
     setApiUrl,
+    frontendUrl,
+    setFrontendUrl,
     status,
     handleSave,
     handleTestConnection,

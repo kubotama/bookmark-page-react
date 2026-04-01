@@ -2,6 +2,7 @@ import {
   ARIA_ROLES,
   COMMON_MESSAGES,
   DEFAULT_API_URL,
+  DEFAULT_FRONTEND_URL,
   FIELD_LABELS,
   STATUS_STYLES,
   UI_STATUS,
@@ -12,8 +13,15 @@ import { InputField } from '@shared/ui/InputField'
 import { useOptions } from './hooks/useOptions'
 
 export const Options = () => {
-  const { apiUrl, setApiUrl, status, handleSave, handleTestConnection } =
-    useOptions()
+  const {
+    apiUrl,
+    setApiUrl,
+    frontendUrl,
+    setFrontendUrl,
+    status,
+    handleSave,
+    handleTestConnection,
+  } = useOptions()
 
   return (
     <div className="p-8 max-w-2xl mx-auto bg-white shadow-md rounded-lg mt-10">
@@ -32,6 +40,19 @@ export const Options = () => {
           />
           <p className="mt-2 text-xs text-gray-500 ml-14">
             {COMMON_MESSAGES.API_URL_DESCRIPTION}
+          </p>
+        </div>
+
+        <div>
+          <InputField
+            id="frontend-url"
+            label={FIELD_LABELS.FRONTEND_URL}
+            value={frontendUrl}
+            onChange={(e) => setFrontendUrl(e.target.value)}
+            placeholder={DEFAULT_FRONTEND_URL}
+          />
+          <p className="mt-2 text-xs text-gray-500 ml-14">
+            {COMMON_MESSAGES.FRONTEND_URL_DESCRIPTION}
           </p>
         </div>
 
