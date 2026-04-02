@@ -195,15 +195,62 @@ export const useOptions = () => {
     }
   }, [apiUrl, validateApiUrlAction])
 
-  // Web アプリ用のテストアクション（Issue #353 で本格実装されるまでプレースホルダ）
+  // Web アプリ用のテストアクション
   const handleTestFrontendConnection = useCallback(async () => {
     if (!validateFrontendUrlAction()) return
-    // TODO: Issue #353 で実装
+
     setStatus({
-      type: UI_STATUS.SUCCESS,
-      message: EXTENSION_MESSAGES.FRONTEND_URL_VALID,
+      type: UI_STATUS.LOADING,
+      message: COMMON_MESSAGES.CONNECTION_TESTING,
     })
-  }, [validateFrontendUrlAction])
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      EXTENSION_CONSTANTS.CONNECTION_TIMEOUT_MS,
+    )
+
+    try {
+      const sanitizedUrl = getOrigin(frontendUrl)
+      // Web アプリのベース URL に GET リクエストを送信して疎通確認を行う
+      const response = await fetch(sanitizedUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      setStatus({
+        type: UI_STATUS.SUCCESS,
+        message: COMMON_MESSAGES.FRONTEND_CONNECTION_SUCCESS,
+      })
+    } catch (err) {
+      console.error(LOG_MESSAGES.EXTENSION_CONNECTION_FAILED, err)
+      let detail: string
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          detail = COMMON_MESSAGES.CONNECTION_TIMEOUT
+        } else {
+          detail = `${err.message} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`
+        }
+      } else {
+        detail = COMMON_MESSAGES.UNKNOWN_ERROR
+      }
+
+      // タイムアウト時は共通メッセージ、それ以外は Web アプリ専用の失敗メッセージを表示
+      setStatus({
+        type: UI_STATUS.ERROR,
+        message:
+          detail === COMMON_MESSAGES.CONNECTION_TIMEOUT
+            ? detail
+            : COMMON_MESSAGES.FRONTEND_CONNECTION_FAILED(detail),
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }, [frontendUrl, validateFrontendUrlAction])
 
   return {
     apiUrl,

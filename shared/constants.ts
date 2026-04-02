@@ -108,7 +108,10 @@ export const COMMON_MESSAGES = {
   CONNECTION_TESTING: '接続確認中...',
   CONNECTION_SUCCESS: (count: number) =>
     `接続成功: ${count} 件のブックマークが見つかりました`,
+  FRONTEND_CONNECTION_SUCCESS: '接続成功: Web アプリへのアクセスを確認しました',
   CONNECTION_FAILED: (detail: string) => `接続失敗: ${detail}`,
+  FRONTEND_CONNECTION_FAILED: (detail: string) =>
+    `接続失敗 (Web アプリ): ${detail}`,
   CONNECTION_TIMEOUT: 'リクエストがタイムアウトしました',
   CONNECTION_FAILED_HINT:
     'サーバーが起動しているか、URLが正しいか確認してください。',
@@ -162,7 +165,6 @@ export const EXTENSION_MESSAGES = {
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
-  FRONTEND_URL_VALID: 'Web アプリ URL は有効です（形式チェックのみ）',
   POPUP_SAVED: 'ブックマークを保存しました',
   POPUP_SAVE_FAILED: '保存に失敗しました',
 } as const
