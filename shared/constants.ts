@@ -16,6 +16,8 @@ export const FIELD_LABELS = {
   OPTIONS_TITLE: '拡張機能の設定',
   POPUP_TITLE: 'ページをブックマーク',
   SETTING_TITLE: '設定',
+  API_SETTINGS_TITLE: 'API 設定',
+  FRONTEND_SETTINGS_TITLE: 'Web アプリ設定',
   BOOKMARK_DETAIL_TITLE: 'Bookmark Detail',
   KEYWORD_DETAIL_TITLE: 'Keyword Detail',
   BOOKMARK_ID_PREFIX: 'Bookmark ID:',
@@ -160,6 +162,7 @@ export const EXTENSION_MESSAGES = {
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
+  FRONTEND_URL_VALID: 'Web アプリ URL は有効です（形式チェックのみ）',
   POPUP_SAVED: 'ブックマークを保存しました',
   POPUP_SAVE_FAILED: '保存に失敗しました',
 } as const

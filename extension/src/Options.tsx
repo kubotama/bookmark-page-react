@@ -19,8 +19,10 @@ export const Options = () => {
     frontendUrl,
     setFrontendUrl,
     status,
-    handleSave,
-    handleTestConnection,
+    handleSaveApiUrl,
+    handleSaveFrontendUrl,
+    handleTestApiConnection,
+    handleTestFrontendConnection,
   } = useOptions()
 
   return (
@@ -29,52 +31,91 @@ export const Options = () => {
         {FIELD_LABELS.OPTIONS_TITLE}
       </h1>
 
-      <div className="space-y-6">
-        <div>
-          <InputField
-            id="api-url"
-            label={FIELD_LABELS.URL}
-            value={apiUrl}
-            onChange={(e) => setApiUrl(e.target.value)}
-            placeholder={DEFAULT_API_URL}
-            width="w-32"
-          />
-          <p className="mt-2 text-xs text-gray-500 ml-36">
-            {COMMON_MESSAGES.API_URL_DESCRIPTION}
-          </p>
-        </div>
-
-        <div>
-          <InputField
-            id="frontend-url"
-            label={FIELD_LABELS.FRONTEND_URL}
-            value={frontendUrl}
-            onChange={(e) => setFrontendUrl(e.target.value)}
-            placeholder={DEFAULT_FRONTEND_URL}
-            width="w-32"
-          />
-          <p className="mt-2 text-xs text-gray-500 ml-36">
-            {COMMON_MESSAGES.FRONTEND_URL_DESCRIPTION}
-          </p>
-        </div>
-
-        <div className="flex space-x-3 ml-36">
-          <Button
-            onClick={handleSave}
-            size="medium"
-            disabled={status.type === UI_STATUS.LOADING}
+      <div className="space-y-10">
+        {/* API URL 設定セクション */}
+        <section className="space-y-6" aria-labelledby="api-settings-title">
+          <h2
+            id="api-settings-title"
+            className="text-lg font-semibold text-gray-700"
           >
-            {FIELD_LABELS.BUTTON_SAVE}
-          </Button>
-          <Button
-            onClick={handleTestConnection}
-            variant="secondary"
-            size="medium"
-            disabled={status.type === UI_STATUS.LOADING}
+            {FIELD_LABELS.API_SETTINGS_TITLE}
+          </h2>
+          <div>
+            <InputField
+              id="api-url"
+              label={FIELD_LABELS.URL}
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              placeholder={DEFAULT_API_URL}
+              width="w-32"
+            />
+            <p className="mt-2 text-xs text-gray-500 ml-36">
+              {COMMON_MESSAGES.API_URL_DESCRIPTION}
+            </p>
+          </div>
+
+          <div className="flex space-x-3 ml-36">
+            <Button
+              onClick={handleSaveApiUrl}
+              size="medium"
+              disabled={status.type === UI_STATUS.LOADING}
+            >
+              {FIELD_LABELS.BUTTON_SAVE}
+            </Button>
+            <Button
+              onClick={handleTestApiConnection}
+              variant="secondary"
+              size="medium"
+              disabled={status.type === UI_STATUS.LOADING}
+            >
+              {FIELD_LABELS.BUTTON_TEST}
+            </Button>
+          </div>
+        </section>
+
+        {/* Web アプリ URL 設定セクション */}
+        <section
+          className="space-y-6"
+          aria-labelledby="frontend-settings-title"
+        >
+          <h2
+            id="frontend-settings-title"
+            className="text-lg font-semibold text-gray-700"
           >
-            {FIELD_LABELS.BUTTON_TEST}
-          </Button>
-        </div>
+            {FIELD_LABELS.FRONTEND_SETTINGS_TITLE}
+          </h2>
+          <div>
+            <InputField
+              id="frontend-url"
+              label={FIELD_LABELS.FRONTEND_URL}
+              value={frontendUrl}
+              onChange={(e) => setFrontendUrl(e.target.value)}
+              placeholder={DEFAULT_FRONTEND_URL}
+              width="w-32"
+            />
+            <p className="mt-2 text-xs text-gray-500 ml-36">
+              {COMMON_MESSAGES.FRONTEND_URL_DESCRIPTION}
+            </p>
+          </div>
+
+          <div className="flex space-x-3 ml-36">
+            <Button
+              onClick={handleSaveFrontendUrl}
+              size="medium"
+              disabled={status.type === UI_STATUS.LOADING}
+            >
+              {FIELD_LABELS.BUTTON_SAVE}
+            </Button>
+            <Button
+              onClick={handleTestFrontendConnection}
+              variant="secondary"
+              size="medium"
+              disabled={status.type === UI_STATUS.LOADING}
+            >
+              {FIELD_LABELS.BUTTON_TEST}
+            </Button>
+          </div>
+        </section>
 
         {status.type !== UI_STATUS.IDLE && (
           <div

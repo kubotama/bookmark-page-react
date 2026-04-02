@@ -70,38 +70,32 @@ export const useOptions = () => {
     }
   }, [])
 
-  const runValidation = useCallback((): boolean => {
+  const validateApiUrlAction = useCallback((): boolean => {
     const apiErrorMessage = validateApiUrl(apiUrl)
     if (apiErrorMessage) {
       setStatus({ type: UI_STATUS.ERROR, message: apiErrorMessage })
       return false
     }
+    return true
+  }, [apiUrl])
 
+  const validateFrontendUrlAction = useCallback((): boolean => {
     const frontendErrorMessage = validateUrl(frontendUrl)
     if (frontendErrorMessage) {
       setStatus({ type: UI_STATUS.ERROR, message: frontendErrorMessage })
       return false
     }
-
     return true
-  }, [apiUrl, frontendUrl])
+  }, [frontendUrl])
 
-  const handleSave = useCallback(async () => {
-    if (!runValidation()) return
+  const handleSaveApiUrl = useCallback(async () => {
+    if (!validateApiUrlAction()) return
 
     setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
     try {
       const sanitizedApiUrl = getOrigin(apiUrl)
-      const sanitizedFrontendUrl = getOrigin(frontendUrl)
-
-      await storage.set({
-        [STORAGE_KEYS.API_URL]: sanitizedApiUrl,
-        [STORAGE_KEYS.FRONTEND_URL]: sanitizedFrontendUrl,
-      })
-
+      await storage.set({ [STORAGE_KEYS.API_URL]: sanitizedApiUrl })
       setApiUrl(sanitizedApiUrl)
-      setFrontendUrl(sanitizedFrontendUrl)
-
       setStatus({
         type: UI_STATUS.SUCCESS,
         message: EXTENSION_MESSAGES.SETTINGS_SAVED,
@@ -113,10 +107,31 @@ export const useOptions = () => {
         message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
       })
     }
-  }, [apiUrl, frontendUrl, runValidation])
+  }, [apiUrl, validateApiUrlAction])
 
-  const handleTestConnection = useCallback(async () => {
-    if (!runValidation()) return
+  const handleSaveFrontendUrl = useCallback(async () => {
+    if (!validateFrontendUrlAction()) return
+
+    setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
+    try {
+      const sanitizedFrontendUrl = getOrigin(frontendUrl)
+      await storage.set({ [STORAGE_KEYS.FRONTEND_URL]: sanitizedFrontendUrl })
+      setFrontendUrl(sanitizedFrontendUrl)
+      setStatus({
+        type: UI_STATUS.SUCCESS,
+        message: EXTENSION_MESSAGES.SETTINGS_SAVED,
+      })
+    } catch (err) {
+      console.error(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, err)
+      setStatus({
+        type: UI_STATUS.ERROR,
+        message: EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
+      })
+    }
+  }, [frontendUrl, validateFrontendUrlAction])
+
+  const handleTestApiConnection = useCallback(async () => {
+    if (!validateApiUrlAction()) return
 
     setStatus({
       type: UI_STATUS.LOADING,
@@ -178,7 +193,17 @@ export const useOptions = () => {
     } finally {
       clearTimeout(timeoutId)
     }
-  }, [apiUrl, runValidation])
+  }, [apiUrl, validateApiUrlAction])
+
+  // Web アプリ用のテストアクション（Issue #353 で本格実装されるまでプレースホルダ）
+  const handleTestFrontendConnection = useCallback(async () => {
+    if (!validateFrontendUrlAction()) return
+    // TODO: Issue #353 で実装
+    setStatus({
+      type: UI_STATUS.SUCCESS,
+      message: EXTENSION_MESSAGES.FRONTEND_URL_VALID,
+    })
+  }, [validateFrontendUrlAction])
 
   return {
     apiUrl,
@@ -186,7 +211,9 @@ export const useOptions = () => {
     frontendUrl,
     setFrontendUrl,
     status,
-    handleSave,
-    handleTestConnection,
+    handleSaveApiUrl,
+    handleSaveFrontendUrl,
+    handleTestApiConnection,
+    handleTestFrontendConnection,
   }
 }
