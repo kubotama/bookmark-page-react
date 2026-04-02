@@ -120,6 +120,30 @@ describe('useOptions Hook', () => {
 
       expect(chrome.storage.sync.set).not.toHaveBeenCalled()
       expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      )
+    })
+
+    it('保存に失敗した場合にエラーメッセージを表示すること', async () => {
+      const { result } = await setupHook()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(chrome.storage.sync.set).mockRejectedValue(
+        new Error('Save Error'),
+      )
+
+      await act(async () => {
+        await result.current.handleSaveApiUrl()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        EXTENSION_MESSAGES.SETTINGS_SAVE_FAILED,
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED,
+        expect.any(Error),
+      )
     })
   })
 
@@ -140,6 +164,28 @@ describe('useOptions Hook', () => {
         [STORAGE_KEYS.FRONTEND_URL]: newUrl,
       })
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
+      expect(result.current.status.message).toBe(
+        EXTENSION_MESSAGES.SETTINGS_SAVED,
+      )
+    })
+
+    it('バリデーションエラーの場合に保存を中断すること', async () => {
+      const { result } = await setupHook()
+      vi.mocked(chrome.storage.sync.set).mockClear()
+
+      await act(async () => {
+        result.current.setFrontendUrl('ftp://invalid')
+      })
+
+      await act(async () => {
+        await result.current.handleSaveFrontendUrl()
+      })
+
+      expect(chrome.storage.sync.set).not.toHaveBeenCalled()
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      )
     })
   })
 

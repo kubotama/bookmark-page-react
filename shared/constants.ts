@@ -160,6 +160,7 @@ export const EXTENSION_MESSAGES = {
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
+  FRONTEND_URL_VALID: 'Web アプリ URL は有効です（形式チェックのみ）',
   POPUP_SAVED: 'ブックマークを保存しました',
   POPUP_SAVE_FAILED: '保存に失敗しました',
 } as const

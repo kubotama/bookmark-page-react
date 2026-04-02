@@ -201,7 +201,7 @@ export const useOptions = () => {
     // TODO: Issue #353 で実装
     setStatus({
       type: UI_STATUS.SUCCESS,
-      message: 'Web アプリ URL は有効です（形式チェックのみ）',
+      message: EXTENSION_MESSAGES.FRONTEND_URL_VALID,
     })
   }, [validateFrontendUrlAction])
 
