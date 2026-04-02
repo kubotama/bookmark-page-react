@@ -52,6 +52,24 @@ describe('Options Component', () => {
 
     expect(apiUrlLabel).toHaveClass('w-32')
     expect(frontendUrlLabel).toHaveClass('w-32')
+
+    // セクションの見出しとアクセシビリティ属性
+    const apiSection = screen.getByRole('region', {
+      name: FIELD_LABELS.API_SETTINGS_TITLE,
+    })
+    const frontendSection = screen.getByRole('region', {
+      name: FIELD_LABELS.FRONTEND_SETTINGS_TITLE,
+    })
+
+    expect(apiSection).toBeInTheDocument()
+    expect(frontendSection).toBeInTheDocument()
+    expect(screen.getByText(FIELD_LABELS.API_SETTINGS_TITLE)).toHaveAttribute(
+      'id',
+      'api-settings-title',
+    )
+    expect(
+      screen.getByText(FIELD_LABELS.FRONTEND_SETTINGS_TITLE),
+    ).toHaveAttribute('id', 'frontend-settings-title')
   })
 
   it('説明文やボタンのインデントがラベル幅と揃っていること', () => {

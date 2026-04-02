@@ -33,7 +33,13 @@ export const Options = () => {
 
       <div className="space-y-10">
         {/* API URL 設定セクション */}
-        <section className="space-y-6">
+        <section className="space-y-6" aria-labelledby="api-settings-title">
+          <h2
+            id="api-settings-title"
+            className="text-lg font-semibold text-gray-700"
+          >
+            {FIELD_LABELS.API_SETTINGS_TITLE}
+          </h2>
           <div>
             <InputField
               id="api-url"
@@ -68,7 +74,16 @@ export const Options = () => {
         </section>
 
         {/* Web アプリ URL 設定セクション */}
-        <section className="space-y-6">
+        <section
+          className="space-y-6"
+          aria-labelledby="frontend-settings-title"
+        >
+          <h2
+            id="frontend-settings-title"
+            className="text-lg font-semibold text-gray-700"
+          >
+            {FIELD_LABELS.FRONTEND_SETTINGS_TITLE}
+          </h2>
           <div>
             <InputField
               id="frontend-url"

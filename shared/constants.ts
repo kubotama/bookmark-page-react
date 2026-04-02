@@ -16,6 +16,8 @@ export const FIELD_LABELS = {
   OPTIONS_TITLE: '拡張機能の設定',
   POPUP_TITLE: 'ページをブックマーク',
   SETTING_TITLE: '設定',
+  API_SETTINGS_TITLE: 'API 設定',
+  FRONTEND_SETTINGS_TITLE: 'Web アプリ設定',
   BOOKMARK_DETAIL_TITLE: 'Bookmark Detail',
   KEYWORD_DETAIL_TITLE: 'Keyword Detail',
   BOOKMARK_ID_PREFIX: 'Bookmark ID:',
