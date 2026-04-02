@@ -130,6 +130,17 @@ export const useOptions = () => {
     }
   }, [frontendUrl, validateFrontendUrlAction])
 
+  const parseErrorDetail = useCallback((err: unknown): string => {
+    console.error(LOG_MESSAGES.EXTENSION_CONNECTION_FAILED, err)
+    if (err instanceof Error) {
+      if (err.name === 'AbortError') {
+        return COMMON_MESSAGES.CONNECTION_TIMEOUT
+      }
+      return `${err.message} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`
+    }
+    return COMMON_MESSAGES.UNKNOWN_ERROR
+  }, [])
+
   const handleTestApiConnection = useCallback(async () => {
     if (!validateApiUrlAction()) return
 
@@ -175,17 +186,7 @@ export const useOptions = () => {
         throw new Error(COMMON_MESSAGES.UNEXPECTED_RESPONSE)
       }
     } catch (err) {
-      console.error(LOG_MESSAGES.EXTENSION_CONNECTION_FAILED, err)
-      let detail: string
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          detail = COMMON_MESSAGES.CONNECTION_TIMEOUT
-        } else {
-          detail = `${err.message} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`
-        }
-      } else {
-        detail = COMMON_MESSAGES.UNKNOWN_ERROR
-      }
+      const detail = parseErrorDetail(err)
       setStatus({
         type: UI_STATUS.ERROR,
         message: COMMON_MESSAGES.CONNECTION_FAILED(detail),
@@ -193,7 +194,7 @@ export const useOptions = () => {
     } finally {
       clearTimeout(timeoutId)
     }
-  }, [apiUrl, validateApiUrlAction])
+  }, [apiUrl, validateApiUrlAction, parseErrorDetail])
 
   // Web アプリ用のテストアクション
   const handleTestFrontendConnection = useCallback(async () => {
@@ -227,18 +228,7 @@ export const useOptions = () => {
         message: COMMON_MESSAGES.FRONTEND_CONNECTION_SUCCESS,
       })
     } catch (err) {
-      console.error(LOG_MESSAGES.EXTENSION_CONNECTION_FAILED, err)
-      let detail: string
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          detail = COMMON_MESSAGES.CONNECTION_TIMEOUT
-        } else {
-          detail = `${err.message} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`
-        }
-      } else {
-        detail = COMMON_MESSAGES.UNKNOWN_ERROR
-      }
-
+      const detail = parseErrorDetail(err)
       // タイムアウト時は共通メッセージ、それ以外は Web アプリ専用の失敗メッセージを表示
       setStatus({
         type: UI_STATUS.ERROR,
@@ -250,7 +240,7 @@ export const useOptions = () => {
     } finally {
       clearTimeout(timeoutId)
     }
-  }, [frontendUrl, validateFrontendUrlAction])
+  }, [frontendUrl, validateFrontendUrlAction, parseErrorDetail])
 
   return {
     apiUrl,

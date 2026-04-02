@@ -150,7 +150,7 @@ describe('useOptions Hook', () => {
   describe('handleSaveFrontendUrl', () => {
     it('有効な Frontend URL の場合に設定を保存できること', async () => {
       const { result } = await setupHook()
-      const newUrl = 'http://localhost:3000'
+      const newUrl = VALID_URLS.FRONTEND
 
       await act(async () => {
         result.current.setFrontendUrl(newUrl)
@@ -197,9 +197,10 @@ describe('useOptions Hook', () => {
     })
 
     it('接続テストが成功した場合に件数を表示すること', async () => {
+      const mockBookmarks = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]
       const mockResponse = {
         success: true,
-        data: { bookmarks: [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2] },
+        data: { bookmarks: mockBookmarks },
       }
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
@@ -212,7 +213,9 @@ describe('useOptions Hook', () => {
       })
 
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
-      expect(result.current.status.message).toContain('2 件')
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.CONNECTION_SUCCESS(mockBookmarks.length),
+      )
     })
 
     it('バリデーションエラーの場合に接続テストを中断すること', async () => {
