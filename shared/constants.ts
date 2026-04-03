@@ -359,6 +359,7 @@ export const LOG_MESSAGES = {
   FETCH_KEYWORDS_FAILED: 'Failed to fetch keywords:',
   CREATE_KEYWORD_FAILED: 'Failed to create keyword:',
   UPDATE_KEYWORD_FAILED: 'Failed to update keyword:',
+  DELETE_KEYWORD_FAILED: 'Failed to delete keyword:',
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
