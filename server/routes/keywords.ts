@@ -186,14 +186,15 @@ const keywordsRoute = new Hono()
       const { id } = c.req.valid('param')
 
       try {
-        // 存在確認
-        const existing = await db
-          .select()
-          .from(keywordsTable)
+        // 削除実行と結果の取得を同時に行う
+        // 中間テーブル (bookmarkKeywords) は外部キー制約 (ON DELETE CASCADE) により自動的に削除される
+        const result = await db
+          .delete(keywordsTable)
           .where(eq(keywordsTable.keywordId, Number(id)))
+          .returning()
           .get()
 
-        if (!existing) {
+        if (!result) {
           return c.json(
             {
               success: false,
@@ -205,13 +206,6 @@ const keywordsRoute = new Hono()
             HTTP_STATUS.NOT_FOUND,
           )
         }
-
-        // 削除実行
-        // 中間テーブル (bookmarkKeywords) は外部キー制約 (ON DELETE CASCADE) により自動的に削除される
-        await db
-          .delete(keywordsTable)
-          .where(eq(keywordsTable.keywordId, Number(id)))
-          .run()
 
         return c.body(null, HTTP_STATUS.NO_CONTENT)
       } catch (error) {
