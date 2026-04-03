@@ -198,3 +198,124 @@ describe(`POST ${API_PATHS.KEYWORDS}`, () => {
     })
   })
 })
+
+describe(`PATCH ${API_PATHS.KEYWORDS}/:id`, () => {
+  beforeEach(() => {
+    initializeDatabase()
+    resetDatabase()
+  })
+
+  it('キーワード名を正常に更新できること', async () => {
+    const k1 = createKeyword('OldName')
+    const NEW_NAME = 'NewName'
+
+    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: NEW_NAME }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.OK)
+    const body = await res.json()
+    expect(body.success).toBe(true)
+    expect(body.data.keyword.name).toBe(NEW_NAME)
+
+    // 実際にデータベースが更新されているか確認
+    const getRes = await app.request(API_PATHS.KEYWORDS)
+    const getBody = await getRes.json()
+    expect(getBody.data.keywords).toContainEqual(
+      expect.objectContaining({ id: String(k1.keyword_id), name: NEW_NAME }),
+    )
+  })
+
+  it('存在しない ID の場合は 404 Not Found を返すこと', async () => {
+    const res = await app.request(`${API_PATHS.KEYWORDS}/999`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'ValidName' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+    const body = await res.json()
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+  })
+
+  it('名前が重複する場合は 409 Conflict を返すこと', async () => {
+    createKeyword('Existing')
+    const k2 = createKeyword('ToUpdate')
+
+    const res = await app.request(`${API_PATHS.KEYWORDS}/${k2.keyword_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Existing' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.CONFLICT)
+    const body = await res.json()
+    expect(body.success).toBe(false)
+    expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
+  })
+
+  it('不正なデータ（名前が空）の場合は 400 Bad Request を返すこと', async () => {
+    const k1 = createKeyword('Tag')
+    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+  })
+
+  it('データベースエラー時に 500 を返し、ログを出力すること', async () => {
+    const k1 = createKeyword('Tag')
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const dbError = new Error('Update failed')
+
+    vi.spyOn(sqlite, 'prepare').mockImplementation(() => {
+      throw dbError
+    })
+
+    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'NewName' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.UPDATE_KEYWORD_FAILED,
+      dbError,
+    )
+  })
+
+  it('キーワードの更新結果が取得できなかった場合に 500 を返すこと', async () => {
+    const k1 = createKeyword('Tag')
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // db.update()...get() が undefined を返すようにモックして if (!result) を通す
+    vi.spyOn(db, 'update').mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockReturnValue({
+            get: vi.fn().mockReturnValue(undefined),
+          }),
+        }),
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+
+    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'FailureTag' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.UPDATE_KEYWORD_FAILED,
+      new Error(ERROR_MESSAGES.KEYWORD_UPDATE_RETURN_VALUE_MISSING),
+    )
+  })
+})

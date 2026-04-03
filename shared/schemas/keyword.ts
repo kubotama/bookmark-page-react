@@ -36,6 +36,14 @@ export const createKeywordRequestSchema = z.object({
 export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
 
 /**
+ * キーワード更新リクエストのバリデーションスキーマ
+ */
+export const updateKeywordRequestSchema = z.object({
+  name: createKeywordRequestSchema.shape.name,
+})
+export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
+
+/**
  * 単一キーワードのレスポンススキーマ
  */
 export const keywordResponseSchema = z.object({
