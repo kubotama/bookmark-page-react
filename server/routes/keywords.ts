@@ -179,5 +179,40 @@ const keywordsRoute = new Hono()
       }
     },
   )
+  .delete(
+    '/:id',
+    zValidator('param', z.object({ id: KeywordIdSchema })),
+    async (c) => {
+      const { id } = c.req.valid('param')
+
+      try {
+        // 削除実行と結果の取得を同時に行う
+        // 中間テーブル (bookmarkKeywords) は外部キー制約 (ON DELETE CASCADE) により自動的に削除される
+        const result = await db
+          .delete(keywordsTable)
+          .where(eq(keywordsTable.keywordId, Number(id)))
+          .returning()
+          .get()
+
+        if (!result) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+                code: API_ERROR_CODES.NOT_FOUND,
+              },
+            },
+            HTTP_STATUS.NOT_FOUND,
+          )
+        }
+
+        return c.body(null, HTTP_STATUS.NO_CONTENT)
+      } catch (error) {
+        console.error(LOG_MESSAGES.DELETE_KEYWORD_FAILED, error)
+        throw error
+      }
+    },
+  )
 
 export default keywordsRoute
