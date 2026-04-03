@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   COMMON_MESSAGES,
   DEFAULT_API_URL,
+  ERROR_MESSAGES,
   EXTENSION_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
@@ -150,7 +151,7 @@ describe('useOptions Hook', () => {
   describe('handleSaveFrontendUrl', () => {
     it('有効な Frontend URL の場合に設定を保存できること', async () => {
       const { result } = await setupHook()
-      const newUrl = 'http://localhost:3000'
+      const newUrl = VALID_URLS.FRONTEND
 
       await act(async () => {
         result.current.setFrontendUrl(newUrl)
@@ -197,9 +198,10 @@ describe('useOptions Hook', () => {
     })
 
     it('接続テストが成功した場合に件数を表示すること', async () => {
+      const mockBookmarks = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]
       const mockResponse = {
         success: true,
-        data: { bookmarks: [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2] },
+        data: { bookmarks: mockBookmarks },
       }
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
@@ -212,7 +214,9 @@ describe('useOptions Hook', () => {
       })
 
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
-      expect(result.current.status.message).toContain('2 件')
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.CONNECTION_SUCCESS(mockBookmarks.length),
+      )
     })
 
     it('バリデーションエラーの場合に接続テストを中断すること', async () => {
@@ -248,7 +252,7 @@ describe('useOptions Hook', () => {
             status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           } as Response)
         },
-        expectedMessage: `HTTP error! status: ${HTTP_STATUS.INTERNAL_SERVER_ERROR} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${ERROR_MESSAGES.HTTP_ERROR(HTTP_STATUS.INTERNAL_SERVER_ERROR)} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -324,5 +328,95 @@ describe('useOptions Hook', () => {
         }
       },
     )
+  })
+
+  describe('handleTestFrontendConnection', () => {
+    let consoleSpy: MockInstance
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('接続テストが成功した場合に成功メッセージを表示すること', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+      } as Response)
+
+      const { result } = await setupHook()
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.FRONTEND_CONNECTION_SUCCESS,
+      )
+      expect(consoleSpy).not.toHaveBeenCalled()
+    })
+
+    it('バリデーションエラーの場合に接続テストを中断すること', async () => {
+      const { result } = await setupHook()
+      vi.mocked(fetch).mockClear()
+
+      await act(async () => {
+        result.current.setFrontendUrl('not-a-url')
+      })
+
+      await waitFor(() => expect(result.current.frontendUrl).toBe('not-a-url'))
+
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(fetch).not.toHaveBeenCalled()
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      )
+      expect(consoleSpy).not.toHaveBeenCalled()
+    })
+
+    it('HTTP ステータスエラーの場合に適切なエラーを表示すること', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: false,
+        status: HTTP_STATUS.NOT_FOUND,
+      } as Response)
+
+      const { result } = await setupHook()
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.FRONTEND_CONNECTION_FAILED(
+          `${ERROR_MESSAGES.HTTP_ERROR(HTTP_STATUS.NOT_FOUND)} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
+        ),
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expect.any(Error),
+      )
+    })
+
+    it('タイムアウトエラーが発生した場合に適切なメッセージを表示すること', async () => {
+      const abortError = new Error('Abort')
+      abortError.name = 'AbortError'
+      vi.mocked(fetch).mockRejectedValue(abortError)
+
+      const { result } = await setupHook()
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.CONNECTION_TIMEOUT,
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expect.any(Error),
+      )
+    })
   })
 })

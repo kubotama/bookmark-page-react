@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port,
+      cors: true,
       proxy: {
         '/api': {
           target: 'http://localhost:3030',
