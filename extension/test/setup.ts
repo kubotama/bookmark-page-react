@@ -21,9 +21,6 @@ const chromeMock = {
     onInstalled: {
       addListener: vi.fn(),
     },
-    onMessageExternal: {
-      addListener: vi.fn(),
-    },
   },
   tabs: {
     query: vi.fn(() => Promise.resolve([])),

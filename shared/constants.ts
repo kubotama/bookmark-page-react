@@ -86,13 +86,6 @@ export const STATUS_STYLES: Record<UIStatus, string> = {
 } as const
 
 /**
- * 許可されたオリジン (Web アプリ)
- */
-export const ALLOWED_ORIGINS = [
-  `http://localhost:${DEFAULT_PORTS.FRONTEND}`,
-] as const
-
-/**
  * プロダクト共通の UI メッセージ
  */
 export const COMMON_MESSAGES = {
@@ -222,10 +215,8 @@ export const EXTENSION_CONSTANTS = {
  * 拡張機能とのメッセージ通信用定数
  */
 export const EXTENSION_MESSAGE_TYPES = {
-  GET_API_CONFIG: 'GET_API_CONFIG',
   INVALIDATE_CACHE: 'INVALIDATE_CACHE',
   CHECK_BOOKMARK_STATUS: 'CHECK_BOOKMARK_STATUS',
-  SET_FRONTEND_URL: 'SET_FRONTEND_URL',
 } as const
 
 /**
@@ -357,9 +348,6 @@ export const LOG_MESSAGES = {
   INSERT_FAILED: 'Failed to insert bookmark',
   INVALID_STORAGE_URL_BACKGROUND: 'Invalid API URL in background:',
   ICON_STATUS_UPDATE_FAILED: 'Failed to update icon status:',
-  UNAUTHORIZED_EXTENSION_MESSAGE:
-    'Blocked message from unauthorized extension:',
-  UNAUTHORIZED_ORIGIN_MESSAGE: 'Blocked unauthorized message from origin:',
   VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
   VERSION_MISMATCH_ERROR:
     '[sync-version] package.json and manifest.json versions do not match. Run "npm run version-sync" to fix.',
@@ -373,11 +361,6 @@ export const LOG_MESSAGES = {
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
-  ORIGIN_MISMATCH: 'Origin mismatch or unauthorized sender',
-  INVALID_URL_FORMAT: 'Invalid URL format',
-  INVALID_MESSAGE_STRUCTURE: 'Invalid message structure',
-  NOTIFY_FRONTEND_URL_FAILED: 'Failed to notify extension of frontend URL:',
-  STORAGE_SET_FAILED: 'Failed to set storage data:',
 } as const
 
 /**

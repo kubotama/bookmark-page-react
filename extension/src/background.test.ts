@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  ALLOWED_ORIGINS,
   BOOKMARK_STATUS,
   EXTENSION_ICONS,
   EXTENSION_MESSAGE_TYPES,
@@ -24,7 +23,6 @@ describe('background service worker', () => {
       runtime: {
         onInstalled: { addListener: vi.fn() },
         onMessage: { addListener: vi.fn() },
-        onMessageExternal: { addListener: vi.fn() },
       },
       tabs: {
         onUpdated: { addListener: vi.fn() },
@@ -281,11 +279,7 @@ describe('background service worker', () => {
       await import('./background')
 
       const handler = onMessageMock.mock.calls[0][0]
-      handler(
-        { type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE },
-        { origin: ALLOWED_ORIGINS[0] },
-        vi.fn(),
-      )
+      handler({ type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE }, {}, vi.fn())
 
       await vi.waitFor(() => {
         expect(chrome.tabs.query).toHaveBeenCalled()
@@ -323,132 +317,6 @@ describe('background service worker', () => {
 
       const handler = onActivatedMock.mock.calls[0][0]
       await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
-    })
-
-    it.each([
-      {
-        name: '不許可拡張機能 (sender.id あり) をブロックすること',
-        sender: { id: 'other-extension-id', origin: ALLOWED_ORIGINS[0] },
-        expectedWarn: LOG_MESSAGES.UNAUTHORIZED_EXTENSION_MESSAGE,
-        expectedArg: 'other-extension-id',
-      },
-      {
-        name: '不許可オリジンをブロックすること',
-        sender: { origin: 'http://malicious.com' },
-        expectedWarn: LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE,
-        expectedArg: 'http://malicious.com',
-      },
-    ])('$name', async ({ sender, expectedWarn, expectedArg }) => {
-      const addListenerMock = vi.mocked(
-        chrome.runtime.onMessageExternal.addListener,
-      )
-      const consoleSpy = vi.mocked(console.warn)
-      await import('./background')
-
-      const messageHandler = addListenerMock.mock.calls[0][0]
-      const result = messageHandler(
-        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
-        sender,
-        vi.fn(),
-      )
-
-      expect(result).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith(expectedWarn, expectedArg)
-    })
-
-    it('GET_API_CONFIG メッセージを受信した際に設定値を返すこと', async () => {
-      const addListenerMock = vi.mocked(
-        chrome.runtime.onMessageExternal.addListener,
-      )
-      await import('./background')
-
-      const messageHandler = addListenerMock.mock.calls[0][0]
-      const sendResponse = vi.fn()
-
-      const result = messageHandler(
-        { type: EXTENSION_MESSAGE_TYPES.GET_API_CONFIG },
-        { origin: ALLOWED_ORIGINS[0] },
-        sendResponse,
-      )
-
-      expect(result).toBe(true)
-      expect(sendResponse).toHaveBeenCalledWith({
-        success: true,
-        apiUrl: mockApiUrl,
-      })
-    })
-
-    describe('SET_FRONTEND_URL', () => {
-      const sendResponse = vi.fn()
-
-      beforeEach(async () => {
-        sendResponse.mockClear()
-      })
-
-      it('メッセージを受信した際に sender.origin をストレージに保存すること', async () => {
-        const addListenerMock = vi.mocked(
-          chrome.runtime.onMessageExternal.addListener,
-        )
-        const setMock = vi.mocked(chrome.storage.sync.set)
-        await import('./background')
-        const messageHandler = addListenerMock.mock.calls[0][0]
-
-        const result = messageHandler(
-          { type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL },
-          { origin: 'http://localhost:5173' },
-          sendResponse,
-        )
-
-        expect(result).toBe(true)
-        await vi.waitFor(() => {
-          expect(setMock).toHaveBeenCalledWith({
-            [STORAGE_KEYS.FRONTEND_URL]: 'http://localhost:5173',
-          })
-          expect(sendResponse).toHaveBeenCalledWith({ success: true })
-        })
-      })
-
-      it('sender.origin が欠落している場合に保存を拒否すること', async () => {
-        const addListenerMock = vi.mocked(
-          chrome.runtime.onMessageExternal.addListener,
-        )
-        const setMock = vi.mocked(chrome.storage.sync.set)
-        await import('./background')
-        const messageHandler = addListenerMock.mock.calls[0][0]
-
-        const result = messageHandler(
-          { type: EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL },
-          { origin: undefined }, // origin 欠落
-          sendResponse,
-        )
-
-        expect(result).toBe(true)
-        await vi.waitFor(() => {
-          expect(setMock).not.toHaveBeenCalled()
-          expect(sendResponse).toHaveBeenCalledWith(
-            expect.objectContaining({
-              success: false,
-              error: LOG_MESSAGES.ORIGIN_MISMATCH,
-            }),
-          )
-        })
-      })
-
-      it('不正なメッセージ構造（type 違いなど）を受信した際にエラーを返すこと', async () => {
-        const addListenerMock = vi.mocked(
-          chrome.runtime.onMessageExternal.addListener,
-        )
-        await import('./background')
-        const messageHandler = addListenerMock.mock.calls[0][0]
-
-        const result = messageHandler(
-          { type: 'INVALID_TYPE' },
-          { origin: ALLOWED_ORIGINS[0] },
-          sendResponse,
-        )
-
-        expect(result).toBe(false) // 共通ガードで type チェックまでは行かないが、ハンドラ自体も false を返す
-      })
     })
 
     describe('CHECK_BOOKMARK_STATUS', () => {
