@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   API_PATHS,
   COMMON_MESSAGES,
+  ERROR_MESSAGES,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
   STORAGE_KEYS,
@@ -163,7 +164,7 @@ export const useOptions = () => {
       )
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(ERROR_MESSAGES.HTTP_ERROR(response.status))
       }
 
       const result = await response.json()
@@ -220,7 +221,7 @@ export const useOptions = () => {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(ERROR_MESSAGES.HTTP_ERROR(response.status))
       }
 
       setStatus({

@@ -131,6 +131,7 @@ export const ERROR_MESSAGES = {
   BOOKMARK_NOT_FOUND: '指定されたブックマークが見つかりませんでした',
   NOT_FOUND: 'リソースが見つかりませんでした',
   INVALID_URL: '有効な URL 形式ではありません',
+  HTTP_ERROR: (status: number | string) => `HTTP error! status: ${status}`,
   INVALID_HOST:
     'このホストへの接続はセキュリティ上の理由により許可されていません。',
   INVALID_PORT:

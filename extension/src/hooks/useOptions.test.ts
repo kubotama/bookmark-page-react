@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   COMMON_MESSAGES,
   DEFAULT_API_URL,
+  ERROR_MESSAGES,
   EXTENSION_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
@@ -251,7 +252,7 @@ describe('useOptions Hook', () => {
             status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           } as Response)
         },
-        expectedMessage: `HTTP error! status: ${HTTP_STATUS.INTERNAL_SERVER_ERROR} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${ERROR_MESSAGES.HTTP_ERROR(HTTP_STATUS.INTERNAL_SERVER_ERROR)} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -389,7 +390,7 @@ describe('useOptions Hook', () => {
       expect(result.current.status.type).toBe(UI_STATUS.ERROR)
       expect(result.current.status.message).toBe(
         COMMON_MESSAGES.FRONTEND_CONNECTION_FAILED(
-          `HTTP error! status: ${HTTP_STATUS.NOT_FOUND} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
+          `${ERROR_MESSAGES.HTTP_ERROR(HTTP_STATUS.NOT_FOUND)} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         ),
       )
       expect(consoleSpy).toHaveBeenCalledWith(
