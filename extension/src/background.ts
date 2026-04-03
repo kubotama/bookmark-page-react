@@ -7,7 +7,6 @@ import {
   EXTENSION_MESSAGE_TYPES,
   STORAGE_KEYS,
   LOG_MESSAGES,
-  ALLOWED_ORIGINS,
 } from '@shared/constants'
 import type { BookmarksResponse } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
@@ -199,80 +198,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
     })
   }
 })
-
-/**
- * 外部（Web アプリ）および内部メッセージを処理
- */
-chrome.runtime.onMessageExternal.addListener(
-  (message, sender, sendResponse) => {
-    // 許可されたオリジンリストを定数から取得
-    const allowedOrigins: readonly string[] = ALLOWED_ORIGINS
-
-    // 他の拡張機能からのメッセージを拒否
-    if (sender.id) {
-      console.warn(LOG_MESSAGES.UNAUTHORIZED_EXTENSION_MESSAGE, sender.id)
-      return false
-    }
-
-    if (sender.origin && !allowedOrigins.includes(sender.origin)) {
-      console.warn(LOG_MESSAGES.UNAUTHORIZED_ORIGIN_MESSAGE, sender.origin)
-      return false
-    }
-
-    if (message?.type === EXTENSION_MESSAGE_TYPES.GET_API_CONFIG) {
-      chrome.storage.sync.get(STORAGE_KEYS.API_URL, (data) => {
-        sendResponse({
-          success: true,
-          apiUrl: data[STORAGE_KEYS.API_URL],
-        })
-      })
-      return true
-    }
-
-    if (message?.type === EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL) {
-      // 構造の検証
-      const schema = z.object({
-        type: z.literal(EXTENSION_MESSAGE_TYPES.SET_FRONTEND_URL),
-      })
-      const validation = schema.safeParse(message)
-
-      if (!validation.success) {
-        sendResponse({
-          success: false,
-          error: LOG_MESSAGES.INVALID_MESSAGE_STRUCTURE,
-        })
-        return true
-      }
-
-      // 既に ALLOWED_ORIGINS で検証済みの sender.origin を直接使用
-      if (sender.origin) {
-        const origin = sender.origin
-        ;(async () => {
-          try {
-            await chrome.storage.sync.set({
-              [STORAGE_KEYS.FRONTEND_URL]: origin,
-            })
-            sendResponse({ success: true })
-          } catch (err) {
-            console.error(LOG_MESSAGES.STORAGE_SET_FAILED, err)
-            sendResponse({
-              success: false,
-              error: err instanceof Error ? err.message : String(err),
-            })
-          }
-        })()
-      } else {
-        sendResponse({
-          success: false,
-          error: LOG_MESSAGES.ORIGIN_MISMATCH,
-        })
-      }
-      return true
-    }
-
-    return false
-  },
-)
 
 /**
  * 内部メッセージを処理
