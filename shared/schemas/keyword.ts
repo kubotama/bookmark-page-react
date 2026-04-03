@@ -39,10 +39,7 @@ export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
  * キーワード更新リクエストのバリデーションスキーマ
  */
 export const updateKeywordRequestSchema = z.object({
-  name: z
-    .string()
-    .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
-    .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH),
+  name: createKeywordRequestSchema.shape.name,
 })
 export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
 

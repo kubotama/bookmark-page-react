@@ -289,4 +289,33 @@ describe(`PATCH ${API_PATHS.KEYWORDS}/:id`, () => {
       dbError,
     )
   })
+
+  it('キーワードの更新結果が取得できなかった場合に 500 を返すこと', async () => {
+    const k1 = createKeyword('Tag')
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // db.update()...get() が undefined を返すようにモックして if (!result) を通す
+    vi.spyOn(db, 'update').mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockReturnValue({
+            get: vi.fn().mockReturnValue(undefined),
+          }),
+        }),
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+
+    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'FailureTag' }),
+    })
+
+    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      LOG_MESSAGES.UPDATE_KEYWORD_FAILED,
+      new Error(ERROR_MESSAGES.KEYWORD_UPDATE_RETURN_VALUE_MISSING),
+    )
+  })
 })

@@ -161,7 +161,7 @@ const keywordsRoute = new Hono()
           .get()
 
         if (!result) {
-          throw new Error(ERROR_MESSAGES.NOT_FOUND)
+          throw new Error(ERROR_MESSAGES.KEYWORD_UPDATE_RETURN_VALUE_MISSING)
         }
 
         const keyword = {
