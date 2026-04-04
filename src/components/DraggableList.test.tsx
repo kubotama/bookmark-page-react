@@ -4,10 +4,9 @@ import { z } from 'zod'
 
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
-import { createDragEndEvent } from 'src/test/dnd-utils'
-
 import { DraggableItem } from './DraggableItem'
 import { DraggableList } from './DraggableList'
+import { createDragEndEvent } from '../test/dnd-utils'
 import { render, screen } from '../test/utils'
 
 const mockIdSchema = z.string()
