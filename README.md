@@ -76,7 +76,7 @@
 
 ### 前提条件 (Prerequisites)
 
-- Node.js (v20以上必須)
+- Node.js (v24以上必須)
 
 ### データベース (Database)
 
