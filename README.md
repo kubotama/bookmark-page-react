@@ -79,7 +79,7 @@
 
 ### 前提条件 (Prerequisites)
 
-- Node.js (v24以上必須)
+- Node.js (v24.14.1以上必須)
 
 ### データベース (Database)
 
