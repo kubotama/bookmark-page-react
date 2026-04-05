@@ -41,7 +41,7 @@ export function KeywordPage() {
   }
 
   const handleDeleteWithConfirm = () => {
-    if (window.confirm(UI_MESSAGES.DELETE_CONFIRM)) {
+    if (window.confirm(UI_MESSAGES.KEYWORD_DELETE_CONFIRM)) {
       handleDelete()
     }
   }
@@ -67,14 +67,18 @@ export function KeywordPage() {
               onClick={handleUpdate}
               disabled={isUpdating}
             >
-              {isUpdating ? '...' : FIELD_LABELS.BUTTON_UPDATE}
+              {isUpdating
+                ? COMMON_MESSAGES.LOADING_DOTS
+                : FIELD_LABELS.BUTTON_UPDATE}
             </Button>
             <Button
               variant="danger"
               onClick={handleDeleteWithConfirm}
               disabled={isDeleting}
             >
-              {isDeleting ? '...' : FIELD_LABELS.BUTTON_DELETE}
+              {isDeleting
+                ? COMMON_MESSAGES.LOADING_DOTS
+                : FIELD_LABELS.BUTTON_DELETE}
             </Button>
             <Button variant="secondary" onClick={handleBack}>
               {FIELD_LABELS.BUTTON_CLOSE}

@@ -94,6 +94,7 @@ export const COMMON_MESSAGES = {
   UNEXPECTED_RESPONSE: '予期しないレスポンス形式です',
   SAVING: '保存中...',
   LOADING_LABEL: '読み込み中...',
+  LOADING_DOTS: '...',
   API_URL_DESCRIPTION:
     'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
   FRONTEND_URL_DESCRIPTION:
@@ -146,12 +147,14 @@ export const UI_MESSAGES = {
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
+  KEYWORD_DELETE_CONFIRM: 'このキーワードを削除してもよろしいですか？',
   FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
   DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
-  KEYWORD_NOT_FOUND: (id: string | number) => `Keyword not found (ID: ${id})`,
+  KEYWORD_NOT_FOUND: (id: string | number) =>
+    `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
 } as const
 
