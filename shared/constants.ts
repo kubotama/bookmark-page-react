@@ -151,6 +151,7 @@ export const UI_MESSAGES = {
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
   DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
+  KEYWORD_NOT_FOUND: (id: string | number) => `Keyword not found (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
 } as const
 
@@ -363,6 +364,8 @@ export const LOG_MESSAGES = {
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
+  UPDATE_KEYWORD_PLACEHOLDER: (name: string) => `Update keyword: ${name}`,
+  DELETE_KEYWORD_PLACEHOLDER: (id: string | number) => `Delete keyword: ${id}`,
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
 } as const

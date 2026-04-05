@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react'
 
 import { useParams, useNavigate } from 'react-router-dom'
 
-import { APP_PATHS } from '@shared/constants'
+import { APP_PATHS, LOG_MESSAGES } from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 
 import { useKeywords } from './useBookmarks'
@@ -48,12 +48,13 @@ export const useKeywordPage = (onBack?: () => void) => {
   }, [onBack, navigate])
 
   const handleUpdate = useCallback(async () => {
-    console.log('Update keyword:', editName)
+    console.log(LOG_MESSAGES.UPDATE_KEYWORD_PLACEHOLDER(editName))
     // TODO: Issue #361 で実装
   }, [editName])
 
   const handleDelete = useCallback(async () => {
-    console.log('Delete keyword:', parsedId)
+    if (!parsedId) return
+    console.log(LOG_MESSAGES.DELETE_KEYWORD_PLACEHOLDER(parsedId))
     // TODO: Issue #362 で実装
   }, [parsedId])
 

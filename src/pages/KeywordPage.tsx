@@ -1,4 +1,9 @@
-import { FIELD_LABELS, PLACEHOLDERS, UI_MESSAGES } from '@shared/constants'
+import {
+  COMMON_MESSAGES,
+  FIELD_LABELS,
+  PLACEHOLDERS,
+  UI_MESSAGES,
+} from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
 
@@ -19,13 +24,15 @@ export function KeywordPage() {
   } = useKeywordPage()
 
   if (isLoading) {
-    return <div className="p-4">Loading...</div>
+    return <div className="p-4">{COMMON_MESSAGES.LOADING_LABEL}</div>
   }
 
   if (!keyword) {
     return (
       <div className="p-4">
-        <p className="text-red-600 mb-4">Keyword not found (ID: {id})</p>
+        <p className="text-red-600 mb-4">
+          {UI_MESSAGES.KEYWORD_NOT_FOUND(id ?? '')}
+        </p>
         <Button variant="secondary" onClick={handleBack}>
           {FIELD_LABELS.BUTTON_CLOSE}
         </Button>

@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { FIELD_LABELS, PLACEHOLDERS } from '@shared/constants'
+import {
+  COMMON_MESSAGES,
+  FIELD_LABELS,
+  PLACEHOLDERS,
+  UI_MESSAGES,
+} from '@shared/constants'
 import { MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import { KeywordPage } from './KeywordPage'
@@ -58,7 +63,7 @@ describe('KeywordPage Component', () => {
     })
 
     render(<KeywordPage />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(screen.getByText(COMMON_MESSAGES.LOADING_LABEL)).toBeInTheDocument()
   })
 
   it('キーワードが見つからない場合にエラーメッセージが表示されること', () => {
@@ -68,6 +73,10 @@ describe('KeywordPage Component', () => {
     })
 
     render(<KeywordPage />)
-    expect(screen.getByText(/Keyword not found/)).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        UI_MESSAGES.KEYWORD_NOT_FOUND(mockUseKeywordPage.id ?? ''),
+      ),
+    ).toBeInTheDocument()
   })
 })
