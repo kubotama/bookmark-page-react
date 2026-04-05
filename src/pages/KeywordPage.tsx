@@ -54,10 +54,11 @@ export function KeywordPage() {
           <div className="flex items-center">
             <InputField
               id="keyword-name"
-              label={FIELD_LABELS.KEYWORDS_LABEL}
+              label={FIELD_LABELS.KEYWORD_NAME}
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder={PLACEHOLDERS.KEYWORD}
+              width="w-32"
             />
           </div>
 

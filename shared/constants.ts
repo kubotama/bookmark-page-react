@@ -25,6 +25,7 @@ export const FIELD_LABELS = {
   BACK_TO_LIST: 'Back to List',
   BOOKMARKS_LABEL: 'ブックマーク一覧',
   KEYWORDS_LABEL: 'キーワード一覧',
+  KEYWORD_NAME: 'キーワード名',
   KEYWORDS_HEADING: 'Keywords',
   MATCHED_BOOKMARKS_LABEL: '一致したブックマーク',
   OTHER_BOOKMARKS_LABEL: 'その他のブックマーク',

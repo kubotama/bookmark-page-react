@@ -39,9 +39,7 @@ describe('KeywordPage Component', () => {
   it('キーワード情報が正しく表示されること', () => {
     render(<KeywordPage />)
 
-    expect(
-      screen.getByLabelText(FIELD_LABELS.KEYWORDS_LABEL),
-    ).toBeInTheDocument()
+    expect(screen.getByLabelText(FIELD_LABELS.KEYWORD_NAME)).toBeInTheDocument()
     expect(screen.getByDisplayValue(MOCK_KEYWORDS[0].name)).toBeInTheDocument()
     expect(
       screen.getByPlaceholderText(PLACEHOLDERS.KEYWORD),
