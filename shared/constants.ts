@@ -69,6 +69,14 @@ export const UI_STATUS = {
 export type UIStatus = (typeof UI_STATUS)[keyof typeof UI_STATUS]
 
 /**
+ * 共通の UI スタイル定数
+ */
+export const UI_STYLES = {
+  LABEL_WIDTH_CLASS: 'w-32',
+  INDENT_MARGIN_CLASS: 'ml-36',
+} as const
+
+/**
  * 処理状態とメッセージを組み合わせた共通型
  */
 export type StatusInfo = {

@@ -3,6 +3,7 @@ import {
   FIELD_LABELS,
   PLACEHOLDERS,
   UI_MESSAGES,
+  UI_STYLES,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
@@ -49,7 +50,13 @@ export function KeywordPage() {
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-6">
       {/* 基本情報ブロック */}
-      <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
+      <section
+        className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm"
+        aria-labelledby="keyword-detail-title"
+      >
+        <h2 id="keyword-detail-title" className="sr-only">
+          {FIELD_LABELS.KEYWORD_DETAIL_TITLE}
+        </h2>
         <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
           <div className="flex items-center">
             <InputField
@@ -58,11 +65,11 @@ export function KeywordPage() {
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder={PLACEHOLDERS.KEYWORD}
-              width="w-32"
+              width={UI_STYLES.LABEL_WIDTH_CLASS}
             />
           </div>
 
-          <div className="grid grid-rows-3 gap-0.5 min-w-24">
+          <div className="grid grid-rows-3 gap-1 min-w-24">
             <Button
               variant="primary"
               onClick={handleUpdate}
@@ -86,7 +93,7 @@ export function KeywordPage() {
             </Button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

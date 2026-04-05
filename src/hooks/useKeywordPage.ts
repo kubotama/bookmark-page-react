@@ -33,12 +33,12 @@ export const useKeywordPage = (onBack?: () => void) => {
 
   // 3. フォーム状態
   const [editName, setEditName] = useState('')
-  const [prevKeywordId, setPrevKeywordId] = useState<string | null>(null)
+  const [prevId, setPrevId] = useState<string | null>(null)
 
-  // データが届いた際、またはキーワードが変わった際の初期化
-  if (keyword && keyword.id !== prevKeywordId) {
+  // キーワードが変わった際にステートを初期化 (Rendering 時に同期)
+  if (keyword && keyword.id !== prevId) {
     setEditName(keyword.name)
-    setPrevKeywordId(keyword.id)
+    setPrevId(keyword.id)
   }
 
   // 4. ハンドラ (Issue #361, #362, #363 で実装予定)
