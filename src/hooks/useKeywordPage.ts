@@ -39,7 +39,18 @@ export const useKeywordPage = (onBack?: () => void) => {
   if (keyword && keyword.id !== prevId) {
     setEditName(keyword.name)
     setPrevId(keyword.id)
+  } else if (!keyword && prevId !== null) {
+    // キーワードが取得できなくなった（または ID が無効になった）場合にリセット
+    setEditName('')
+    setPrevId(null)
   }
+
+  // 保存ボタンの有効・無効判定
+  const isSaveDisabled = useMemo(() => {
+    if (!keyword) return true
+    if (!editName.trim()) return true
+    return editName === keyword.name
+  }, [keyword, editName])
 
   // 4. ハンドラ (Issue #361, #362, #363 で実装予定)
   const handleBack = useCallback(() => {
@@ -66,6 +77,7 @@ export const useKeywordPage = (onBack?: () => void) => {
     isLoading,
     isUpdating: false, // プレースホルダ
     isDeleting: false, // プレースホルダ
+    isSaveDisabled,
     handleUpdate,
     handleDelete,
     handleBack,

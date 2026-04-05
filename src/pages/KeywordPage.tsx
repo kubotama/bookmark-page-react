@@ -19,37 +19,34 @@ export function KeywordPage() {
     isLoading,
     isUpdating,
     isDeleting,
+    isSaveDisabled,
     handleUpdate,
     handleDelete,
     handleBack,
   } = useKeywordPage()
 
-  if (isLoading) {
-    return <div className="p-4">{COMMON_MESSAGES.LOADING_LABEL}</div>
-  }
-
-  if (!keyword) {
-    return (
-      <div className="p-4">
-        <p className="text-red-600 mb-4">
-          {UI_MESSAGES.KEYWORD_NOT_FOUND(id ?? '')}
-        </p>
-        <Button variant="secondary" onClick={handleBack}>
-          {FIELD_LABELS.BUTTON_CLOSE}
-        </Button>
-      </div>
-    )
-  }
-
-  const handleDeleteWithConfirm = () => {
-    if (window.confirm(UI_MESSAGES.KEYWORD_DELETE_CONFIRM)) {
-      handleDelete()
+  // コンテンツのレンダリング
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="p-4 text-gray-600">{COMMON_MESSAGES.LOADING_LABEL}</div>
+      )
     }
-  }
 
-  return (
-    <div className="p-4 max-w-2xl mx-auto space-y-6">
-      {/* 基本情報ブロック */}
+    if (!keyword) {
+      return (
+        <div className="p-4">
+          <p className="text-red-600 mb-4">
+            {UI_MESSAGES.KEYWORD_NOT_FOUND(id ?? '')}
+          </p>
+          <Button variant="secondary" onClick={handleBack}>
+            {FIELD_LABELS.BUTTON_CLOSE}
+          </Button>
+        </div>
+      )
+    }
+
+    return (
       <section
         className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm"
         aria-labelledby="keyword-detail-title"
@@ -73,7 +70,7 @@ export function KeywordPage() {
             <Button
               variant="primary"
               onClick={handleUpdate}
-              disabled={isUpdating}
+              disabled={isUpdating || isSaveDisabled}
             >
               {isUpdating
                 ? COMMON_MESSAGES.LOADING_DOTS
@@ -94,6 +91,16 @@ export function KeywordPage() {
           </div>
         </div>
       </section>
-    </div>
+    )
+  }
+
+  const handleDeleteWithConfirm = () => {
+    if (window.confirm(UI_MESSAGES.KEYWORD_DELETE_CONFIRM)) {
+      handleDelete()
+    }
+  }
+
+  return (
+    <div className="p-4 max-w-2xl mx-auto space-y-6">{renderContent()}</div>
   )
 }

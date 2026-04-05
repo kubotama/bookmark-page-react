@@ -26,6 +26,7 @@ describe('KeywordPage Component', () => {
     isLoading: false,
     isUpdating: false,
     isDeleting: false,
+    isSaveDisabled: true,
     handleUpdate: vi.fn(),
     handleDelete: vi.fn(),
     handleBack: vi.fn(),
@@ -54,7 +55,23 @@ describe('KeywordPage Component', () => {
     expect(screen.getByText(FIELD_LABELS.BUTTON_CLOSE)).toBeInTheDocument()
   })
 
-  it('ローディング中に Loading... が表示されること', () => {
+  it('更新ボタンが変更がない場合に不活性化されていること', () => {
+    render(<KeywordPage />)
+    const updateButton = screen.getByText(FIELD_LABELS.BUTTON_UPDATE)
+    expect(updateButton).toBeDisabled()
+  })
+
+  it('更新ボタンが変更がある場合に活性化されること', () => {
+    vi.mocked(useKeywordPage).mockReturnValue({
+      ...mockUseKeywordPage,
+      isSaveDisabled: false,
+    })
+    render(<KeywordPage />)
+    const updateButton = screen.getByText(FIELD_LABELS.BUTTON_UPDATE)
+    expect(updateButton).not.toBeDisabled()
+  })
+
+  it('ローディング中に読み込み中メッセージが表示されること', () => {
     vi.mocked(useKeywordPage).mockReturnValue({
       ...mockUseKeywordPage,
       isLoading: true,
