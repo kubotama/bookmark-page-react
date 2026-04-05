@@ -1,27 +1,79 @@
-import { useParams, Link } from 'react-router-dom'
+import { FIELD_LABELS, PLACEHOLDERS, UI_MESSAGES } from '@shared/constants'
+import { Button } from '@shared/ui/Button'
+import { InputField } from '@shared/ui/InputField'
 
-import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
+import { useKeywordPage } from '../hooks/useKeywordPage'
 
 export function KeywordPage() {
-  const { id } = useParams<{ id: string }>()
+  const {
+    id,
+    keyword,
+    editName,
+    setEditName,
+    isLoading,
+    isUpdating,
+    isDeleting,
+    handleUpdate,
+    handleDelete,
+    handleBack,
+  } = useKeywordPage()
+
+  if (isLoading) {
+    return <div className="p-4">Loading...</div>
+  }
+
+  if (!keyword) {
+    return (
+      <div className="p-4">
+        <p className="text-red-600 mb-4">Keyword not found (ID: {id})</p>
+        <Button variant="secondary" onClick={handleBack}>
+          {FIELD_LABELS.BUTTON_CLOSE}
+        </Button>
+      </div>
+    )
+  }
+
+  const handleDeleteWithConfirm = () => {
+    if (window.confirm(UI_MESSAGES.DELETE_CONFIRM)) {
+      handleDelete()
+    }
+  }
 
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <Link to={APP_PATHS.HOME} className="text-blue-600 hover:underline">
-          &larr; {FIELD_LABELS.BACK_TO_LIST}
-        </Link>
-      </div>
-      <h1 className="text-xl font-bold mb-2">
-        {FIELD_LABELS.KEYWORD_DETAIL_TITLE}
-      </h1>
-      <p className="text-gray-600">
-        {FIELD_LABELS.KEYWORD_ID_PREFIX} {id}
-      </p>
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
-        <p className="text-sm text-blue-700">
-          Note: This is a placeholder for the keyword filtered list screen.
-        </p>
+    <div className="p-4 max-w-2xl mx-auto space-y-6">
+      {/* 基本情報ブロック */}
+      <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
+        <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
+          <div className="flex items-center">
+            <InputField
+              id="keyword-name"
+              label={FIELD_LABELS.KEYWORDS_LABEL}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder={PLACEHOLDERS.KEYWORD}
+            />
+          </div>
+
+          <div className="grid grid-rows-3 gap-0.5 min-w-24">
+            <Button
+              variant="primary"
+              onClick={handleUpdate}
+              disabled={isUpdating}
+            >
+              {isUpdating ? '...' : FIELD_LABELS.BUTTON_UPDATE}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteWithConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? '...' : FIELD_LABELS.BUTTON_DELETE}
+            </Button>
+            <Button variant="secondary" onClick={handleBack}>
+              {FIELD_LABELS.BUTTON_CLOSE}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )
