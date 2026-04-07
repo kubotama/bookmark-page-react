@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 
 import { useParams, useNavigate } from 'react-router-dom'
 
@@ -8,6 +8,7 @@ import {
   LOG_MESSAGES,
   UI_MESSAGES,
   UI_STATUS,
+  KEY_VALUES,
   type StatusInfo,
 } from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
@@ -113,6 +114,18 @@ export const useKeywordPage = (onBack?: () => void) => {
       })
     }
   }, [parsedId, isDeleting, deleteKeyword, navigate])
+
+  // 5. キーボードショートカット
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      if (e.key === KEY_VALUES.ESCAPE) {
+        handleBack()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleBack])
 
   return {
     id,
