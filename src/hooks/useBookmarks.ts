@@ -245,6 +245,24 @@ export const useUpdateKeyword = () => {
         UI_MESSAGES.UPDATE_FAILED,
       )
     },
+    onSuccess: (data) => {
+      // キャッシュを直接更新して即座に UI に反映させる
+      const updatedKeyword = data.keyword
+      queryClient.setQueryData<KeywordsResponse>(
+        QUERY_KEYS.KEYWORDS.LIST(),
+        (oldData) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            keywords: oldData.keywords.map((kw) =>
+              kw.id === updatedKeyword.id
+                ? { ...kw, name: updatedKeyword.name }
+                : kw,
+            ),
+          }
+        },
+      )
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
     },
