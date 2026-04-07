@@ -10,6 +10,7 @@ interface KeywordListProps {
   keywords: Keyword[]
   selectedKeywordIds?: KeywordId[]
   onKeywordClick?: (id: KeywordId) => void
+  onKeywordDoubleClick?: (id: KeywordId) => void
   onReorder?: (activeId: KeywordId, overId: KeywordId) => void
   onClose?: () => void
   dndContext?: boolean
@@ -19,6 +20,7 @@ export const KeywordList = ({
   keywords,
   selectedKeywordIds,
   onKeywordClick,
+  onKeywordDoubleClick,
   onReorder,
   onClose,
   dndContext,
@@ -51,6 +53,7 @@ export const KeywordList = ({
                   (selectedKeywordIds?.length === 0 && index === 0)
                 }
                 onClick={onKeywordClick ?? (() => {})}
+                onDoubleClick={onKeywordDoubleClick}
                 onClose={onClose}
                 {...dndProps}
               />
