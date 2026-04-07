@@ -280,10 +280,26 @@ export const useDeleteKeyword = () => {
       })
 
       if (res.status === HTTP_STATUS.NO_CONTENT) {
-        return
+        return id
       }
 
-      return await parseResponse<void>(res, UI_MESSAGES.DELETE_FAILED)
+      return await parseResponse<KeywordId>(
+        res,
+        UI_MESSAGES.KEYWORD_DELETE_FAILED,
+      )
+    },
+    onSuccess: (deletedId) => {
+      // キャッシュから削除対象を取り除く
+      queryClient.setQueryData<KeywordsResponse>(
+        QUERY_KEYS.KEYWORDS.LIST(),
+        (oldData) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            keywords: oldData.keywords.filter((kw) => kw.id !== deletedId),
+          }
+        },
+      )
     },
     onSettled: () => {
       // キーワード削除によりブックマークとの紐付けも解除されるため、両方のキャッシュを無効化

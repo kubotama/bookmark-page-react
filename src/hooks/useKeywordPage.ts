@@ -98,6 +98,7 @@ export const useKeywordPage = (onBack?: () => void) => {
   const handleDelete = useCallback(async () => {
     if (!parsedId || isDeleting) return
 
+    setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
     try {
       await deleteKeyword(parsedId)
       navigate(APP_PATHS.HOME)
@@ -105,7 +106,10 @@ export const useKeywordPage = (onBack?: () => void) => {
       console.error(LOG_MESSAGES.DELETE_KEYWORD_FAILED, err)
       setStatus({
         type: UI_STATUS.ERROR,
-        message: err instanceof Error ? err.message : UI_MESSAGES.DELETE_FAILED,
+        message:
+          err instanceof Error
+            ? err.message
+            : UI_MESSAGES.KEYWORD_DELETE_FAILED,
       })
     }
   }, [parsedId, isDeleting, deleteKeyword, navigate])
