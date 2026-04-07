@@ -14,6 +14,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useNavigate } from 'react-router-dom'
 
 import {
+  APP_PATHS,
   FIELD_LABELS,
   KEY_VALUES,
   DROPPABLE_IDS,
@@ -83,7 +84,7 @@ export function HomePage({ appState }: HomePageProps) {
 
   const handleKeywordDoubleClick = useCallback(
     (id: string) => {
-      navigate(`/keyword/${id}`)
+      navigate(APP_PATHS.KEYWORD_DETAIL(id))
     },
     [navigate],
   )
