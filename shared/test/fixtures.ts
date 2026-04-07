@@ -1,14 +1,15 @@
 import { BookmarkIdSchema } from '../schemas/bookmark'
-import type { Bookmark } from '../schemas/bookmark'
 import { KeywordIdSchema } from '../schemas/keyword'
-import type { Keyword } from '../schemas/keyword'
+
+import type { Bookmark } from '../schemas/bookmark'
+import type { KeywordWithCount } from '../schemas/keyword'
 
 export const MOCK_BOOKMARK_TITLE_PREFIX = 'Test Bookmark'
 
-export const MOCK_KEYWORDS: Keyword[] = [
-  { id: KeywordIdSchema.parse('1'), name: 'React' },
-  { id: KeywordIdSchema.parse('2'), name: 'TypeScript' },
-  { id: KeywordIdSchema.parse('3'), name: 'Vite' },
+export const MOCK_KEYWORDS: KeywordWithCount[] = [
+  { id: KeywordIdSchema.parse('1'), name: 'React', bookmarkCount: 0 },
+  { id: KeywordIdSchema.parse('2'), name: 'TypeScript', bookmarkCount: 0 },
+  { id: KeywordIdSchema.parse('3'), name: 'Vite', bookmarkCount: 0 },
 ]
 
 export const MOCK_BOOKMARK_1: Bookmark = {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+
 import { VALIDATION_MESSAGES } from '@shared/constants'
 
 export const KeywordIdSchema = z
@@ -33,6 +34,14 @@ export const createKeywordRequestSchema = z.object({
     .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH),
 })
 export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
+
+/**
+ * キーワード更新リクエストのバリデーションスキーマ
+ */
+export const updateKeywordRequestSchema = z.object({
+  name: createKeywordRequestSchema.shape.name,
+})
+export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
 
 /**
  * 単一キーワードのレスポンススキーマ

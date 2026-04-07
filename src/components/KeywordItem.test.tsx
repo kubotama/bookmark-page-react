@@ -1,13 +1,13 @@
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
-import userEvent from '@testing-library/user-event'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
-import { render, screen } from '../test/utils'
 import { KeywordItem } from './KeywordItem'
+import { render, screen } from '../test/utils'
 
 import type { DraggableAttributes } from '@dnd-kit/core'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 describe('KeywordItem', () => {
   const mockKeyword: Keyword = {
@@ -40,6 +40,15 @@ describe('KeywordItem', () => {
 
     await user.click(screen.getByText(mockKeyword.name))
     expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
+  })
+
+  it('ダブルクリック時に onDoubleClick が呼ばれること', async () => {
+    const user = userEvent.setup()
+    const onDoubleClick = vi.fn()
+    render(<KeywordItem {...defaultProps} onDoubleClick={onDoubleClick} />)
+
+    await user.dblClick(screen.getByText(mockKeyword.name))
+    expect(onDoubleClick).toHaveBeenCalledWith(mockKeyword.id)
   })
 
   it('Space キーで onClick が呼ばれること', async () => {

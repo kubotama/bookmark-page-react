@@ -15,9 +15,9 @@ import { updateBookmarkSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
+import { BookmarkPage } from './BookmarkPage'
 import { server } from '../test/setup'
 import { fireEvent, render, screen, waitFor } from '../test/utils'
-import { BookmarkPage } from './BookmarkPage'
 
 // openUrlInNewTab をモック
 vi.mock('@shared/utils/url', async () => {

@@ -24,7 +24,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    "baseUrl": ".."
+    "paths": {
+      "@shared/ui/*": ["../shared/components/ui/*"],
+      "@shared/*": ["../shared/*"]
+    }
   },
   "include": ["src", "shared"]
 }

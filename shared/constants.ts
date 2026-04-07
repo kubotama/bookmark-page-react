@@ -12,11 +12,12 @@ export const FIELD_LABELS = {
   BUTTON_SAVE: '保存',
   BUTTON_TEST: '接続確認',
   BUTTON_SAVE_AND_APPLY: '保存して適用',
-  BUTTON_SYNCHRONIZE: '同期',
-  BUTTON_SYNCHRONIZING: '同期中...',
+  BUTTON_ADD: '追加',
   OPTIONS_TITLE: '拡張機能の設定',
   POPUP_TITLE: 'ページをブックマーク',
   SETTING_TITLE: '設定',
+  API_SETTINGS_TITLE: 'API 設定',
+  FRONTEND_SETTINGS_TITLE: 'Web アプリ設定',
   BOOKMARK_DETAIL_TITLE: 'Bookmark Detail',
   KEYWORD_DETAIL_TITLE: 'Keyword Detail',
   BOOKMARK_ID_PREFIX: 'Bookmark ID:',
@@ -24,13 +25,14 @@ export const FIELD_LABELS = {
   BACK_TO_LIST: 'Back to List',
   BOOKMARKS_LABEL: 'ブックマーク一覧',
   KEYWORDS_LABEL: 'キーワード一覧',
+  KEYWORD_NAME: 'キーワード名',
   KEYWORDS_HEADING: 'Keywords',
   MATCHED_BOOKMARKS_LABEL: '一致したブックマーク',
   OTHER_BOOKMARKS_LABEL: 'その他のブックマーク',
   ASSIGNED_KEYWORDS_LABEL: '割り当て済みのキーワード',
   UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
   ADD_KEYWORD_LABEL: '追加するキーワード',
-  BUTTON_ADD: '追加',
+  FRONTEND_URL: 'Web アプリ URL',
 } as const
 
 export const PLACEHOLDERS = {
@@ -51,6 +53,7 @@ export const DEFAULT_PORTS = {
  * プロダクト全体で共有されるデフォルト設定
  */
 export const DEFAULT_API_URL = `http://localhost:${DEFAULT_PORTS.BACKEND}`
+export const DEFAULT_FRONTEND_URL = `http://localhost:${DEFAULT_PORTS.FRONTEND}`
 export const DEFAULT_SERVER_PORT = DEFAULT_PORTS.BACKEND
 
 /**
@@ -64,6 +67,14 @@ export const UI_STATUS = {
 } as const
 
 export type UIStatus = (typeof UI_STATUS)[keyof typeof UI_STATUS]
+
+/**
+ * 共通の UI スタイル定数
+ */
+export const UI_STYLES = {
+  LABEL_WIDTH_CLASS: 'w-32',
+  INDENT_MARGIN_CLASS: 'ml-36',
+} as const
 
 /**
  * 処理状態とメッセージを組み合わせた共通型
@@ -84,13 +95,6 @@ export const STATUS_STYLES: Record<UIStatus, string> = {
 } as const
 
 /**
- * 許可されたオリジン (Web アプリ)
- */
-export const ALLOWED_ORIGINS = [
-  `http://localhost:${DEFAULT_PORTS.FRONTEND}`,
-] as const
-
-/**
  * プロダクト共通の UI メッセージ
  */
 export const COMMON_MESSAGES = {
@@ -99,9 +103,21 @@ export const COMMON_MESSAGES = {
   UNEXPECTED_RESPONSE: '予期しないレスポンス形式です',
   SAVING: '保存中...',
   LOADING_LABEL: '読み込み中...',
+  LOADING_DOTS: '...',
   API_URL_DESCRIPTION:
     'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
-  SETTINGS_SYNCED: '拡張機能から設定を読み込みました',
+  FRONTEND_URL_DESCRIPTION:
+    '詳細画面を開く際に使用する Web アプリのベース URL を入力してください。',
+  CONNECTION_TESTING: '接続確認中...',
+  CONNECTION_SUCCESS: (count: number) =>
+    `接続成功: ${count} 件のブックマークが見つかりました`,
+  FRONTEND_CONNECTION_SUCCESS: '接続成功: Web アプリへのアクセスを確認しました',
+  CONNECTION_FAILED: (detail: string) => `接続失敗: ${detail}`,
+  FRONTEND_CONNECTION_FAILED: (detail: string) =>
+    `接続失敗 (Web アプリ): ${detail}`,
+  CONNECTION_TIMEOUT: 'リクエストがタイムアウトしました',
+  CONNECTION_FAILED_HINT:
+    'サーバーが起動しているか、URLが正しいか確認してください。',
 } as const
 
 /**
@@ -114,10 +130,13 @@ export const ERROR_MESSAGES = {
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   KEYWORD_INSERT_RETURN_VALUE_MISSING:
     'キーワードの挿入に成功しましたが、返り値の取得に失敗しました',
+  KEYWORD_UPDATE_RETURN_VALUE_MISSING:
+    'キーワードの更新に成功しましたが、返り値の取得に失敗しました',
   KEYWORD_NOT_FOUND: '指定されたキーワードが見つかりませんでした',
   BOOKMARK_NOT_FOUND: '指定されたブックマークが見つかりませんでした',
   NOT_FOUND: 'リソースが見つかりませんでした',
   INVALID_URL: '有効な URL 形式ではありません',
+  HTTP_ERROR: (status: number | string) => `HTTP error! status: ${status}`,
   INVALID_HOST:
     'このホストへの接続はセキュリティ上の理由により許可されていません。',
   INVALID_PORT:
@@ -133,19 +152,20 @@ export const ERROR_MESSAGES = {
 export const UI_MESSAGES = {
   NO_BOOKMARKS: 'ブックマークがありません。',
   FETCH_BOOKMARKS_FAILED: 'ブックマークの取得に失敗しました',
+  UPDATE_SUCCESS: '更新しました',
   UPDATE_FAILED: 'ブックマークの更新に失敗しました',
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
+  KEYWORD_DELETE_FAILED: 'キーワードの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
-  SYNC_ID_NOT_CONFIGURED: '拡張機能 ID が設定されていません',
-  SYNC_NOT_DETECTED: '拡張機能環境が検出されませんでした',
-  SYNC_INVALID_RESPONSE: '拡張機能から不正なレスポンスが返されました',
-  SYNC_CONNECTION_FAILED: '拡張機能との接続に失敗しました',
+  KEYWORD_DELETE_CONFIRM: 'このキーワードを削除してもよろしいですか？',
   FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
   DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
+  KEYWORD_NOT_FOUND: (id: string | number) =>
+    `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
 } as const
 
@@ -156,13 +176,6 @@ export const EXTENSION_MESSAGES = {
   SETTINGS_SAVED: '設定を保存しました',
   SETTINGS_SAVE_FAILED: '設定の保存に失敗しました',
   SETTINGS_LOAD_FAILED: '設定の読み込みに失敗しました',
-  CONNECTION_TESTING: '接続確認中...',
-  CONNECTION_SUCCESS: (count: number) =>
-    `接続成功: ${count} 件のブックマークが見つかりました`,
-  CONNECTION_FAILED: (detail: string) => `接続失敗: ${detail}`,
-  CONNECTION_TIMEOUT: 'リクエストがタイムアウトしました',
-  CONNECTION_FAILED_HINT:
-    'サーバーが起動しているか、URLが正しいか確認してください。',
   POPUP_SAVED: 'ブックマークを保存しました',
   POPUP_SAVE_FAILED: '保存に失敗しました',
 } as const
@@ -219,8 +232,8 @@ export const EXTENSION_CONSTANTS = {
  * 拡張機能とのメッセージ通信用定数
  */
 export const EXTENSION_MESSAGE_TYPES = {
-  GET_API_CONFIG: 'GET_API_CONFIG',
   INVALIDATE_CACHE: 'INVALIDATE_CACHE',
+  CHECK_BOOKMARK_STATUS: 'CHECK_BOOKMARK_STATUS',
 } as const
 
 /**
@@ -283,6 +296,7 @@ export const HTTP_STATUS = {
  */
 export const STORAGE_KEYS = {
   API_URL: 'apiUrl',
+  FRONTEND_URL: 'frontendUrl',
 } as const
 
 /**
@@ -351,9 +365,6 @@ export const LOG_MESSAGES = {
   INSERT_FAILED: 'Failed to insert bookmark',
   INVALID_STORAGE_URL_BACKGROUND: 'Invalid API URL in background:',
   ICON_STATUS_UPDATE_FAILED: 'Failed to update icon status:',
-  UNAUTHORIZED_EXTENSION_MESSAGE:
-    'Blocked message from unauthorized extension:',
-  UNAUTHORIZED_ORIGIN_MESSAGE: 'Blocked unauthorized message from origin:',
   VERSION_SYNC_ERROR: '[sync-version] Error syncing versions:',
   VERSION_MISMATCH_ERROR:
     '[sync-version] package.json and manifest.json versions do not match. Run "npm run version-sync" to fix.',
@@ -362,9 +373,15 @@ export const LOG_MESSAGES = {
   BLOCKED_NON_HTTP_URL: (url: string) => `Blocked opening non-HTTP URL: ${url}`,
   FETCH_KEYWORDS_FAILED: 'Failed to fetch keywords:',
   CREATE_KEYWORD_FAILED: 'Failed to create keyword:',
+  UPDATE_KEYWORD_FAILED: 'Failed to update keyword:',
+  DELETE_KEYWORD_FAILED: 'Failed to delete keyword:',
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
+  UPDATE_KEYWORD_PLACEHOLDER: (name: string) => `Update keyword: ${name}`,
+  DELETE_KEYWORD_PLACEHOLDER: (id: string | number) => `Delete keyword: ${id}`,
+  API_RESPONSE_PARSE_FAILED: (status: number) =>
+    `Failed to parse API response (Status: ${status}):`,
 } as const
 
 /**

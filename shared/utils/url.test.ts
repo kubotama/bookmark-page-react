@@ -1,12 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  isHttpUrl,
-  getOrigin,
-  validateApiUrl,
-  openUrlInNewTab,
-  validatePort,
-  getPortFromUrl,
-} from './url'
+
 import {
   ERROR_MESSAGES,
   VALIDATION_MESSAGES,
@@ -15,6 +8,16 @@ import {
   DEFAULT_PORTS,
 } from '@shared/constants'
 import { VALID_URLS, INVALID_URLS } from '@shared/test/fixtures'
+
+import {
+  isHttpUrl,
+  getOrigin,
+  validateApiUrl,
+  openUrlInNewTab,
+  validatePort,
+  getPortFromUrl,
+  validateUrl,
+} from './url'
 
 describe('url utilities', () => {
   describe('isHttpUrl', () => {
@@ -143,6 +146,50 @@ describe('url utilities', () => {
         expect(getPortFromUrl(url, port)).toBe(port)
       },
     )
+  })
+
+  describe('validateUrl', () => {
+    const validateUrlTestData = [
+      {
+        name: '正しい localhost URL の場合に null を返すこと',
+        url: VALID_URLS.HTTP,
+        message: null,
+      },
+      {
+        name: '正しい 127.0.0.1 URL の場合に null を返すこと',
+        url: VALID_URLS.LOOPBACK,
+        message: null,
+      },
+      {
+        name: '外部ホスト (example.com:3000) を許可すること',
+        url: 'http://example.com:3000',
+        message: null,
+      },
+      {
+        name: 'プロトコルが不正な場合にエラーメッセージを返すこと',
+        url: INVALID_URLS.FTP,
+        message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      },
+      {
+        name: '特権ポート(80)を許可すること',
+        url: 'http://example.com:80',
+        message: null,
+      },
+      {
+        name: '外部ホスト (example.com:443) を許可すること',
+        url: 'https://example.com:443',
+        message: null,
+      },
+      {
+        name: '有効範囲外のポート番号(65536)の場合に INVALID_URL を返すこと',
+        url: 'http://example.com:65536',
+        message: ERROR_MESSAGES.INVALID_URL,
+      },
+    ]
+
+    it.each(validateUrlTestData)('$name', ({ url, message }) => {
+      expect(validateUrl(url)).toBe(message)
+    })
   })
 
   describe('validateApiUrl', () => {

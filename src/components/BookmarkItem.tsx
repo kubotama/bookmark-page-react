@@ -1,15 +1,17 @@
 import { memo } from 'react'
+
 import {
   ARIA_ROLES,
   ARIA_ATTRIBUTES,
   HTML_ATTRIBUTES,
   KEY_VALUES,
 } from '@shared/constants'
+import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
+
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
 } from '@dnd-kit/core'
-import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
 
 interface BookmarkItemProps {
   bookmark: Bookmark

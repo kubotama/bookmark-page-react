@@ -2,7 +2,6 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
     "paths": {
       "@shared/ui/*": ["./shared/components/ui/*"],
       "@shared/*": ["./shared/*"]

@@ -1,14 +1,17 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import path from 'path'
 import { fileURLToPath } from 'url'
+
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), tsconfigPaths()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    tsconfigPaths: true,
+  },
   root: path.resolve(__dirname),
   build: {
     outDir: path.resolve(__dirname, '../dist-extension'),
@@ -21,7 +24,9 @@ export default defineConfig({
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'background' ? '[name].js' : 'assets/[name]-[hash].js'
+          return chunkInfo.name === 'background'
+            ? '[name].js'
+            : 'assets/[name]-[hash].js'
         },
       },
     },

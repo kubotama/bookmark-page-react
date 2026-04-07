@@ -1,8 +1,10 @@
 import { serve } from '@hono/node-server'
-import app from './app'
-import { initializeDatabase } from './db'
+
 import { LOG_MESSAGES, DEFAULT_SERVER_PORT } from '@shared/constants'
 import { validatePort } from '@shared/utils/url'
+
+import app from './app'
+import { initializeDatabase } from './db'
 
 // データベースの初期化
 try {

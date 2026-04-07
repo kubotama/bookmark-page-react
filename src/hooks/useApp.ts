@@ -1,29 +1,35 @@
+import { useMemo, useCallback, useState } from 'react'
+
+import { z } from 'zod'
+
+import { DROPPABLE_IDS } from '@shared/constants'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
+import type { Bookmark } from '@shared/schemas/bookmark'
+import { openUrlInNewTab } from '@shared/utils/url'
+
+import { useBookmarkListState } from './useBookmarkListState'
+import { useBookmarkReorder } from './useBookmarkReorder'
 import {
   useBookmarks,
   useKeywords,
   useAttachKeyword,
   useDetachKeyword,
 } from './useBookmarks'
-import { useSettings } from './useSettings'
-import { useBookmarkListState } from './useBookmarkListState'
 import { useKeywordListState } from './useKeywordListState'
-import { useBookmarkReorder } from './useBookmarkReorder'
-import { openUrlInNewTab } from '@shared/utils/url'
-import { useMemo, useCallback, useState } from 'react'
+import { useSettings } from './useSettings'
+
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
-import { BookmarkIdSchema } from '@shared/schemas/bookmark'
-import type { Bookmark } from '@shared/schemas/bookmark'
-import { DROPPABLE_IDS } from '@shared/constants'
-import { z } from 'zod'
 
 export const useApp = () => {
   // 1. 設定管理
   const {
     showSettings,
     currentApiUrl,
+    connectionStatus,
     toggleSettings,
     closeSettings,
     handleSaveSettings,
+    testConnection,
   } = useSettings()
 
   // 2. 一覧の状態管理
@@ -207,12 +213,14 @@ export const useApp = () => {
     activeBookmark,
     showSettings,
     currentApiUrl,
+    connectionStatus,
     handleRowClick,
     handleOpen,
     handleClose,
     toggleSettings,
     closeSettings,
     handleSaveSettings,
+    testConnection,
     handleReorder,
     toggleKeywordSelection,
     clearKeywordSelection,

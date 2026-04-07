@@ -1,21 +1,24 @@
 import { memo } from 'react'
+
 import {
   ARIA_ROLES,
   ARIA_ATTRIBUTES,
   HTML_ATTRIBUTES,
   KEY_VALUES,
 } from '@shared/constants'
+import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
 } from '@dnd-kit/core'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
 
 interface KeywordItemProps {
   keyword: Keyword
   isSelected: boolean
   isFocusable: boolean
   onClick: (id: KeywordId) => void
+  onDoubleClick?: (id: KeywordId) => void
   onClose?: () => void
   // D&D Props (オプショナルに変更)
   attributes?: DraggableAttributes
@@ -31,6 +34,7 @@ export const KeywordItem = memo(
     isSelected,
     isFocusable,
     onClick,
+    onDoubleClick,
     onClose,
     attributes,
     listeners,
@@ -57,6 +61,7 @@ export const KeywordItem = memo(
           {...{ [HTML_ATTRIBUTES.TAB_INDEX]: isFocusable ? 0 : -1 }}
           {...{ [HTML_ATTRIBUTES.ROLE]: ARIA_ROLES.BUTTON }}
           {...{ [ARIA_ATTRIBUTES.SELECTED]: isSelected }}
+          onDoubleClick={() => onDoubleClick?.(keyword.id)}
           // マウスによる選択。合成イベント(Enter)の影響を受けないようMouseUpを使用。
           onMouseUp={(e) => {
             if (e.button === 0) {

@@ -1,8 +1,10 @@
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   COMMON_MESSAGES,
   DEFAULT_API_URL,
+  ERROR_MESSAGES,
   EXTENSION_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
@@ -15,16 +17,15 @@ import {
   MOCK_BOOKMARK_2,
   VALID_URLS,
 } from '@shared/test/fixtures'
-import { act, renderHook, waitFor } from '@testing-library/react'
 
 import { useOptions } from './useOptions'
 
 import type { ErrorTestCase } from '../../test/setup'
-
 import type { MockInstance } from 'vitest'
 
 describe('useOptions Hook', () => {
   const defaultUrl = DEFAULT_API_URL
+  const defaultFrontendUrl = VALID_URLS.LOOPBACK // Use a valid URL for testing
 
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -33,6 +34,7 @@ describe('useOptions Hook', () => {
     vi.mocked(chrome.storage.sync.get).mockImplementation(() =>
       Promise.resolve({
         [STORAGE_KEYS.API_URL]: defaultUrl,
+        [STORAGE_KEYS.FRONTEND_URL]: defaultFrontendUrl,
       }),
     )
     vi.mocked(chrome.storage.sync.set).mockImplementation(() =>
@@ -47,14 +49,19 @@ describe('useOptions Hook', () => {
   const setupHook = async () => {
     const hook = renderHook(() => useOptions())
     await waitFor(() => expect(hook.result.current.apiUrl).toBe(defaultUrl))
+    await waitFor(() =>
+      expect(hook.result.current.frontendUrl).toBe(defaultFrontendUrl),
+    )
     return hook
   }
 
   it('初期化時にストレージから設定を読み込むこと', async () => {
     const { result } = renderHook(() => useOptions())
     expect(result.current.apiUrl).toBe('')
+    expect(result.current.frontendUrl).toBe('')
     await waitFor(() => {
       expect(result.current.apiUrl).toBe(defaultUrl)
+      expect(result.current.frontendUrl).toBe(defaultFrontendUrl)
     })
   })
 
@@ -78,8 +85,8 @@ describe('useOptions Hook', () => {
     )
   })
 
-  describe('handleSave', () => {
-    it('有効な URL の場合に設定を保存できること', async () => {
+  describe('handleSaveApiUrl', () => {
+    it('有効な API URL の場合に設定を保存できること', async () => {
       const { result } = await setupHook()
       const newUrl = VALID_URLS.TEST_API
 
@@ -88,7 +95,7 @@ describe('useOptions Hook', () => {
       })
 
       await act(async () => {
-        await result.current.handleSave()
+        await result.current.handleSaveApiUrl()
       })
 
       expect(chrome.storage.sync.set).toHaveBeenCalledWith({
@@ -108,10 +115,8 @@ describe('useOptions Hook', () => {
         result.current.setApiUrl('ftp://invalid')
       })
 
-      await waitFor(() => expect(result.current.apiUrl).toBe('ftp://invalid'))
-
       await act(async () => {
-        await result.current.handleSave()
+        await result.current.handleSaveApiUrl()
       })
 
       expect(chrome.storage.sync.set).not.toHaveBeenCalled()
@@ -129,7 +134,7 @@ describe('useOptions Hook', () => {
       )
 
       await act(async () => {
-        await result.current.handleSave()
+        await result.current.handleSaveApiUrl()
       })
 
       expect(result.current.status.type).toBe(UI_STATUS.ERROR)
@@ -143,7 +148,49 @@ describe('useOptions Hook', () => {
     })
   })
 
-  describe('handleTestConnection', () => {
+  describe('handleSaveFrontendUrl', () => {
+    it('有効な Frontend URL の場合に設定を保存できること', async () => {
+      const { result } = await setupHook()
+      const newUrl = VALID_URLS.FRONTEND
+
+      await act(async () => {
+        result.current.setFrontendUrl(newUrl)
+      })
+
+      await act(async () => {
+        await result.current.handleSaveFrontendUrl()
+      })
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith({
+        [STORAGE_KEYS.FRONTEND_URL]: newUrl,
+      })
+      expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
+      expect(result.current.status.message).toBe(
+        EXTENSION_MESSAGES.SETTINGS_SAVED,
+      )
+    })
+
+    it('バリデーションエラーの場合に保存を中断すること', async () => {
+      const { result } = await setupHook()
+      vi.mocked(chrome.storage.sync.set).mockClear()
+
+      await act(async () => {
+        result.current.setFrontendUrl('ftp://invalid')
+      })
+
+      await act(async () => {
+        await result.current.handleSaveFrontendUrl()
+      })
+
+      expect(chrome.storage.sync.set).not.toHaveBeenCalled()
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      )
+    })
+  })
+
+  describe('handleTestApiConnection', () => {
     let consoleSpy: MockInstance
 
     beforeEach(() => {
@@ -151,9 +198,10 @@ describe('useOptions Hook', () => {
     })
 
     it('接続テストが成功した場合に件数を表示すること', async () => {
+      const mockBookmarks = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2]
       const mockResponse = {
         success: true,
-        data: { bookmarks: [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2] },
+        data: { bookmarks: mockBookmarks },
       }
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
@@ -162,12 +210,13 @@ describe('useOptions Hook', () => {
 
       const { result } = await setupHook()
       await act(async () => {
-        await result.current.handleTestConnection()
+        await result.current.handleTestApiConnection()
       })
 
       expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
-      expect(result.current.status.message).toContain('2 件')
-      expect(consoleSpy).not.toHaveBeenCalled()
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.CONNECTION_SUCCESS(mockBookmarks.length),
+      )
     })
 
     it('バリデーションエラーの場合に接続テストを中断すること', async () => {
@@ -181,7 +230,7 @@ describe('useOptions Hook', () => {
       await waitFor(() => expect(result.current.apiUrl).toBe('not-a-url'))
 
       await act(async () => {
-        await result.current.handleTestConnection()
+        await result.current.handleTestApiConnection()
       })
 
       expect(fetch).not.toHaveBeenCalled()
@@ -203,7 +252,7 @@ describe('useOptions Hook', () => {
             status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           } as Response)
         },
-        expectedMessage: `HTTP error! status: ${HTTP_STATUS.INTERNAL_SERVER_ERROR} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${ERROR_MESSAGES.HTTP_ERROR(HTTP_STATUS.INTERNAL_SERVER_ERROR)} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -218,7 +267,7 @@ describe('useOptions Hook', () => {
             }),
           } as Response)
         },
-        expectedMessage: `${errorMessage} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${errorMessage} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -230,7 +279,7 @@ describe('useOptions Hook', () => {
             json: async () => ({ success: true, data: { wrongKey: [] } }),
           } as Response)
         },
-        expectedMessage: `${COMMON_MESSAGES.UNEXPECTED_RESPONSE} - ${EXTENSION_MESSAGES.CONNECTION_FAILED_HINT}`,
+        expectedMessage: `${COMMON_MESSAGES.UNEXPECTED_RESPONSE} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -241,7 +290,7 @@ describe('useOptions Hook', () => {
           abortError.name = 'AbortError'
           vi.mocked(fetch).mockRejectedValue(abortError)
         },
-        expectedMessage: EXTENSION_MESSAGES.CONNECTION_TIMEOUT,
+        expectedMessage: COMMON_MESSAGES.CONNECTION_TIMEOUT,
         expectedLog: LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
         expectedLogError: expect.any(Error),
       },
@@ -265,13 +314,13 @@ describe('useOptions Hook', () => {
 
         const { result } = await setupHook()
         await act(async () => {
-          await result.current.handleTestConnection()
+          await result.current.handleTestApiConnection()
         })
 
         expect(result.current.status.type).toBe(UI_STATUS.ERROR)
         if (expectedMessage) {
           expect(result.current.status.message).toBe(
-            EXTENSION_MESSAGES.CONNECTION_FAILED(expectedMessage as string),
+            COMMON_MESSAGES.CONNECTION_FAILED(expectedMessage as string),
           )
         }
         if (expectedLog) {
@@ -279,5 +328,95 @@ describe('useOptions Hook', () => {
         }
       },
     )
+  })
+
+  describe('handleTestFrontendConnection', () => {
+    let consoleSpy: MockInstance
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('接続テストが成功した場合に成功メッセージを表示すること', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+      } as Response)
+
+      const { result } = await setupHook()
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.FRONTEND_CONNECTION_SUCCESS,
+      )
+      expect(consoleSpy).not.toHaveBeenCalled()
+    })
+
+    it('バリデーションエラーの場合に接続テストを中断すること', async () => {
+      const { result } = await setupHook()
+      vi.mocked(fetch).mockClear()
+
+      await act(async () => {
+        result.current.setFrontendUrl('not-a-url')
+      })
+
+      await waitFor(() => expect(result.current.frontendUrl).toBe('not-a-url'))
+
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(fetch).not.toHaveBeenCalled()
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+      )
+      expect(consoleSpy).not.toHaveBeenCalled()
+    })
+
+    it('HTTP ステータスエラーの場合に適切なエラーを表示すること', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: false,
+        status: HTTP_STATUS.NOT_FOUND,
+      } as Response)
+
+      const { result } = await setupHook()
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.FRONTEND_CONNECTION_FAILED(
+          `${ERROR_MESSAGES.HTTP_ERROR(HTTP_STATUS.NOT_FOUND)} - ${COMMON_MESSAGES.CONNECTION_FAILED_HINT}`,
+        ),
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expect.any(Error),
+      )
+    })
+
+    it('タイムアウトエラーが発生した場合に適切なメッセージを表示すること', async () => {
+      const abortError = new Error('Abort')
+      abortError.name = 'AbortError'
+      vi.mocked(fetch).mockRejectedValue(abortError)
+
+      const { result } = await setupHook()
+      await act(async () => {
+        await result.current.handleTestFrontendConnection()
+      })
+
+      expect(result.current.status.type).toBe(UI_STATUS.ERROR)
+      expect(result.current.status.message).toBe(
+        COMMON_MESSAGES.CONNECTION_TIMEOUT,
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.EXTENSION_CONNECTION_FAILED,
+        expect.any(Error),
+      )
+    })
   })
 })

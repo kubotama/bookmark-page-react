@@ -1,14 +1,16 @@
 import { ARIA_ROLES, FIELD_LABELS, UI_MESSAGES } from '@shared/constants'
-import { DraggableList } from './DraggableList'
-import { DraggableItem } from './DraggableItem'
-import { KeywordItem } from './KeywordItem'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+
+import { DraggableItem } from './DraggableItem'
+import { DraggableList } from './DraggableList'
+import { KeywordItem } from './KeywordItem'
 
 interface KeywordListProps {
   keywords: Keyword[]
   selectedKeywordIds?: KeywordId[]
   onKeywordClick?: (id: KeywordId) => void
+  onKeywordDoubleClick?: (id: KeywordId) => void
   onReorder?: (activeId: KeywordId, overId: KeywordId) => void
   onClose?: () => void
   dndContext?: boolean
@@ -18,6 +20,7 @@ export const KeywordList = ({
   keywords,
   selectedKeywordIds,
   onKeywordClick,
+  onKeywordDoubleClick,
   onReorder,
   onClose,
   dndContext,
@@ -50,6 +53,7 @@ export const KeywordList = ({
                   (selectedKeywordIds?.length === 0 && index === 0)
                 }
                 onClick={onKeywordClick ?? (() => {})}
+                onDoubleClick={onKeywordDoubleClick}
                 onClose={onClose}
                 {...dndProps}
               />

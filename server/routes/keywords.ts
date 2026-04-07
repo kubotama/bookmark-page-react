@@ -1,13 +1,15 @@
+import { zValidator } from '@hono/zod-validator'
 import { count, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { z } from 'zod'
 
-import { zValidator } from '@hono/zod-validator'
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import {
   createKeywordRequestSchema,
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsResponseSchema,
+  updateKeywordRequestSchema,
 } from '@shared/schemas/keyword'
 
 import { db } from '../db'
@@ -101,5 +103,116 @@ const keywordsRoute = new Hono()
       throw error
     }
   })
+  .patch(
+    '/:id',
+    zValidator('param', z.object({ id: KeywordIdSchema })),
+    zValidator('json', updateKeywordRequestSchema),
+    async (c) => {
+      const { id } = c.req.valid('param')
+      const { name } = c.req.valid('json')
+
+      try {
+        // 存在確認
+        const existing = await db
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.keywordId, Number(id)))
+          .get()
+
+        if (!existing) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+                code: API_ERROR_CODES.NOT_FOUND,
+              },
+            },
+            HTTP_STATUS.NOT_FOUND,
+          )
+        }
+
+        // 同名の他キーワードがないかチェック
+        const duplicate = await db
+          .select()
+          .from(keywordsTable)
+          .where(eq(keywordsTable.keywordName, name))
+          .get()
+
+        if (duplicate && duplicate.keywordId !== Number(id)) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+                code: API_ERROR_CODES.CONFLICT,
+              },
+            },
+            HTTP_STATUS.CONFLICT,
+          )
+        }
+
+        // 更新
+        const result = await db
+          .update(keywordsTable)
+          .set({ keywordName: name })
+          .where(eq(keywordsTable.keywordId, Number(id)))
+          .returning()
+          .get()
+
+        if (!result) {
+          throw new Error(ERROR_MESSAGES.KEYWORD_UPDATE_RETURN_VALUE_MISSING)
+        }
+
+        const keyword = {
+          id: KeywordIdSchema.parse(String(result.keywordId)),
+          name: result.keywordName,
+        }
+
+        return c.json({
+          success: true,
+          data: keywordResponseSchema.parse({ keyword }),
+        })
+      } catch (error) {
+        console.error(LOG_MESSAGES.UPDATE_KEYWORD_FAILED, error)
+        throw error
+      }
+    },
+  )
+  .delete(
+    '/:id',
+    zValidator('param', z.object({ id: KeywordIdSchema })),
+    async (c) => {
+      const { id } = c.req.valid('param')
+
+      try {
+        // 削除実行と結果の取得を同時に行う
+        // 中間テーブル (bookmarkKeywords) は外部キー制約 (ON DELETE CASCADE) により自動的に削除される
+        const result = await db
+          .delete(keywordsTable)
+          .where(eq(keywordsTable.keywordId, Number(id)))
+          .returning()
+          .get()
+
+        if (!result) {
+          return c.json(
+            {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+                code: API_ERROR_CODES.NOT_FOUND,
+              },
+            },
+            HTTP_STATUS.NOT_FOUND,
+          )
+        }
+
+        return c.body(null, HTTP_STATUS.NO_CONTENT)
+      } catch (error) {
+        console.error(LOG_MESSAGES.DELETE_KEYWORD_FAILED, error)
+        throw error
+      }
+    },
+  )
 
 export default keywordsRoute

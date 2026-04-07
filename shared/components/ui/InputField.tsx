@@ -23,7 +23,11 @@ export const InputField = ({
       </label>
       <input
         id={id}
-        className={`flex-1 px-2 py-1 bg-blue-50 border-2 border-solid border-gray-500 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${className}`}
+        className={`flex-1 px-2 py-1 border-2 border-solid border-gray-500 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+          props.disabled
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : 'bg-blue-50 text-gray-900'
+        } ${className}`}
         {...props}
       />
     </div>

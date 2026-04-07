@@ -1,4 +1,6 @@
 import { type ReactNode } from 'react'
+
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
@@ -11,14 +13,14 @@ import {
   FIELD_LABELS,
   KEY_VALUES,
   DROPPABLE_IDS,
+  LOG_MESSAGES,
 } from '@shared/constants'
+import type { Bookmark } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
-import type { Bookmark } from '@shared/schemas/bookmark'
-import userEvent from '@testing-library/user-event'
 
 import App from './App'
 import { createDragEndEvent } from './test/dnd-utils'
@@ -51,6 +53,7 @@ vi.mock('@dnd-kit/core', async () => {
 describe('App Integration', () => {
   beforeEach(() => {
     vi.stubGlobal('open', vi.fn())
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     localStorage.clear()
     lastOnDragEnd = null
 
@@ -101,6 +104,8 @@ describe('App Integration', () => {
   })
 
   it('ブックマーク取得失敗時にエラーメッセージが表示されること', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
     server.use(
       http.get(`${DEFAULT_API_URL}${API_PATHS.BOOKMARKS}`, () => {
         return new HttpResponse(null, { status: 500 })
@@ -108,6 +113,11 @@ describe('App Integration', () => {
     )
     setup()
     expect(await screen.findByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
+
+    expect(console.error).toHaveBeenCalledWith(
+      LOG_MESSAGES.API_RESPONSE_PARSE_FAILED(500),
+      expect.any(Error),
+    )
   })
 
   it('ブックマークをクリックすると詳細画面に遷移すること', async () => {
@@ -288,6 +298,54 @@ describe('App Integration', () => {
       )
 
       await waitFor(() => expect(detachCalled).toBe(true))
+    })
+
+    it('キーワード選択中に Escape キーを押すと、すべての選択が解除されること', async () => {
+      const { user } = setup()
+
+      const keyword1 = await screen.findByRole(ARIA_ROLES.BUTTON, {
+        name: MOCK_KEYWORDS[0].name,
+      })
+      const keyword2 = await screen.findByRole(ARIA_ROLES.BUTTON, {
+        name: MOCK_KEYWORDS[1].name,
+      })
+
+      // 1. 2つのキーワードを選択
+      await user.click(keyword1)
+      await user.click(keyword2)
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'true')
+
+      // 2. Escape キーを押下
+      await user.keyboard('{' + KEY_VALUES.ESCAPE + '}')
+
+      // 3. 全ての選択が解除されていることを検証
+      expect(keyword1).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+      expect(keyword2).toHaveAttribute(ARIA_ATTRIBUTES.SELECTED, 'false')
+    })
+
+    it('入力フィールドにフォーカスがある場合、Enter キーを押しても一括起動が発生しないこと', async () => {
+      const kw1 = MOCK_KEYWORDS[0]
+      const b1 = { ...MOCK_BOOKMARK_1, keywords: [kw1] }
+      const { user } = setup([b1])
+
+      // 1. キーワードを選択
+      const keywordBtn = await screen.findByRole(ARIA_ROLES.BUTTON, {
+        name: kw1.name,
+      })
+      await user.click(keywordBtn)
+
+      // 2. 設定パネルを開いて入力フィールドを取得
+      const settingsButton = screen.getByTitle(FIELD_LABELS.SETTING_TITLE)
+      await user.click(settingsButton)
+      const input = screen.getByLabelText(FIELD_LABELS.URL)
+
+      // 3. 入力フィールドにフォーカスを当てて Enter
+      await user.click(input)
+      await user.keyboard(`{${KEY_VALUES.ENTER}}`)
+
+      // 4. 一括起動が呼ばれていないことを検証
+      expect(window.open).not.toHaveBeenCalled()
     })
   })
 })

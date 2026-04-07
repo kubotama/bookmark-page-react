@@ -1,13 +1,5 @@
-import {
-  FIELD_LABELS,
-  KEY_VALUES,
-  DROPPABLE_IDS,
-  UI_MESSAGES,
-} from '@shared/constants'
-import { BookmarkList } from '../components/BookmarkList'
-import { KeywordList } from '../components/KeywordList'
-import { useApp } from '../hooks/useApp'
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
+
 import {
   DndContext,
   DragOverlay,
@@ -19,7 +11,20 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { useNavigate } from 'react-router-dom'
+
+import {
+  APP_PATHS,
+  FIELD_LABELS,
+  KEY_VALUES,
+  DROPPABLE_IDS,
+  UI_MESSAGES,
+} from '@shared/constants'
+
 import { BookmarkItem } from '../components/BookmarkItem'
+import { BookmarkList } from '../components/BookmarkList'
+import { KeywordList } from '../components/KeywordList'
+import { useApp } from '../hooks/useApp'
 
 interface HomePageProps {
   appState: ReturnType<typeof useApp>
@@ -57,6 +62,7 @@ function DroppableSection({
 }
 
 export function HomePage({ appState }: HomePageProps) {
+  const navigate = useNavigate()
   const {
     filteredBookmarks,
     otherBookmarks,
@@ -75,6 +81,13 @@ export function HomePage({ appState }: HomePageProps) {
     handleDragStart,
     handleDragEnd,
   } = appState
+
+  const handleKeywordDoubleClick = useCallback(
+    (id: string) => {
+      navigate(APP_PATHS.KEYWORD_DETAIL(id))
+    },
+    [navigate],
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -145,6 +158,7 @@ export function HomePage({ appState }: HomePageProps) {
                 keywords={keywords}
                 selectedKeywordIds={selectedKeywordIds}
                 onKeywordClick={toggleKeywordSelection}
+                onKeywordDoubleClick={handleKeywordDoubleClick}
               />
             </div>
           </aside>

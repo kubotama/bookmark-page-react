@@ -5,13 +5,12 @@ import {
   FIELD_LABELS,
   UI_MESSAGES,
 } from '@shared/constants'
-
-import { BookmarkItem } from './BookmarkItem'
-import { DraggableList } from './DraggableList'
-import { DraggableItem } from './DraggableItem'
-
 import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import type { Bookmark, BookmarkId } from '@shared/schemas/bookmark'
+
+import { BookmarkItem } from './BookmarkItem'
+import { DraggableItem } from './DraggableItem'
+import { DraggableList } from './DraggableList'
 
 export type BookmarkProps = {
   bookmarks: Bookmark[]
