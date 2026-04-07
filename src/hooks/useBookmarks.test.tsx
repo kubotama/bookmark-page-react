@@ -12,6 +12,7 @@ import {
   useReorderBookmarks,
   useUpdateBookmark,
   useUpdateKeyword,
+  useDeleteKeyword,
 } from './useBookmarks'
 import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
@@ -147,6 +148,23 @@ describe('useBookmarks Hook', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(patchCalled).toBe(true)
     expect(result.current.data?.keyword.name).toBe('New Name')
+  })
+
+  it('useDeleteKeyword が正常に動作すること', async () => {
+    let deleteCalled = false
+    server.use(
+      http.delete(`*${API_PATHS.KEYWORDS}/:id`, () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const { result } = renderHook(() => useDeleteKeyword())
+
+    result.current.mutate(MOCK_KEYWORDS[0].id)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(deleteCalled).toBe(true)
   })
 
   describe('useReorderBookmarks', () => {

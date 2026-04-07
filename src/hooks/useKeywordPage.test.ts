@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { useParams, useNavigate } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { UI_MESSAGES, UI_STATUS } from '@shared/constants'
+import { APP_PATHS, UI_MESSAGES, UI_STATUS } from '@shared/constants'
 import { MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import { useKeywordPage } from './useKeywordPage'
@@ -99,5 +99,25 @@ describe('useKeywordPage Hook', () => {
     expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
     expect(result.current.status.message).toBe(UI_MESSAGES.UPDATE_SUCCESS)
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('handleDelete が正しく削除 API を呼び出し、ホームページに遷移すること', async () => {
+    let deleteCalled = false
+    server.use(
+      http.delete('*/api/keywords/:id', () => {
+        deleteCalled = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const { result } = renderHook(() => useKeywordPage())
+    await waitFor(() => expect(result.current.keyword).toBeDefined())
+
+    await act(async () => {
+      await result.current.handleDelete()
+    })
+
+    expect(deleteCalled).toBe(true)
+    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 })

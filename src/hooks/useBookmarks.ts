@@ -269,6 +269,46 @@ export const useUpdateKeyword = () => {
   })
 }
 
+export const useDeleteKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: KeywordId) => {
+      const res = await client.api.keywords[':id'].$delete({
+        param: { id },
+      })
+
+      if (res.status === HTTP_STATUS.NO_CONTENT) {
+        return id
+      }
+
+      return await parseResponse<KeywordId>(
+        res,
+        UI_MESSAGES.KEYWORD_DELETE_FAILED,
+      )
+    },
+    onSuccess: (deletedId) => {
+      // キャッシュから削除対象を取り除く
+      queryClient.setQueryData<KeywordsResponse>(
+        QUERY_KEYS.KEYWORDS.LIST(),
+        (oldData) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            keywords: oldData.keywords.filter((kw) => kw.id !== deletedId),
+          }
+        },
+      )
+    },
+    onSettled: () => {
+      // キーワード削除によりブックマークとの紐付けも解除されるため、両方のキャッシュを無効化
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
+    },
+  })
+}
+
 export const useAttachKeyword = () => {
   const { client } = useApi()
   const queryClient = useQueryClient()

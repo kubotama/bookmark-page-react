@@ -12,7 +12,7 @@ import {
 } from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 
-import { useKeywords, useUpdateKeyword } from './useBookmarks'
+import { useKeywords, useUpdateKeyword, useDeleteKeyword } from './useBookmarks'
 
 /**
  * キーワード詳細画面のロジックを管理するカスタムフック
@@ -34,6 +34,8 @@ export const useKeywordPage = (onBack?: () => void) => {
   const { data, isLoading } = useKeywords()
   const { mutateAsync: updateKeyword, isPending: isUpdating } =
     useUpdateKeyword()
+  const { mutateAsync: deleteKeyword, isPending: isDeleting } =
+    useDeleteKeyword()
 
   const keyword = useMemo(
     () => data?.keywords.find((k) => k.id === parsedId),
@@ -94,10 +96,23 @@ export const useKeywordPage = (onBack?: () => void) => {
   }, [parsedId, editName, isSaveDisabled, isUpdating, updateKeyword])
 
   const handleDelete = useCallback(async () => {
-    if (!parsedId) return
-    console.log(LOG_MESSAGES.DELETE_KEYWORD_PLACEHOLDER(parsedId))
-    // TODO: Issue #362 で実装
-  }, [parsedId])
+    if (!parsedId || isDeleting) return
+
+    setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
+    try {
+      await deleteKeyword(parsedId)
+      navigate(APP_PATHS.HOME)
+    } catch (err) {
+      console.error(LOG_MESSAGES.DELETE_KEYWORD_FAILED, err)
+      setStatus({
+        type: UI_STATUS.ERROR,
+        message:
+          err instanceof Error
+            ? err.message
+            : UI_MESSAGES.KEYWORD_DELETE_FAILED,
+      })
+    }
+  }, [parsedId, isDeleting, deleteKeyword, navigate])
 
   return {
     id,
@@ -106,7 +121,7 @@ export const useKeywordPage = (onBack?: () => void) => {
     setEditName,
     isLoading,
     isUpdating,
-    isDeleting: false, // プレースホルダ
+    isDeleting,
     isSaveDisabled,
     status,
     handleUpdate,

@@ -155,6 +155,7 @@ export const UI_MESSAGES = {
   UPDATE_SUCCESS: '更新しました',
   UPDATE_FAILED: 'ブックマークの更新に失敗しました',
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
+  KEYWORD_DELETE_FAILED: 'キーワードの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
   KEYWORD_DELETE_CONFIRM: 'このキーワードを削除してもよろしいですか？',
