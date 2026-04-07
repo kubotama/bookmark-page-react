@@ -12,6 +12,7 @@ import type {
   KeywordResponse,
   KeywordsResponse,
   CreateKeywordRequest,
+  UpdateKeywordRequest,
 } from '@shared/schemas/keyword'
 
 import { useApi } from '../contexts/ApiContext'
@@ -214,6 +215,34 @@ export const useCreateKeyword = () => {
       return await parseResponse<KeywordResponse>(
         res,
         UI_MESSAGES.CREATE_KEYWORD_FAILED,
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
+    },
+  })
+}
+
+export const useUpdateKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: KeywordId
+      updates: UpdateKeywordRequest
+    }) => {
+      const res = await client.api.keywords[':id'].$patch({
+        param: { id },
+        json: updates,
+      })
+
+      return await parseResponse<KeywordResponse>(
+        res,
+        UI_MESSAGES.UPDATE_FAILED,
       )
     },
     onSettled: () => {

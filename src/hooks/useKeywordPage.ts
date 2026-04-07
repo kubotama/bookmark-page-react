@@ -2,10 +2,17 @@ import { useState, useCallback, useMemo } from 'react'
 
 import { useParams, useNavigate } from 'react-router-dom'
 
-import { APP_PATHS, LOG_MESSAGES } from '@shared/constants'
+import {
+  APP_PATHS,
+  COMMON_MESSAGES,
+  LOG_MESSAGES,
+  UI_MESSAGES,
+  UI_STATUS,
+  type StatusInfo,
+} from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 
-import { useKeywords } from './useBookmarks'
+import { useKeywords, useUpdateKeyword } from './useBookmarks'
 
 /**
  * キーワード詳細画面のロジックを管理するカスタムフック
@@ -25,6 +32,8 @@ export const useKeywordPage = (onBack?: () => void) => {
 
   // 2. データ取得
   const { data, isLoading } = useKeywords()
+  const { mutateAsync: updateKeyword, isPending: isUpdating } =
+    useUpdateKeyword()
 
   const keyword = useMemo(
     () => data?.keywords.find((k) => k.id === parsedId),
@@ -34,6 +43,10 @@ export const useKeywordPage = (onBack?: () => void) => {
   // 3. フォーム状態
   const [editName, setEditName] = useState('')
   const [prevId, setPrevId] = useState<string | null>(null)
+  const [status, setStatus] = useState<StatusInfo>({
+    type: UI_STATUS.IDLE,
+    message: '',
+  })
 
   // キーワードが変わった際にステートを初期化 (Rendering 時に同期)
   if (keyword && keyword.id !== prevId) {
@@ -59,9 +72,26 @@ export const useKeywordPage = (onBack?: () => void) => {
   }, [onBack, navigate])
 
   const handleUpdate = useCallback(async () => {
-    console.log(LOG_MESSAGES.UPDATE_KEYWORD_PLACEHOLDER(editName))
-    // TODO: Issue #361 で実装
-  }, [editName])
+    if (!parsedId || isSaveDisabled || isUpdating) return
+
+    setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
+    try {
+      await updateKeyword({
+        id: parsedId,
+        updates: { name: editName.trim() },
+      })
+      setStatus({
+        type: UI_STATUS.SUCCESS,
+        message: UI_MESSAGES.UPDATE_SUCCESS,
+      })
+    } catch (err) {
+      console.error(LOG_MESSAGES.UPDATE_KEYWORD_FAILED, err)
+      setStatus({
+        type: UI_STATUS.ERROR,
+        message: err instanceof Error ? err.message : UI_MESSAGES.UPDATE_FAILED,
+      })
+    }
+  }, [parsedId, editName, isSaveDisabled, isUpdating, updateKeyword])
 
   const handleDelete = useCallback(async () => {
     if (!parsedId) return
@@ -75,9 +105,10 @@ export const useKeywordPage = (onBack?: () => void) => {
     editName,
     setEditName,
     isLoading,
-    isUpdating: false, // プレースホルダ
+    isUpdating,
     isDeleting: false, // プレースホルダ
     isSaveDisabled,
+    status,
     handleUpdate,
     handleDelete,
     handleBack,

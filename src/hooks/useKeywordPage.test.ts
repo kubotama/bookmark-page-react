@@ -2,11 +2,12 @@ import { http, HttpResponse } from 'msw'
 import { useParams, useNavigate } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { UI_MESSAGES, UI_STATUS } from '@shared/constants'
 import { MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import { useKeywordPage } from './useKeywordPage'
 import { server } from '../test/setup'
-import { renderHook, waitFor } from '../test/utils'
+import { renderHook, waitFor, act } from '../test/utils'
 
 // モックの設定
 vi.mock('react-router-dom', async () => {
@@ -66,5 +67,37 @@ describe('useKeywordPage Hook', () => {
       expect(result.current.isLoading).toBe(false)
       expect(result.current.keyword).toBeUndefined()
     })
+  })
+
+  it('handleUpdate が正しく更新 API を呼び出し、遷移しないこと', async () => {
+    let patchCalled = false
+    server.use(
+      http.patch('*/api/keywords/:id', async ({ request }) => {
+        const body = (await request.json()) as { name: string }
+        if (body.name === 'Updated Name') {
+          patchCalled = true
+        }
+        return HttpResponse.json({
+          success: true,
+          data: { keyword: { id: MOCK_KEYWORDS[0].id, name: 'Updated Name' } },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useKeywordPage())
+    await waitFor(() => expect(result.current.keyword).toBeDefined())
+
+    await act(async () => {
+      result.current.setEditName('Updated Name')
+    })
+
+    await act(async () => {
+      await result.current.handleUpdate()
+    })
+
+    expect(patchCalled).toBe(true)
+    expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
+    expect(result.current.status.message).toBe(UI_MESSAGES.UPDATE_SUCCESS)
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
 })

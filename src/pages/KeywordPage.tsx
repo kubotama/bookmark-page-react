@@ -1,9 +1,12 @@
 import {
+  ARIA_ROLES,
   COMMON_MESSAGES,
   FIELD_LABELS,
   PLACEHOLDERS,
+  STATUS_STYLES,
   UI_MESSAGES,
   UI_STYLES,
+  UI_STATUS,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
@@ -20,6 +23,7 @@ export function KeywordPage() {
     isUpdating,
     isDeleting,
     isSaveDisabled,
+    status,
     handleUpdate,
     handleDelete,
     handleBack,
@@ -90,6 +94,19 @@ export function KeywordPage() {
             </Button>
           </div>
         </div>
+
+        {status.type !== UI_STATUS.IDLE && (
+          <div
+            role={
+              status.type === UI_STATUS.ERROR
+                ? ARIA_ROLES.ALERT
+                : ARIA_ROLES.STATUS
+            }
+            className={`mt-4 p-3 rounded-md text-sm ${STATUS_STYLES[status.type]}`}
+          >
+            {status.message}
+          </div>
+        )}
       </section>
     )
   }

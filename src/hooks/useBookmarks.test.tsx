@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
 import type { BookmarkId } from '@shared/schemas/bookmark'
-import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import {
   BookmarkApiError,
@@ -11,6 +11,7 @@ import {
   useDeleteBookmark,
   useReorderBookmarks,
   useUpdateBookmark,
+  useUpdateKeyword,
 } from './useBookmarks'
 import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
@@ -121,6 +122,31 @@ describe('useBookmarks Hook', () => {
     expect(result.current.error).toBeInstanceOf(BookmarkApiError)
     const error = result.current.error as BookmarkApiError
     expect(error.message).toBe('Delete Failed')
+  })
+
+  it('useUpdateKeyword が正常に動作すること', async () => {
+    let patchCalled = false
+    const updatedKeyword = { ...MOCK_KEYWORDS[0], name: 'New Name' }
+    server.use(
+      http.patch(`*${API_PATHS.KEYWORDS}/:id`, () => {
+        patchCalled = true
+        return HttpResponse.json({
+          success: true,
+          data: { keyword: updatedKeyword },
+        })
+      }),
+    )
+
+    const { result } = renderHook(() => useUpdateKeyword())
+
+    result.current.mutate({
+      id: MOCK_KEYWORDS[0].id,
+      updates: { name: 'New Name' },
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(patchCalled).toBe(true)
+    expect(result.current.data?.keyword.name).toBe('New Name')
   })
 
   describe('useReorderBookmarks', () => {
