@@ -1,3 +1,4 @@
+import { fireEvent } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { useParams, useNavigate } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -118,6 +119,16 @@ describe('useKeywordPage Hook', () => {
     })
 
     expect(deleteCalled).toBe(true)
+    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+  })
+
+  it('Escape キーが押されたときにホームページに遷移すること', async () => {
+    renderHook(() => useKeywordPage())
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape' })
+    })
+
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 })
