@@ -131,4 +131,14 @@ describe('useKeywordPage Hook', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
+
+  it('IME 入力中 (isComposing: true) に Escape キーが押されたときは遷移しないこと', async () => {
+    renderHook(() => useKeywordPage())
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape', isComposing: true })
+    })
+
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
 })

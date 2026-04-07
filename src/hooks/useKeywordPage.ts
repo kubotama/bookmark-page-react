@@ -118,6 +118,7 @@ export const useKeywordPage = (onBack?: () => void) => {
   // 5. キーボードショートカット
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing) return
       if (e.key === KEY_VALUES.ESCAPE) {
         handleBack()
       }
