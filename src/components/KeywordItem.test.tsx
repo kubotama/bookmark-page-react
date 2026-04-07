@@ -42,6 +42,15 @@ describe('KeywordItem', () => {
     expect(onClick).toHaveBeenCalledWith(mockKeyword.id)
   })
 
+  it('ダブルクリック時に onDoubleClick が呼ばれること', async () => {
+    const user = userEvent.setup()
+    const onDoubleClick = vi.fn()
+    render(<KeywordItem {...defaultProps} onDoubleClick={onDoubleClick} />)
+
+    await user.dblClick(screen.getByText(mockKeyword.name))
+    expect(onDoubleClick).toHaveBeenCalledWith(mockKeyword.id)
+  })
+
   it('Space キーで onClick が呼ばれること', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()
