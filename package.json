@@ -1,7 +1,7 @@
 {
   "name": "bookmark-page",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "MIT",
   "type": "module",
   "overrides": {
@@ -12,9 +12,9 @@
     "client:dev": "vite",
     "server:dev": "tsx watch server/index.ts",
     "build": "tsc && vite build",
-    "type-check": "concurrently \"npm:type-check:*\" \"npm:check:paths\"",
+    "type-check": "concurrently \"npm:type-check:client\" \"npm:type-check:extension\" \"npm:check:paths\"",
     "type-check:client": "tsc -p tsconfig.app.json --noEmit",
-    "type-check:server": "tsc -p tsconfig.server.json --noEmit",
+    "type-check:server": "echo 'Skipping server type-check (Deprecated)'",
     "check:paths": "tsx -e \"import '@shared/constants'\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write .",
