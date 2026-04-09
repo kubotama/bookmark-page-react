@@ -2,10 +2,7 @@ import { z } from 'zod'
 
 import { VALIDATION_MESSAGES } from '@shared/constants'
 
-export const KeywordIdSchema = z
-  .string()
-  .regex(/^[1-9]\d*$/)
-  .brand<'KeywordId'>()
+export const KeywordIdSchema = z.string().uuid().brand<'KeywordId'>()
 export type KeywordId = z.infer<typeof KeywordIdSchema>
 
 export const keywordSchema = z.object({
