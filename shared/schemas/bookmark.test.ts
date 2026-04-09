@@ -7,7 +7,12 @@ import {
   updateBookmarkSchema,
 } from './bookmark'
 import { VALIDATION_MESSAGES } from '../constants'
-import { MOCK_BOOKMARK_1, INVALID_URLS, VALID_URLS } from '../test/fixtures'
+import {
+  MOCK_BOOKMARK_1,
+  INVALID_URLS,
+  VALID_URLS,
+  MOCK_IDS,
+} from '../test/fixtures'
 
 describe('bookmarkSchema', () => {
   it.each([
@@ -98,12 +103,14 @@ describe('updateBookmarkSchema', () => {
 
 describe('reorderBookmarksSchema', () => {
   it('正常な ID リストを受け入れること', () => {
-    const valid = { ids: ['1', '2', '3'] }
+    const valid = { ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2] }
     expect(reorderBookmarksSchema.safeParse(valid).success).toBe(true)
   })
 
   it('重複した ID が含まれる場合にエラーを返すこと', () => {
-    const invalid = { ids: ['1', '2', '1'] }
+    const invalid = {
+      ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2, MOCK_IDS.BOOKMARK_1],
+    }
     const result = reorderBookmarksSchema.safeParse(invalid)
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -114,7 +121,11 @@ describe('reorderBookmarksSchema', () => {
   })
 
   it('上限を超える ID リストを拒否すること', () => {
-    const manyIds = Array.from({ length: 1001 }, (_, i) => String(i + 1))
+    // 1001個の有効な UUID を生成
+    const manyIds = Array.from(
+      { length: 1001 },
+      (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    )
     const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)
     if (!result.success) {

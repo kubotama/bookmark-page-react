@@ -7,24 +7,23 @@ import {
   keywordsResponseSchema,
   updateKeywordRequestSchema,
 } from './keyword'
+import { MOCK_IDS } from '../test/fixtures'
 
 describe('Keyword Schemas', () => {
   describe('KeywordIdSchema', () => {
-    it('正の整数文字列を受け入れること', () => {
-      expect(KeywordIdSchema.parse('1')).toBe('1')
-      expect(KeywordIdSchema.parse('123')).toBe('123')
+    it('有効な UUID を受け入れること', () => {
+      expect(KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1)).toBe(MOCK_IDS.KEYWORD_1)
     })
 
-    it('0や負の数、非数値を拒否すること', () => {
-      expect(() => KeywordIdSchema.parse('0')).toThrow()
-      expect(() => KeywordIdSchema.parse('-1')).toThrow()
-      expect(() => KeywordIdSchema.parse('abc')).toThrow()
+    it('不正な形式の文字列を拒否すること', () => {
+      expect(() => KeywordIdSchema.parse('1')).toThrow()
+      expect(() => KeywordIdSchema.parse('not-a-uuid')).toThrow()
     })
   })
 
   describe('keywordSchema', () => {
     it('正しいキーワードオブジェクトを受け入れること', () => {
-      const validKeyword = { id: '1', name: 'Test' }
+      const validKeyword = { id: MOCK_IDS.KEYWORD_1, name: 'Test' }
       expect(keywordSchema.parse(validKeyword)).toEqual(validKeyword)
     })
 
@@ -32,19 +31,23 @@ describe('Keyword Schemas', () => {
       expect(() =>
         keywordSchema.parse({ id: 'invalid', name: 'Test' }),
       ).toThrow()
-      expect(() => keywordSchema.parse({ id: '1' })).toThrow() // name missing
+      expect(() => keywordSchema.parse({ id: MOCK_IDS.KEYWORD_1 })).toThrow() // name missing
     })
   })
 
   describe('keywordWithCountSchema', () => {
     it('bookmarkCount を含むオブジェクトを受け入れること', () => {
-      const validData = { id: '1', name: 'Test', bookmarkCount: 5 }
+      const validData = {
+        id: MOCK_IDS.KEYWORD_1,
+        name: 'Test',
+        bookmarkCount: 5,
+      }
       expect(keywordWithCountSchema.parse(validData)).toEqual(validData)
     })
 
     it('bookmarkCount が欠落している場合に拒否すること', () => {
       expect(() =>
-        keywordWithCountSchema.parse({ id: '1', name: 'Test' }),
+        keywordWithCountSchema.parse({ id: MOCK_IDS.KEYWORD_1, name: 'Test' }),
       ).toThrow()
     })
   })
@@ -53,8 +56,8 @@ describe('Keyword Schemas', () => {
     it('キーワードリストを含むレスポンスを受け入れること', () => {
       const validResponse = {
         keywords: [
-          { id: '1', name: 'Tag1', bookmarkCount: 10 },
-          { id: '2', name: 'Tag2', bookmarkCount: 0 },
+          { id: MOCK_IDS.KEYWORD_1, name: 'Tag1', bookmarkCount: 10 },
+          { id: MOCK_IDS.KEYWORD_2, name: 'Tag2', bookmarkCount: 0 },
         ],
       }
       expect(keywordsResponseSchema.parse(validResponse)).toEqual(validResponse)

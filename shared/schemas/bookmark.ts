@@ -11,10 +11,7 @@ export {
   type Keyword,
 } from './keyword'
 
-export const BookmarkIdSchema = z
-  .string()
-  .regex(/^[1-9]\d*$/)
-  .brand<'BookmarkId'>()
+export const BookmarkIdSchema = z.string().uuid().brand<'BookmarkId'>()
 export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 
 export const bookmarkSchema = z.object({
