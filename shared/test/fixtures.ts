@@ -59,7 +59,6 @@ export const VALID_URLS = {
   IPV6_LOOPBACK: 'http://[::1]:3030',
   FRONTEND: 'http://localhost:5173',
   TEST_API: 'http://localhost:4000',
-  FRONTEND_APP: 'http://localhost:5173',
 } as const
 
 /**
