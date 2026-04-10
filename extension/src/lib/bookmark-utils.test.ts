@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
 
 import { bookmarkSchema } from '@shared/schemas/bookmark'
+import { MOCK_IDS } from '@shared/test/fixtures'
 
 import { findBookmarkByUrl, determineBookmarkStatus } from './bookmark-utils'
 
@@ -9,14 +10,14 @@ describe('bookmark-utils', () => {
   // モックデータを Zod スキーマでパースして生成（スキーマとの不整合を防止）
   const mockBookmarks = z.array(bookmarkSchema).parse([
     {
-      id: '1',
+      id: MOCK_IDS.BOOKMARK_1,
       title: 'Test 1',
       url: 'https://test1.com',
       sortOrder: 1,
       keywords: [],
     },
     {
-      id: '2',
+      id: MOCK_IDS.BOOKMARK_2,
       title: 'Test 2',
       url: 'https://test2.com',
       sortOrder: 2,

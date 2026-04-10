@@ -7,6 +7,7 @@ import {
   LOG_MESSAGES,
   STORAGE_KEYS,
 } from '@shared/constants'
+import { MOCK_IDS } from '@shared/test/fixtures'
 
 describe('background service worker', () => {
   const mockApiUrl = 'http://localhost:3030'
@@ -75,7 +76,13 @@ describe('background service worker', () => {
 
   describe('アイコン状態更新 (updateIconStatus)', () => {
     const mockBookmarks = {
-      bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
+      bookmarks: [
+        {
+          id: MOCK_IDS.BOOKMARK_1,
+          title: 'Example',
+          url: 'https://example.com',
+        },
+      ],
     }
 
     beforeEach(() => {
@@ -236,7 +243,13 @@ describe('background service worker', () => {
 
   describe('イベントリスナーとメッセージ', () => {
     const mockBookmarks = {
-      bookmarks: [{ id: '1', title: 'Example', url: 'https://example.com' }],
+      bookmarks: [
+        {
+          id: MOCK_IDS.BOOKMARK_1,
+          title: 'Example',
+          url: 'https://example.com',
+        },
+      ],
     }
 
     beforeEach(() => {
@@ -324,7 +337,11 @@ describe('background service worker', () => {
         const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
         const mockBookmarksResult = {
           bookmarks: [
-            { id: '123', title: 'Example', url: 'https://example.com' },
+            {
+              id: MOCK_IDS.BOOKMARK_1,
+              title: 'Example',
+              url: 'https://example.com',
+            },
           ],
         }
 
@@ -359,7 +376,7 @@ describe('background service worker', () => {
             expect.objectContaining({
               success: true,
               status: 'REGISTERED',
-              bookmarkId: '123',
+              bookmarkId: MOCK_IDS.BOOKMARK_1,
             }),
           )
         })

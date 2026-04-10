@@ -11,6 +11,7 @@ import {
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
 } from '@shared/constants'
+import { MOCK_IDS } from '@shared/test/fixtures'
 
 import { usePopup } from './usePopup'
 import { storage } from '../lib/storage'
@@ -49,7 +50,11 @@ describe('usePopup Hook', () => {
 
     mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
       if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
-        callback({ success: true, status: 'REGISTERED', bookmarkId: '123' })
+        callback({
+          success: true,
+          status: 'REGISTERED',
+          bookmarkId: MOCK_IDS.BOOKMARK_1,
+        })
       }
     })
 
@@ -108,7 +113,11 @@ describe('usePopup Hook', () => {
       { title: 'Test', url: 'https://example.com' },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
-      callback({ success: true, status: 'REGISTERED', bookmarkId: 'id-123' })
+      callback({
+        success: true,
+        status: 'REGISTERED',
+        bookmarkId: MOCK_IDS.BOOKMARK_1,
+      })
     })
 
     const { result } = renderHook(() => usePopup())
@@ -119,7 +128,7 @@ describe('usePopup Hook', () => {
     })
 
     // 保存された URL が正しく反映されることを検証
-    const expectedUrl = `${customFrontendUrl}${APP_PATHS.BOOKMARK_DETAIL('id-123')}`
+    const expectedUrl = `${customFrontendUrl}${APP_PATHS.BOOKMARK_DETAIL(MOCK_IDS.BOOKMARK_1)}`
     expect(mockChrome.tabs.create).toHaveBeenCalledWith({ url: expectedUrl })
     expect(window.close).toHaveBeenCalled()
   })
@@ -130,7 +139,11 @@ describe('usePopup Hook', () => {
       { title: 'Test', url: 'https://example.com' },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
-      callback({ success: true, status: 'REGISTERED', bookmarkId: 'id-123' })
+      callback({
+        success: true,
+        status: 'REGISTERED',
+        bookmarkId: MOCK_IDS.BOOKMARK_1,
+      })
     })
     mockChrome.tabs.create.mockRejectedValue(new Error('Tab Create Fail'))
 
@@ -158,7 +171,8 @@ describe('usePopup Hook', () => {
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true, data: { id: '1' } }),
+      json: () =>
+        Promise.resolve({ success: true, data: { id: MOCK_IDS.BOOKMARK_1 } }),
     })
     vi.stubGlobal('fetch', fetchMock)
 
