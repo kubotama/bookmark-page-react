@@ -11,7 +11,11 @@ import {
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
 } from '@shared/constants'
-import { MOCK_IDS } from '@shared/test/fixtures'
+import {
+  MOCK_IDS,
+  MOCK_BOOKMARK_TITLE_PREFIX,
+  VALID_URLS,
+} from '@shared/test/fixtures'
 
 import { usePopup } from './usePopup'
 import { storage } from '../lib/storage'
@@ -45,7 +49,7 @@ describe('usePopup Hook', () => {
 
   it('初期化時に現在のタブ情報を取得し、バックグラウンドに状態を問い合わせること', async () => {
     mockChrome.tabs.query.mockResolvedValue([
-      { title: 'Test Page', url: 'https://example.com' },
+      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
     ])
 
     mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
@@ -61,8 +65,8 @@ describe('usePopup Hook', () => {
     const { result } = renderHook(() => usePopup())
 
     await vi.waitFor(() => {
-      expect(result.current.title).toBe('Test Page')
-      expect(result.current.url).toBe('https://example.com')
+      expect(result.current.title).toBe(MOCK_BOOKMARK_TITLE_PREFIX)
+      expect(result.current.url).toBe(VALID_URLS.HTTPS)
       expect(result.current.isRegistered).toBe(true)
     })
   })
@@ -110,7 +114,7 @@ describe('usePopup Hook', () => {
     })
 
     mockChrome.tabs.query.mockResolvedValue([
-      { title: 'Test', url: 'https://example.com' },
+      { title: 'Test', url: VALID_URLS.HTTPS },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       callback({
@@ -136,7 +140,7 @@ describe('usePopup Hook', () => {
   it('handleEdit においてタブの作成に失敗した場合、ログを出力すること', async () => {
     const consoleSpy = vi.spyOn(console, 'error')
     mockChrome.tabs.query.mockResolvedValue([
-      { title: 'Test', url: 'https://example.com' },
+      { title: 'Test', url: VALID_URLS.HTTPS },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       callback({
@@ -194,7 +198,7 @@ describe('usePopup Hook', () => {
   describe('handleSave 異常系テスト', () => {
     it('API URL が不正な形式（プロトコル欠落など）の場合にエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: 'Test', url: 'https://example.com' },
+        { title: 'Test', url: VALID_URLS.HTTPS },
       ])
       vi.spyOn(storage, 'get').mockResolvedValue({
         [STORAGE_KEYS.API_URL]: 'ftp://invalid',
@@ -202,9 +206,7 @@ describe('usePopup Hook', () => {
       })
 
       const { result } = renderHook(() => usePopup())
-      await vi.waitFor(() =>
-        expect(result.current.url).toBe('https://example.com'),
-      )
+      await vi.waitFor(() => expect(result.current.url).toBe(VALID_URLS.HTTPS))
 
       await act(async () => {
         await result.current.handleSave()
@@ -218,7 +220,7 @@ describe('usePopup Hook', () => {
 
     it('HTTP 500 エラーが発生した場合にエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: 'Test', url: 'https://example.com' },
+        { title: 'Test', url: VALID_URLS.HTTPS },
       ])
       vi.stubGlobal(
         'fetch',
@@ -229,9 +231,7 @@ describe('usePopup Hook', () => {
       )
 
       const { result } = renderHook(() => usePopup())
-      await vi.waitFor(() =>
-        expect(result.current.url).toBe('https://example.com'),
-      )
+      await vi.waitFor(() => expect(result.current.url).toBe(VALID_URLS.HTTPS))
 
       await act(async () => {
         await result.current.handleSave()
@@ -243,15 +243,13 @@ describe('usePopup Hook', () => {
 
     it('不明なエラー（Errorオブジェクト以外がスローされた場合）にデフォルトのエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: 'Test', url: 'https://example.com' },
+        { title: 'Test', url: VALID_URLS.HTTPS },
       ])
       // String で reject する
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue('Fatal Exception'))
 
       const { result } = renderHook(() => usePopup())
-      await vi.waitFor(() =>
-        expect(result.current.url).toBe('https://example.com'),
-      )
+      await vi.waitFor(() => expect(result.current.url).toBe(VALID_URLS.HTTPS))
 
       await act(async () => {
         await result.current.handleSave()
