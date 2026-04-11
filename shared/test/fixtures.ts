@@ -93,3 +93,12 @@ export const INVALID_URLS = {
 export const TEST_MESSAGES = {
   DATABASE_ERROR: 'Database error',
 } as const
+
+/**
+ * テスト用の予測可能な UUID v7 形式の文字列を生成する
+ * @param index 連番
+ * @returns 018ed000-0000-7000-8000-XXXXXXXXXXXX 形式の文字列
+ */
+export const generateMockUuidV7 = (index: number): string => {
+  return `018ed000-0000-7000-8000-${String(index).padStart(12, '0')}`
+}

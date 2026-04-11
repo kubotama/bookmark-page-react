@@ -13,6 +13,7 @@ import {
   INVALID_URLS,
   VALID_URLS,
   MOCK_IDS,
+  generateMockUuidV7,
 } from '../test/fixtures'
 
 describe('bookmarkSchema', () => {
@@ -122,11 +123,8 @@ describe('reorderBookmarksSchema', () => {
   })
 
   it('上限を超える ID リストを拒否すること', () => {
-    // 1001個の有効な UUID を生成
-    const manyIds = Array.from(
-      { length: 1001 },
-      (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
-    )
+    // 1001個の有効な UUID v7 を生成
+    const manyIds = Array.from({ length: 1001 }, (_, i) => generateMockUuidV7(i))
     const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)
     if (!result.success) {

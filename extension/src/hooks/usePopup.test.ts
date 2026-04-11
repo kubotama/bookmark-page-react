@@ -133,7 +133,10 @@ describe('usePopup Hook', () => {
     })
 
     // 保存された URL が正しく反映されることを検証
-    const expectedUrl = `${customFrontendUrl}${APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id)}`
+    const expectedUrl = new URL(
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
+      customFrontendUrl,
+    ).toString()
     expect(mockChrome.tabs.create).toHaveBeenCalledWith({ url: expectedUrl })
     expect(window.close).toHaveBeenCalled()
   })
