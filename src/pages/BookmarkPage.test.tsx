@@ -12,7 +12,7 @@ import {
   UI_MESSAGES,
 } from '@shared/constants'
 import { updateBookmarkSchema } from '@shared/schemas/bookmark'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
 import { BookmarkPage } from './BookmarkPage'
@@ -244,7 +244,7 @@ describe('BookmarkPage Component', () => {
         createCalled = true
         return HttpResponse.json({
           success: true,
-          data: { keyword: { id: 'new-kw', name: 'NewTag' } },
+          data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: 'NewTag' } },
         })
       }),
       http.post('*/api/bookmarks/:id/keywords', () => {
@@ -276,7 +276,7 @@ describe('BookmarkPage Component', () => {
         createCalled = true
         return HttpResponse.json({
           success: true,
-          data: { keyword: { id: 'new-kw', name: 'EnterTag' } },
+          data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: 'EnterTag' } },
         })
       }),
       http.post('*/api/bookmarks/:id/keywords', () => {
@@ -395,7 +395,7 @@ describe('BookmarkPage Component', () => {
 
     renderWithRoutes(
       <BookmarkPage onBack={onBack} />,
-      APP_PATHS.BOOKMARK_DETAIL('999'),
+      APP_PATHS.BOOKMARK_DETAIL(MOCK_IDS.UNKNOWN_ID),
     )
 
     expect(await screen.findByText(/Bookmark not found/i)).toBeInTheDocument()

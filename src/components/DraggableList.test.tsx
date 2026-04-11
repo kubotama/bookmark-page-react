@@ -2,7 +2,7 @@ import * as sortable from '@dnd-kit/sortable'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { z } from 'zod'
 
-import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2, MOCK_IDS } from '@shared/test/fixtures'
 
 import { DraggableItem } from './DraggableItem'
 import { DraggableList } from './DraggableList'
@@ -49,8 +49,8 @@ vi.mock('@dnd-kit/sortable', async () => {
 
 describe('DraggableList', () => {
   const mockItems = [
-    { id: '1', name: 'Item 1' },
-    { id: '2', name: 'Item 2' },
+    { id: MOCK_IDS.BOOKMARK_1, name: 'Item 1' },
+    { id: MOCK_IDS.BOOKMARK_2, name: 'Item 2' },
   ]
 
   beforeEach(() => {
@@ -91,8 +91,8 @@ describe('DraggableList', () => {
       />,
     )
 
-    expect(screen.getByTestId('item-1')).toHaveTextContent('Item 1')
-    expect(screen.getByTestId('item-2')).toHaveTextContent('Item 2')
+    expect(screen.getByTestId(`item-${MOCK_IDS.BOOKMARK_1}`)).toHaveTextContent('Item 1')
+    expect(screen.getByTestId(`item-${MOCK_IDS.BOOKMARK_2}`)).toHaveTextContent('Item 2')
   })
 
   it('ドラッグ終了時に onReorder が正しい引数で呼び出されること', () => {
@@ -113,7 +113,7 @@ describe('DraggableList', () => {
     const context = screen.getByTestId('dnd-context')
     context.click()
 
-    expect(onReorder).toHaveBeenCalledWith('1', '2')
+    expect(onReorder).toHaveBeenCalledWith(MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2)
   })
 
   it('IDの検証に失敗した場合、onReorder が呼び出されないこと', () => {
@@ -137,7 +137,7 @@ describe('DraggableList', () => {
     )
 
     const context = screen.getByTestId('dnd-context')
-    context.click() // モックでは文字列 '1', '2' を渡すため、検証に失敗する
+    context.click() // モックでは文字列 UUID を渡すため、検証に失敗する
 
     expect(onReorder).not.toHaveBeenCalled()
     expect(consoleSpy).toHaveBeenCalled()
@@ -147,7 +147,7 @@ describe('DraggableList', () => {
   it('ドラッグ中のアイテムに適切なスタイルが適用されること (Branch Coverage用)', () => {
     const onReorder = vi.fn()
 
-    // ID '1' のアイテムだけドラッグ中とする
+    // MOCK_IDS.BOOKMARK_1 のアイテムだけドラッグ中とする
     vi.mocked(sortable.useSortable).mockImplementation(
       ({ id }: { id: string | number }) =>
         ({
@@ -156,7 +156,7 @@ describe('DraggableList', () => {
           setNodeRef: () => {},
           transform: null,
           transition: null,
-          isDragging: id === '1',
+          isDragging: id === MOCK_IDS.BOOKMARK_1,
         }) as unknown as ReturnType<typeof sortable.useSortable>,
     )
 
@@ -181,8 +181,8 @@ describe('DraggableList', () => {
       />,
     )
 
-    const item1 = screen.getByTestId('item-1')
-    const item2 = screen.getByTestId('item-2')
+    const item1 = screen.getByTestId(`item-${MOCK_IDS.BOOKMARK_1}`)
+    const item2 = screen.getByTestId(`item-${MOCK_IDS.BOOKMARK_2}`)
 
     // ドラッグ中のスタイルを確認
     expect(item1.style.opacity).toBe('0.5')

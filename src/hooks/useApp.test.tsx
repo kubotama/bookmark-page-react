@@ -2,10 +2,10 @@ import { http, HttpResponse } from 'msw'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { TEST_MESSAGES } from '@shared/constants'
-import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
+  MOCK_BOOKMARK_3,
   VALID_URLS,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
@@ -170,7 +170,7 @@ describe('useApp Hook (Integration)', () => {
       }
       const b3 = {
         ...MOCK_BOOKMARK_1,
-        id: BookmarkIdSchema.parse('3'),
+        id: MOCK_BOOKMARK_3.id,
         title: 'B3',
         url: 'https://b3.com',
         keywords: [],
@@ -220,7 +220,7 @@ describe('useApp Hook (Integration)', () => {
       }
       const bookmarkWithoutKw1 = {
         ...MOCK_BOOKMARK_1,
-        id: '2',
+        id: MOCK_BOOKMARK_2.id,
         title: 'Other',
         keywords: [MOCK_KEYWORDS[1]],
       }
@@ -251,12 +251,12 @@ describe('useApp Hook (Integration)', () => {
     it('複数のキーワードが選択された場合、AND検索として機能すること', async () => {
       const bookmarkWithBoth = {
         ...MOCK_BOOKMARK_1,
-        id: '1',
+        id: MOCK_BOOKMARK_1.id,
         keywords: [MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]],
       }
       const bookmarkWithOnly1 = {
         ...MOCK_BOOKMARK_1,
-        id: '2',
+        id: MOCK_BOOKMARK_2.id,
         keywords: [MOCK_KEYWORDS[0]],
       }
 
