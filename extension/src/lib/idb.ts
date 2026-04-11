@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 
+import { DB_CONSTANTS } from '@shared/constants'
 import type { BookmarkEntity, BookmarkId } from '@shared/schemas/bookmark'
 import type { KeywordId, KeywordWithCount } from '@shared/schemas/keyword'
 
@@ -11,7 +12,7 @@ export class BookmarkDatabase extends Dexie {
   keywords!: Table<KeywordWithCount, KeywordId>
 
   constructor() {
-    super('BookmarkDatabase')
+    super(DB_CONSTANTS.DB_NAME)
 
     // ストアの定義
     // bookmarks: id は主キー, sortOrder と *keywordIds はインデックス

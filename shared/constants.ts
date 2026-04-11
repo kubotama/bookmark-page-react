@@ -320,6 +320,7 @@ export const ELEMENT_IDS = {
  * データベース関連の定数
  */
 export const DB_CONSTANTS = {
+  DB_NAME: 'BookmarkDatabase',
   FILENAME: 'bookmarks.sqlite',
   MIGRATIONS_DIR: 'server/db/migrations',
   PRAGMA_FOREIGN_KEYS_ON: 'foreign_keys = ON',
