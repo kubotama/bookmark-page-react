@@ -16,6 +16,7 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARKS,
   MOCK_BOOKMARK_TITLE_PREFIX,
+  MOCK_IDS,
 } from '@shared/test/fixtures'
 
 import { BookmarkList } from './BookmarkList'
@@ -104,12 +105,12 @@ describe('BookmarkList', () => {
 
         // リスト項目の階層構造を確認 (list > listitem > button)
         const listItems = screen.getAllByRole(ARIA_ROLES.LISTITEM)
-        expect(listItems).toHaveLength(2)
+        expect(listItems).toHaveLength(3)
 
         const buttons = screen.getAllByRole(ARIA_ROLES.BUTTON, {
           name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
         })
-        expect(buttons).toHaveLength(2)
+        expect(buttons).toHaveLength(3)
 
         // 各リスト項目の中にボタンが含まれていることを確認
         listItems.forEach((item, index) => {
@@ -280,8 +281,8 @@ describe('BookmarkList', () => {
 
     const context = screen.getByTestId('mock-dnd-context')
     // ID に number をセットしてクリック
-    context.setAttribute('data-active-id', '1')
-    context.setAttribute('data-over-id', '2')
+    context.setAttribute('data-active-id', MOCK_IDS.BOOKMARK_1)
+    context.setAttribute('data-over-id', MOCK_IDS.BOOKMARK_2)
     context.setAttribute('data-id-type', 'number')
 
     await user.click(context)

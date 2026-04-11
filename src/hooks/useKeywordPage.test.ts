@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { APP_PATHS, UI_MESSAGES, UI_STATUS } from '@shared/constants'
-import { MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
 
 import { useKeywordPage } from './useKeywordPage'
 import { server } from '../test/setup'
@@ -60,7 +60,7 @@ describe('useKeywordPage Hook', () => {
   })
 
   it('ID が存在しない場合、keyword が undefined になること', async () => {
-    vi.mocked(useParams).mockReturnValue({ id: '999' })
+    vi.mocked(useParams).mockReturnValue({ id: MOCK_IDS.UNKNOWN_ID })
 
     const { result } = renderHook(() => useKeywordPage())
 
