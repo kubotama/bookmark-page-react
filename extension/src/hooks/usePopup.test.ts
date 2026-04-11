@@ -12,7 +12,7 @@ import {
   LOG_MESSAGES,
 } from '@shared/constants'
 import {
-  MOCK_IDS,
+  MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_TITLE_PREFIX,
   VALID_URLS,
 } from '@shared/test/fixtures'
@@ -57,7 +57,7 @@ describe('usePopup Hook', () => {
         callback({
           success: true,
           status: 'REGISTERED',
-          bookmarkId: MOCK_IDS.BOOKMARK_1,
+          bookmarkId: MOCK_BOOKMARK_1.id,
         })
       }
     })
@@ -120,7 +120,7 @@ describe('usePopup Hook', () => {
       callback({
         success: true,
         status: 'REGISTERED',
-        bookmarkId: MOCK_IDS.BOOKMARK_1,
+        bookmarkId: MOCK_BOOKMARK_1.id,
       })
     })
 
@@ -132,7 +132,7 @@ describe('usePopup Hook', () => {
     })
 
     // 保存された URL が正しく反映されることを検証
-    const expectedUrl = `${customFrontendUrl}${APP_PATHS.BOOKMARK_DETAIL(MOCK_IDS.BOOKMARK_1)}`
+    const expectedUrl = `${customFrontendUrl}${APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id)}`
     expect(mockChrome.tabs.create).toHaveBeenCalledWith({ url: expectedUrl })
     expect(window.close).toHaveBeenCalled()
   })
@@ -146,7 +146,7 @@ describe('usePopup Hook', () => {
       callback({
         success: true,
         status: 'REGISTERED',
-        bookmarkId: MOCK_IDS.BOOKMARK_1,
+        bookmarkId: MOCK_BOOKMARK_1.id,
       })
     })
     mockChrome.tabs.create.mockRejectedValue(new Error('Tab Create Fail'))
@@ -176,7 +176,7 @@ describe('usePopup Hook', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
-        Promise.resolve({ success: true, data: { id: MOCK_IDS.BOOKMARK_1 } }),
+        Promise.resolve({ success: true, data: { id: MOCK_BOOKMARK_1.id } }),
     })
     vi.stubGlobal('fetch', fetchMock)
 

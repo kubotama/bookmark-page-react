@@ -7,11 +7,7 @@ import {
   LOG_MESSAGES,
   STORAGE_KEYS,
 } from '@shared/constants'
-import {
-  MOCK_IDS,
-  MOCK_BOOKMARK_TITLE_PREFIX,
-  VALID_URLS,
-} from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, VALID_URLS } from '@shared/test/fixtures'
 
 describe('background service worker', () => {
   const mockApiUrl = VALID_URLS.HTTP
@@ -80,13 +76,7 @@ describe('background service worker', () => {
 
   describe('アイコン状態更新 (updateIconStatus)', () => {
     const mockBookmarks = {
-      bookmarks: [
-        {
-          id: MOCK_IDS.BOOKMARK_1,
-          title: MOCK_BOOKMARK_TITLE_PREFIX,
-          url: VALID_URLS.HTTPS,
-        },
-      ],
+      bookmarks: [MOCK_BOOKMARK_1],
     }
 
     beforeEach(() => {
@@ -124,8 +114,8 @@ describe('background service worker', () => {
 
       const handler = onUpdatedMock.mock.calls[0][0]
       handler(1, { status: 'complete' }, {
-        url: VALID_URLS.HTTPS,
-        title: MOCK_BOOKMARK_TITLE_PREFIX,
+        url: MOCK_BOOKMARK_1.url,
+        title: MOCK_BOOKMARK_1.title,
       } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
@@ -142,7 +132,7 @@ describe('background service worker', () => {
 
       const handler = onUpdatedMock.mock.calls[0][0]
       handler(1, { status: 'complete' }, {
-        url: VALID_URLS.HTTPS,
+        url: MOCK_BOOKMARK_1.url,
         title: 'Modified',
       } as chrome.tabs.Tab)
 
@@ -167,8 +157,8 @@ describe('background service worker', () => {
 
       const handler = onUpdatedMock.mock.calls[0][0]
       handler(1, { status: 'complete' }, {
-        url: VALID_URLS.HTTPS,
-        title: MOCK_BOOKMARK_TITLE_PREFIX,
+        url: MOCK_BOOKMARK_1.url,
+        title: MOCK_BOOKMARK_1.title,
       } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
@@ -189,8 +179,8 @@ describe('background service worker', () => {
 
       const handler = onUpdatedMock.mock.calls[0][0]
       handler(1, { status: 'complete' }, {
-        url: VALID_URLS.HTTPS,
-        title: MOCK_BOOKMARK_TITLE_PREFIX,
+        url: MOCK_BOOKMARK_1.url,
+        title: MOCK_BOOKMARK_1.title,
       } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
@@ -232,8 +222,8 @@ describe('background service worker', () => {
 
       const handler = onUpdatedMock.mock.calls[0][0]
       handler(1, { status: 'complete' }, {
-        url: VALID_URLS.HTTPS,
-        title: MOCK_BOOKMARK_TITLE_PREFIX,
+        url: MOCK_BOOKMARK_1.url,
+        title: MOCK_BOOKMARK_1.title,
       } as chrome.tabs.Tab)
 
       await vi.waitFor(() => {
@@ -247,13 +237,7 @@ describe('background service worker', () => {
 
   describe('イベントリスナーとメッセージ', () => {
     const mockBookmarks = {
-      bookmarks: [
-        {
-          id: MOCK_IDS.BOOKMARK_1,
-          title: MOCK_BOOKMARK_TITLE_PREFIX,
-          url: VALID_URLS.HTTPS,
-        },
-      ],
+      bookmarks: [MOCK_BOOKMARK_1],
     }
 
     beforeEach(() => {
@@ -270,7 +254,11 @@ describe('background service worker', () => {
       const onChangedMock = vi.mocked(chrome.storage.onChanged.addListener)
       vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
         ;(callback as unknown as (tabs: unknown[]) => void)([
-          { id: 1, url: VALID_URLS.HTTPS, title: MOCK_BOOKMARK_TITLE_PREFIX },
+          {
+            id: 1,
+            url: MOCK_BOOKMARK_1.url,
+            title: MOCK_BOOKMARK_1.title,
+          },
         ])
       })
       await import('./background')
@@ -290,7 +278,11 @@ describe('background service worker', () => {
       const onMessageMock = vi.mocked(chrome.runtime.onMessage.addListener)
       vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
         ;(callback as unknown as (tabs: unknown[]) => void)([
-          { id: 1, url: VALID_URLS.HTTPS, title: MOCK_BOOKMARK_TITLE_PREFIX },
+          {
+            id: 1,
+            url: MOCK_BOOKMARK_1.url,
+            title: MOCK_BOOKMARK_1.title,
+          },
         ])
       })
       await import('./background')
@@ -307,8 +299,8 @@ describe('background service worker', () => {
       const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
       const tabData = {
         id: 1,
-        url: VALID_URLS.HTTPS,
-        title: MOCK_BOOKMARK_TITLE_PREFIX,
+        url: MOCK_BOOKMARK_1.url,
+        title: MOCK_BOOKMARK_1.title,
       }
       vi.mocked(chrome.tabs.get).mockImplementation((_id, callback) => {
         if (callback) (callback as unknown as (tab: unknown) => void)(tabData)
@@ -344,13 +336,7 @@ describe('background service worker', () => {
       it('メッセージを受信した際に判定結果を返すこと (正常系)', async () => {
         const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
         const mockBookmarksResult = {
-          bookmarks: [
-            {
-              id: MOCK_IDS.BOOKMARK_1,
-              title: MOCK_BOOKMARK_TITLE_PREFIX,
-              url: VALID_URLS.HTTPS,
-            },
-          ],
+          bookmarks: [MOCK_BOOKMARK_1],
         }
 
         vi.stubGlobal(
@@ -370,8 +356,8 @@ describe('background service worker', () => {
         const result = messageHandler(
           {
             type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
-            url: VALID_URLS.HTTPS,
-            title: MOCK_BOOKMARK_TITLE_PREFIX,
+            url: MOCK_BOOKMARK_1.url,
+            title: MOCK_BOOKMARK_1.title,
           },
           {},
           sendResponse,
@@ -384,7 +370,7 @@ describe('background service worker', () => {
             expect.objectContaining({
               success: true,
               status: 'REGISTERED',
-              bookmarkId: MOCK_IDS.BOOKMARK_1,
+              bookmarkId: MOCK_BOOKMARK_1.id,
             }),
           )
         })
