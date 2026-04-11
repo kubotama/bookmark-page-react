@@ -167,7 +167,7 @@ describe('usePopup Hook', () => {
   it('ブックマークを正常に保存できること', async () => {
     vi.useFakeTimers()
     mockChrome.tabs.query.mockResolvedValue([
-      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: 'https://new.com' },
+      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.GOOGLE },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       if (callback) callback({ success: true, status: 'NONE' })
