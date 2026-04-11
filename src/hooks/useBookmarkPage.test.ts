@@ -9,7 +9,7 @@ import {
   DROPPABLE_IDS,
   KEY_VALUES,
 } from '@shared/constants'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
 import { useBookmarkPage } from './useBookmarkPage'
@@ -160,7 +160,7 @@ describe('useBookmarkPage Hook', () => {
         createCalled = true
         return HttpResponse.json({
           success: true,
-          data: { keyword: { id: '10', name: 'Enter' } },
+          data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: 'Enter' } },
         })
       }),
       http.post('*/api/bookmarks/:id/keywords', () => {
@@ -293,14 +293,14 @@ describe('useBookmarkPage Hook', () => {
           createCalled = true
           return HttpResponse.json({
             success: true,
-            data: { keyword: { id: '10', name: NEW_TAG } },
+            data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: NEW_TAG } },
           })
         }
         return new HttpResponse(null, { status: 400 })
       }),
       http.post('*/api/bookmarks/:id/keywords', async ({ request }) => {
         const body = (await request.json()) as { keywordId: string }
-        if (body.keywordId === '10') {
+        if (body.keywordId === MOCK_IDS.NEW_KEYWORD) {
           attachCalled = true
           return HttpResponse.json({ success: true, data: null })
         }
@@ -456,7 +456,7 @@ describe('useBookmarkPage Hook', () => {
         http.post('*/api/keywords', () => {
           return HttpResponse.json({
             success: true,
-            data: { keyword: { id: '10', name: 'Success' } },
+            data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: 'Success' } },
           })
         }),
         http.post('*/api/bookmarks/:id/keywords', () => {

@@ -2,8 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 
 import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
-import type { BookmarkId } from '@shared/schemas/bookmark'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2, MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import {
   BookmarkApiError,
@@ -181,7 +180,7 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useReorderBookmarks())
 
-      result.current.mutate({ ids: ['2' as BookmarkId, '1' as BookmarkId] })
+      result.current.mutate({ ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id] })
 
       await waitFor(() => expect(result.current.isError).toBe(true))
       expect(consoleSpy).toHaveBeenCalledWith(

@@ -7,7 +7,14 @@ import {
   updateBookmarkSchema,
 } from './bookmark'
 import { VALIDATION_MESSAGES } from '../constants'
-import { MOCK_BOOKMARK_1, INVALID_URLS, VALID_URLS } from '../test/fixtures'
+import {
+  MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_TITLE_PREFIX,
+  INVALID_URLS,
+  VALID_URLS,
+  MOCK_IDS,
+  generateMockUuidV7,
+} from '../test/fixtures'
 
 describe('bookmarkSchema', () => {
   it.each([
@@ -33,7 +40,7 @@ describe('bookmarkSchema', () => {
 
 describe('createBookmarkSchema', () => {
   it('正常なデータを受け入れること', () => {
-    const valid = { title: 'Test', url: VALID_URLS.HTTP }
+    const valid = { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTP }
     expect(createBookmarkSchema.safeParse(valid).success).toBe(true)
   })
 
@@ -45,12 +52,12 @@ describe('createBookmarkSchema', () => {
     },
     {
       name: 'URL 形式が不正',
-      data: { title: 'Test', url: INVALID_URLS.MALFORMED },
+      data: { title: MOCK_BOOKMARK_TITLE_PREFIX, url: INVALID_URLS.MALFORMED },
       expected: VALIDATION_MESSAGES.URL_INVALID_FORMAT,
     },
     {
       name: 'プロトコルが不正 (ftp)',
-      data: { title: 'Test', url: INVALID_URLS.FTP },
+      data: { title: MOCK_BOOKMARK_TITLE_PREFIX, url: INVALID_URLS.FTP },
       expected: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
@@ -98,12 +105,14 @@ describe('updateBookmarkSchema', () => {
 
 describe('reorderBookmarksSchema', () => {
   it('正常な ID リストを受け入れること', () => {
-    const valid = { ids: ['1', '2', '3'] }
+    const valid = { ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2] }
     expect(reorderBookmarksSchema.safeParse(valid).success).toBe(true)
   })
 
   it('重複した ID が含まれる場合にエラーを返すこと', () => {
-    const invalid = { ids: ['1', '2', '1'] }
+    const invalid = {
+      ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2, MOCK_IDS.BOOKMARK_1],
+    }
     const result = reorderBookmarksSchema.safeParse(invalid)
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -114,7 +123,8 @@ describe('reorderBookmarksSchema', () => {
   })
 
   it('上限を超える ID リストを拒否すること', () => {
-    const manyIds = Array.from({ length: 1001 }, (_, i) => String(i + 1))
+    // 1001個の有効な UUID v7 を生成
+    const manyIds = Array.from({ length: 1001 }, (_, i) => generateMockUuidV7(i))
     const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)
     if (!result.success) {

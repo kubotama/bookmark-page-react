@@ -2,31 +2,19 @@ import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
 
 import { bookmarkSchema } from '@shared/schemas/bookmark'
+import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
 import { findBookmarkByUrl, determineBookmarkStatus } from './bookmark-utils'
 
 describe('bookmark-utils', () => {
   // モックデータを Zod スキーマでパースして生成（スキーマとの不整合を防止）
-  const mockBookmarks = z.array(bookmarkSchema).parse([
-    {
-      id: '1',
-      title: 'Test 1',
-      url: 'https://test1.com',
-      sortOrder: 1,
-      keywords: [],
-    },
-    {
-      id: '2',
-      title: 'Test 2',
-      url: 'https://test2.com',
-      sortOrder: 2,
-      keywords: [],
-    },
-  ])
+  const mockBookmarks = z
+    .array(bookmarkSchema)
+    .parse([MOCK_BOOKMARK_1, MOCK_BOOKMARK_2])
 
   describe('findBookmarkByUrl', () => {
     it('URL が一致するブックマークを返すこと', () => {
-      const result = findBookmarkByUrl(mockBookmarks, 'https://test1.com')
+      const result = findBookmarkByUrl(mockBookmarks, MOCK_BOOKMARK_1.url)
       expect(result).toEqual(mockBookmarks[0])
     })
 
@@ -49,7 +37,7 @@ describe('bookmark-utils', () => {
 
     it('タイトルが一致する場合は REGISTERED を返すこと', () => {
       const bookmark = mockBookmarks[0]
-      const result = determineBookmarkStatus(bookmark, 'Test 1')
+      const result = determineBookmarkStatus(bookmark, MOCK_BOOKMARK_1.title)
       expect(result).toBe('REGISTERED')
     })
 
