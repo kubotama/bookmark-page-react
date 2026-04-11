@@ -67,7 +67,7 @@ describe('usePopup Hook', () => {
 
     await vi.waitFor(() => {
       expect(result.current.title).toBe(MOCK_BOOKMARK_TITLE_PREFIX)
-      expect(result.current.url).toBe(VALID_URLS.HTTPS)
+      expect(result.current.url).toBe(MOCK_BOOKMARK_1.url)
       expect(result.current.isRegistered).toBe(true)
     })
   })
