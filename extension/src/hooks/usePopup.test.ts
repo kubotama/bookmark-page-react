@@ -114,7 +114,7 @@ describe('usePopup Hook', () => {
     })
 
     mockChrome.tabs.query.mockResolvedValue([
-      { title: 'Test', url: VALID_URLS.HTTPS },
+      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       callback({
@@ -140,7 +140,7 @@ describe('usePopup Hook', () => {
   it('handleEdit においてタブの作成に失敗した場合、ログを出力すること', async () => {
     const consoleSpy = vi.spyOn(console, 'error')
     mockChrome.tabs.query.mockResolvedValue([
-      { title: 'Test', url: VALID_URLS.HTTPS },
+      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       callback({
@@ -167,7 +167,7 @@ describe('usePopup Hook', () => {
   it('ブックマークを正常に保存できること', async () => {
     vi.useFakeTimers()
     mockChrome.tabs.query.mockResolvedValue([
-      { title: 'Test', url: 'https://new.com' },
+      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: 'https://new.com' },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       if (callback) callback({ success: true, status: 'NONE' })
@@ -181,7 +181,9 @@ describe('usePopup Hook', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { result } = renderHook(() => usePopup())
-    await vi.waitFor(() => expect(result.current.title).toBe('Test'))
+    await vi.waitFor(() =>
+      expect(result.current.title).toBe(MOCK_BOOKMARK_TITLE_PREFIX),
+    )
 
     await act(async () => {
       await result.current.handleSave()
@@ -198,7 +200,7 @@ describe('usePopup Hook', () => {
   describe('handleSave 異常系テスト', () => {
     it('API URL が不正な形式（プロトコル欠落など）の場合にエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: 'Test', url: VALID_URLS.HTTPS },
+        { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
       ])
       vi.spyOn(storage, 'get').mockResolvedValue({
         [STORAGE_KEYS.API_URL]: 'ftp://invalid',
@@ -220,7 +222,7 @@ describe('usePopup Hook', () => {
 
     it('HTTP 500 エラーが発生した場合にエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: 'Test', url: VALID_URLS.HTTPS },
+        { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
       ])
       vi.stubGlobal(
         'fetch',
@@ -243,7 +245,7 @@ describe('usePopup Hook', () => {
 
     it('不明なエラー（Errorオブジェクト以外がスローされた場合）にデフォルトのエラーメッセージを表示すること', async () => {
       mockChrome.tabs.query.mockResolvedValue([
-        { title: 'Test', url: VALID_URLS.HTTPS },
+        { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
       ])
       // String で reject する
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue('Fatal Exception'))

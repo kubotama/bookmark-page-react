@@ -7,7 +7,7 @@ import {
   keywordsResponseSchema,
   updateKeywordRequestSchema,
 } from './keyword'
-import { MOCK_IDS } from '../test/fixtures'
+import { MOCK_BOOKMARK_TITLE_PREFIX, MOCK_IDS } from '../test/fixtures'
 
 describe('Keyword Schemas', () => {
   describe('KeywordIdSchema', () => {
@@ -23,13 +23,19 @@ describe('Keyword Schemas', () => {
 
   describe('keywordSchema', () => {
     it('正しいキーワードオブジェクトを受け入れること', () => {
-      const validKeyword = { id: MOCK_IDS.KEYWORD_1, name: 'Test' }
+      const validKeyword = {
+        id: MOCK_IDS.KEYWORD_1,
+        name: MOCK_BOOKMARK_TITLE_PREFIX,
+      }
       expect(keywordSchema.parse(validKeyword)).toEqual(validKeyword)
     })
 
     it('不正なデータを拒否すること', () => {
       expect(() =>
-        keywordSchema.parse({ id: 'invalid', name: 'Test' }),
+        keywordSchema.parse({
+          id: 'invalid',
+          name: MOCK_BOOKMARK_TITLE_PREFIX,
+        }),
       ).toThrow()
       expect(() => keywordSchema.parse({ id: MOCK_IDS.KEYWORD_1 })).toThrow() // name missing
     })
@@ -39,7 +45,7 @@ describe('Keyword Schemas', () => {
     it('bookmarkCount を含むオブジェクトを受け入れること', () => {
       const validData = {
         id: MOCK_IDS.KEYWORD_1,
-        name: 'Test',
+        name: MOCK_BOOKMARK_TITLE_PREFIX,
         bookmarkCount: 5,
       }
       expect(keywordWithCountSchema.parse(validData)).toEqual(validData)
@@ -47,7 +53,10 @@ describe('Keyword Schemas', () => {
 
     it('bookmarkCount が欠落している場合に拒否すること', () => {
       expect(() =>
-        keywordWithCountSchema.parse({ id: MOCK_IDS.KEYWORD_1, name: 'Test' }),
+        keywordWithCountSchema.parse({
+          id: MOCK_IDS.KEYWORD_1,
+          name: MOCK_BOOKMARK_TITLE_PREFIX,
+        }),
       ).toThrow()
     })
   })

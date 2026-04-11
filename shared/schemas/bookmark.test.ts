@@ -9,6 +9,7 @@ import {
 import { VALIDATION_MESSAGES } from '../constants'
 import {
   MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_TITLE_PREFIX,
   INVALID_URLS,
   VALID_URLS,
   MOCK_IDS,
@@ -38,7 +39,7 @@ describe('bookmarkSchema', () => {
 
 describe('createBookmarkSchema', () => {
   it('正常なデータを受け入れること', () => {
-    const valid = { title: 'Test', url: VALID_URLS.HTTP }
+    const valid = { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTP }
     expect(createBookmarkSchema.safeParse(valid).success).toBe(true)
   })
 
@@ -50,12 +51,12 @@ describe('createBookmarkSchema', () => {
     },
     {
       name: 'URL 形式が不正',
-      data: { title: 'Test', url: INVALID_URLS.MALFORMED },
+      data: { title: MOCK_BOOKMARK_TITLE_PREFIX, url: INVALID_URLS.MALFORMED },
       expected: VALIDATION_MESSAGES.URL_INVALID_FORMAT,
     },
     {
       name: 'プロトコルが不正 (ftp)',
-      data: { title: 'Test', url: INVALID_URLS.FTP },
+      data: { title: MOCK_BOOKMARK_TITLE_PREFIX, url: INVALID_URLS.FTP },
       expected: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
