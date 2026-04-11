@@ -12,6 +12,7 @@ import {
   LOG_MESSAGES,
 } from '@shared/constants'
 import {
+  INVALID_URLS,
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_TITLE_PREFIX,
   VALID_URLS,
@@ -203,7 +204,7 @@ describe('usePopup Hook', () => {
         { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
       ])
       vi.spyOn(storage, 'get').mockResolvedValue({
-        [STORAGE_KEYS.API_URL]: 'ftp://invalid',
+        [STORAGE_KEYS.API_URL]: INVALID_URLS.FTP,
         [STORAGE_KEYS.FRONTEND_URL]: mockFrontendUrl,
       })
 
