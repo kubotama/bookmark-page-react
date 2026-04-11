@@ -18,6 +18,14 @@ export const MOCK_IDS = {
   UNKNOWN_ID: '018ed000-0008-7000-8000-000000000008',
 } as const
 
+/**
+ * 不正な入力（数値 ID 等）をテストするためのモック ID
+ */
+export const MOCK_NUMERIC_IDS = {
+  VALID: 1,
+  OVER: 2,
+} as const
+
 export const MOCK_KEYWORDS: KeywordWithCount[] = [
   {
     id: KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1),
