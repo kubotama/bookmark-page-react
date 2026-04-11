@@ -1,7 +1,7 @@
 import { BookmarkIdSchema } from '../schemas/bookmark'
 import { KeywordIdSchema } from '../schemas/keyword'
 
-import type { Bookmark } from '../schemas/bookmark'
+import type { Bookmark, BookmarkEntity } from '../schemas/bookmark'
 import type { KeywordWithCount } from '../schemas/keyword'
 
 export const MOCK_BOOKMARK_TITLE_PREFIX = 'Test Bookmark'
@@ -69,6 +69,29 @@ export const MOCK_BOOKMARK_3: Bookmark = {
 }
 
 export const MOCK_BOOKMARKS = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2, MOCK_BOOKMARK_3]
+
+/**
+ * IndexedDB 用のエンティティフィクスチャ
+ */
+const toEntity = (bookmark: Bookmark): BookmarkEntity => {
+  return {
+    id: bookmark.id,
+    title: bookmark.title,
+    url: bookmark.url,
+    sortOrder: bookmark.sortOrder,
+    keywordIds: bookmark.keywords.map((k) => k.id),
+  }
+}
+
+export const MOCK_BOOKMARK_ENTITY_1 = toEntity(MOCK_BOOKMARK_1)
+export const MOCK_BOOKMARK_ENTITY_2 = toEntity(MOCK_BOOKMARK_2)
+export const MOCK_BOOKMARK_ENTITY_3 = toEntity(MOCK_BOOKMARK_3)
+
+export const MOCK_BOOKMARK_ENTITIES = [
+  MOCK_BOOKMARK_ENTITY_1,
+  MOCK_BOOKMARK_ENTITY_2,
+  MOCK_BOOKMARK_ENTITY_3,
+]
 
 export const VALID_URLS = {
   HTTP: 'http://localhost:3030',

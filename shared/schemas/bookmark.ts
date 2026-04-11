@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { VALIDATION_MESSAGES } from '../constants'
-import { keywordSchema } from './keyword'
+import { keywordSchema, type KeywordId } from './keyword'
 import { isHttpUrl } from '../utils/url'
 
 export {
@@ -28,6 +28,14 @@ export const bookmarkSchema = z.object({
 })
 
 export type Bookmark = z.infer<typeof bookmarkSchema>
+
+/**
+ * IndexedDB に保存するブックマークのエンティティ型
+ * keywords オブジェクト配列の代わりに ID 配列を持つ
+ */
+export interface BookmarkEntity extends Omit<Bookmark, 'keywords'> {
+  keywordIds: KeywordId[]
+}
 
 export const createBookmarkSchema = z.object({
   title: z.string().min(1, VALIDATION_MESSAGES.TITLE_REQUIRED),
