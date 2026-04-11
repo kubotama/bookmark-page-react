@@ -49,7 +49,7 @@ describe('usePopup Hook', () => {
 
   it('初期化時に現在のタブ情報を取得し、バックグラウンドに状態を問い合わせること', async () => {
     mockChrome.tabs.query.mockResolvedValue([
-      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTPS },
+      { title: MOCK_BOOKMARK_TITLE_PREFIX, url: MOCK_BOOKMARK_1.url },
     ])
 
     mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
