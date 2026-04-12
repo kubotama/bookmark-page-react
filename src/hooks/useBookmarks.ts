@@ -12,6 +12,7 @@ import type {
   KeywordResponse,
   KeywordsResponse,
   CreateKeywordRequest,
+  UpdateKeywordRequest,
 } from '@shared/schemas/keyword'
 
 import { useApi } from '../contexts/ApiContext'
@@ -218,6 +219,92 @@ export const useCreateKeyword = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
+    },
+  })
+}
+
+export const useUpdateKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: KeywordId
+      updates: UpdateKeywordRequest
+    }) => {
+      const res = await client.api.keywords[':id'].$patch({
+        param: { id },
+        json: updates,
+      })
+
+      return await parseResponse<KeywordResponse>(
+        res,
+        UI_MESSAGES.UPDATE_FAILED,
+      )
+    },
+    onSuccess: (data) => {
+      // キャッシュを直接更新して即座に UI に反映させる
+      const updatedKeyword = data.keyword
+      queryClient.setQueryData<KeywordsResponse>(
+        QUERY_KEYS.KEYWORDS.LIST(),
+        (oldData) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            keywords: oldData.keywords.map((kw) =>
+              kw.id === updatedKeyword.id
+                ? { ...kw, name: updatedKeyword.name }
+                : kw,
+            ),
+          }
+        },
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
+    },
+  })
+}
+
+export const useDeleteKeyword = () => {
+  const { client } = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: KeywordId) => {
+      const res = await client.api.keywords[':id'].$delete({
+        param: { id },
+      })
+
+      if (res.status === HTTP_STATUS.NO_CONTENT) {
+        return id
+      }
+
+      return await parseResponse<KeywordId>(
+        res,
+        UI_MESSAGES.KEYWORD_DELETE_FAILED,
+      )
+    },
+    onSuccess: (deletedId) => {
+      // キャッシュから削除対象を取り除く
+      queryClient.setQueryData<KeywordsResponse>(
+        QUERY_KEYS.KEYWORDS.LIST(),
+        (oldData) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            keywords: oldData.keywords.filter((kw) => kw.id !== deletedId),
+          }
+        },
+      )
+    },
+    onSettled: () => {
+      // キーワード削除によりブックマークとの紐付けも解除されるため、両方のキャッシュを無効化
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
     },
   })
 }

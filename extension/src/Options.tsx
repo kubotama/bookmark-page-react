@@ -6,6 +6,7 @@ import {
   FIELD_LABELS,
   STATUS_STYLES,
   UI_STATUS,
+  UI_STYLES,
 } from '@shared/constants'
 import { Button } from '@shared/ui/Button'
 import { InputField } from '@shared/ui/InputField'
@@ -47,14 +48,16 @@ export const Options = () => {
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
               placeholder={DEFAULT_API_URL}
-              width="w-32"
+              width={UI_STYLES.LABEL_WIDTH_CLASS}
             />
-            <p className="mt-2 text-xs text-gray-500 ml-36">
+            <p
+              className={`mt-2 text-xs text-gray-500 ${UI_STYLES.INDENT_MARGIN_CLASS}`}
+            >
               {COMMON_MESSAGES.API_URL_DESCRIPTION}
             </p>
           </div>
 
-          <div className="flex space-x-3 ml-36">
+          <div className={`flex space-x-3 ${UI_STYLES.INDENT_MARGIN_CLASS}`}>
             <Button
               onClick={handleSaveApiUrl}
               size="medium"
@@ -91,14 +94,16 @@ export const Options = () => {
               value={frontendUrl}
               onChange={(e) => setFrontendUrl(e.target.value)}
               placeholder={DEFAULT_FRONTEND_URL}
-              width="w-32"
+              width={UI_STYLES.LABEL_WIDTH_CLASS}
             />
-            <p className="mt-2 text-xs text-gray-500 ml-36">
+            <p
+              className={`mt-2 text-xs text-gray-500 ${UI_STYLES.INDENT_MARGIN_CLASS}`}
+            >
               {COMMON_MESSAGES.FRONTEND_URL_DESCRIPTION}
             </p>
           </div>
 
-          <div className="flex space-x-3 ml-36">
+          <div className={`flex space-x-3 ${UI_STYLES.INDENT_MARGIN_CLASS}`}>
             <Button
               onClick={handleSaveFrontendUrl}
               size="medium"
@@ -124,7 +129,7 @@ export const Options = () => {
                 ? ARIA_ROLES.ALERT
                 : ARIA_ROLES.STATUS
             }
-            className={`ml-36 p-3 rounded-md text-sm ${STATUS_STYLES[status.type]}`}
+            className={`${UI_STYLES.INDENT_MARGIN_CLASS} p-3 rounded-md text-sm ${STATUS_STYLES[status.type]}`}
           >
             {status.message}
           </div>

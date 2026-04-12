@@ -25,6 +25,7 @@ export const FIELD_LABELS = {
   BACK_TO_LIST: 'Back to List',
   BOOKMARKS_LABEL: 'ブックマーク一覧',
   KEYWORDS_LABEL: 'キーワード一覧',
+  KEYWORD_NAME: 'キーワード名',
   KEYWORDS_HEADING: 'Keywords',
   MATCHED_BOOKMARKS_LABEL: '一致したブックマーク',
   OTHER_BOOKMARKS_LABEL: 'その他のブックマーク',
@@ -68,6 +69,14 @@ export const UI_STATUS = {
 export type UIStatus = (typeof UI_STATUS)[keyof typeof UI_STATUS]
 
 /**
+ * 共通の UI スタイル定数
+ */
+export const UI_STYLES = {
+  LABEL_WIDTH_CLASS: 'w-32',
+  INDENT_MARGIN_CLASS: 'ml-36',
+} as const
+
+/**
  * 処理状態とメッセージを組み合わせた共通型
  */
 export type StatusInfo = {
@@ -94,6 +103,7 @@ export const COMMON_MESSAGES = {
   UNEXPECTED_RESPONSE: '予期しないレスポンス形式です',
   SAVING: '保存中...',
   LOADING_LABEL: '読み込み中...',
+  LOADING_DOTS: '...',
   API_URL_DESCRIPTION:
     'ブックマークを保存するサーバーを ベースURL（/api/bookmarksの前まで）を入力してください。',
   FRONTEND_URL_DESCRIPTION:
@@ -142,15 +152,20 @@ export const ERROR_MESSAGES = {
 export const UI_MESSAGES = {
   NO_BOOKMARKS: 'ブックマークがありません。',
   FETCH_BOOKMARKS_FAILED: 'ブックマークの取得に失敗しました',
+  UPDATE_SUCCESS: '更新しました',
   UPDATE_FAILED: 'ブックマークの更新に失敗しました',
   DELETE_FAILED: 'ブックマークの削除に失敗しました',
+  KEYWORD_DELETE_FAILED: 'キーワードの削除に失敗しました',
   REORDER_FAILED: 'ブックマークの並び替えに失敗しました',
   DELETE_CONFIRM: 'このブックマークを削除してもよろしいですか？',
+  KEYWORD_DELETE_CONFIRM: 'このキーワードを削除してもよろしいですか？',
   FETCH_KEYWORDS_FAILED: 'キーワードの取得に失敗しました',
   CREATE_KEYWORD_FAILED: 'キーワードの作成に失敗しました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
   DETACH_KEYWORD_FAILED: 'キーワードの解除に失敗しました',
   NO_KEYWORDS_AVAILABLE: '利用可能なキーワードはありません',
+  KEYWORD_NOT_FOUND: (id: string | number) =>
+    `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
 } as const
 
@@ -363,6 +378,8 @@ export const LOG_MESSAGES = {
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
   UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
+  UPDATE_KEYWORD_PLACEHOLDER: (name: string) => `Update keyword: ${name}`,
+  DELETE_KEYWORD_PLACEHOLDER: (id: string | number) => `Delete keyword: ${id}`,
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
 } as const
