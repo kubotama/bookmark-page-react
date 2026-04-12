@@ -3,7 +3,12 @@ import { describe, it, expect, beforeEach } from 'vitest'
 
 import { DB_CONSTANTS } from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
-import { MOCK_BOOKMARK_ENTITY_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import {
+  MOCK_BOOKMARK_ENTITY_1,
+  MOCK_KEYWORDS,
+  MOCK_IDS,
+  TEST_STRINGS,
+} from '@shared/test/fixtures'
 
 import { db } from './idb'
 
@@ -41,13 +46,13 @@ describe('BookmarkDatabase', () => {
     })
 
     it('addKeyword が新しいキーワードを保存し、その ID を返すこと', async () => {
-      const newKeyword = { name: 'New Tag' }
+      const newKeyword = { name: TEST_STRINGS.NEW_NAME }
       const id = await db.addKeyword(newKeyword)
       
       expect(KeywordIdSchema.safeParse(id).success).toBe(true)
       
       const saved = await db.keywords.get(id)
-      expect(saved?.name).toBe('New Tag')
+      expect(saved?.name).toBe(TEST_STRINGS.NEW_NAME)
       expect(saved?.bookmarkCount).toBe(0)
     })
 
@@ -65,6 +70,39 @@ describe('BookmarkDatabase', () => {
     it('不正な名前（空文字等）のキーワード追加を拒否すること', async () => {
       await expect(db.addKeyword({ name: '' })).rejects.toThrow()
       await expect(db.addKeyword({ name: '   ' })).rejects.toThrow()
+    })
+  })
+
+  describe('Keyword Operations (Update)', () => {
+    it('updateKeyword が正常に名前を更新すること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      await db.keywords.add(keyword)
+
+      await db.updateKeyword(keyword.id, TEST_STRINGS.UPDATED_NAME)
+
+      const updated = await db.keywords.get(keyword.id)
+      expect(updated?.name).toBe(TEST_STRINGS.UPDATED_NAME)
+    })
+
+    it('存在しない ID の更新を試みた場合にエラーを投げること', async () => {
+      const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(
+        db.updateKeyword(unknownId, TEST_STRINGS.NEW_NAME),
+      ).rejects.toThrow()
+    })
+
+    it('他のキーワードと重複する名前への更新を拒否すること', async () => {
+      await db.keywords.bulkAdd([MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]])
+
+      // React を TypeScript という名前に更新しようとする
+      await expect(
+        db.updateKeyword(MOCK_KEYWORDS[0].id, MOCK_KEYWORDS[1].name),
+      ).rejects.toThrow()
+    })
+
+    it('不正な形式の名前への更新を拒否すること', async () => {
+      await db.keywords.add(MOCK_KEYWORDS[0])
+      await expect(db.updateKeyword(MOCK_KEYWORDS[0].id, '')).rejects.toThrow()
     })
   })
 })
