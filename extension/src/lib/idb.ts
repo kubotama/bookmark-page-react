@@ -15,12 +15,7 @@ export class BookmarkDatabase extends Dexie {
     super(DB_CONSTANTS.DB_NAME)
 
     // ストアの定義
-    // bookmarks: id は主キー, sortOrder と *keywordIds はインデックス
-    // * を付けることで配列内の各要素に対してインデックスを張る (マルチエントリインデックス)
-    this.version(1).stores({
-      bookmarks: 'id, sortOrder, *keywordIds',
-      keywords: 'id, name',
-    })
+    this.version(DB_CONSTANTS.IDB_VERSION).stores(DB_CONSTANTS.IDB_SCHEMA)
   }
 }
 

@@ -321,6 +321,11 @@ export const ELEMENT_IDS = {
  */
 export const DB_CONSTANTS = {
   DB_NAME: 'BookmarkDatabase',
+  IDB_VERSION: 1,
+  IDB_SCHEMA: {
+    bookmarks: 'id, sortOrder, *keywordIds',
+    keywords: 'id, name',
+  },
   FILENAME: 'bookmarks.sqlite',
   MIGRATIONS_DIR: 'server/db/migrations',
   PRAGMA_FOREIGN_KEYS_ON: 'foreign_keys = ON',
