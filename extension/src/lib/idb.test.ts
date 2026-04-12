@@ -115,4 +115,21 @@ describe('BookmarkDatabase', () => {
       await expect(db.updateKeyword(MOCK_KEYWORDS[0].id, '')).rejects.toThrow()
     })
   })
+
+  describe('Keyword Operations (Delete)', () => {
+    it('deleteKeyword が正常にキーワードを削除すること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      await db.keywords.add(keyword)
+
+      await db.deleteKeyword(keyword.id)
+
+      const deleted = await db.keywords.get(keyword.id)
+      expect(deleted).toBeUndefined()
+    })
+
+    it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {
+      const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(db.deleteKeyword(unknownId)).rejects.toThrow()
+    })
+  })
 })

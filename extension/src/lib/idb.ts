@@ -88,6 +88,21 @@ export class BookmarkDatabase extends Dexie {
       await this.keywords.update(id, { name: trimmedName })
     })
   }
+
+  /**
+   * キーワードを削除する
+   */
+  async deleteKeyword(id: KeywordId): Promise<void> {
+    return await this.transaction('rw', this.keywords, async () => {
+      // 存在確認
+      const existing = await this.keywords.get(id)
+      if (!existing) {
+        throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+      }
+
+      await this.keywords.delete(id)
+    })
+  }
 }
 
 export const db = new BookmarkDatabase()
