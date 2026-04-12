@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { DB_CONSTANTS } from '@shared/constants'
+import { DB_CONSTANTS, ERROR_MESSAGES } from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 import {
   MOCK_BOOKMARK_ENTITY_1,
@@ -98,7 +98,7 @@ describe('BookmarkDatabase', () => {
       const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
       await expect(
         db.updateKeyword(unknownId, TEST_STRINGS.NEW_NAME),
-      ).rejects.toThrow()
+      ).rejects.toThrow(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
     })
 
     it('他のキーワードと重複する名前への更新を拒否すること', async () => {
@@ -107,12 +107,47 @@ describe('BookmarkDatabase', () => {
       // React を TypeScript という名前に更新しようとする
       await expect(
         db.updateKeyword(MOCK_KEYWORDS[0].id, MOCK_KEYWORDS[1].name),
-      ).rejects.toThrow()
+      ).rejects.toThrow(ERROR_MESSAGES.DUPLICATE_KEYWORD)
     })
 
     it('不正な形式の名前への更新を拒否すること', async () => {
       await db.keywords.add(MOCK_KEYWORDS[0])
       await expect(db.updateKeyword(MOCK_KEYWORDS[0].id, '')).rejects.toThrow()
+    })
+  })
+
+  describe('Keyword Operations (Delete)', () => {
+    it('deleteKeyword が正常にキーワードを削除すること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      await db.keywords.add(keyword)
+
+      await db.deleteKeyword(keyword.id)
+
+      const deleted = await db.keywords.get(keyword.id)
+      expect(deleted).toBeUndefined()
+    })
+
+    it('キーワード削除時に、関連するブックマークからの紐付けも解除されること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      const bookmark = {
+        ...MOCK_BOOKMARK_ENTITY_1,
+        keywordIds: [keyword.id],
+      }
+      await db.keywords.add(keyword)
+      await db.bookmarks.add(bookmark)
+
+      // 削除実行
+      await db.deleteKeyword(keyword.id)
+
+      // ブックマークの keywordIds から削除されていることを確認
+      const updatedBookmark = await db.bookmarks.get(bookmark.id)
+      expect(updatedBookmark?.keywordIds).not.toContain(keyword.id)
+      expect(updatedBookmark?.keywordIds).toHaveLength(0)
+    })
+
+    it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {
+      const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(db.deleteKeyword(unknownId)).rejects.toThrow(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
     })
   })
 })
