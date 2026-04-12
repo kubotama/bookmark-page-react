@@ -6,6 +6,7 @@ import {
   type KeywordId,
   type KeywordWithCount,
   keywordSchema,
+  KeywordIdSchema,
 } from '@shared/schemas/keyword'
 import { generateId } from '@shared/utils/id'
 
@@ -45,7 +46,7 @@ export class BookmarkDatabase extends Dexie {
       return existing.id
     }
 
-    const id = generateId() as KeywordId
+    const id = KeywordIdSchema.parse(generateId())
     await this.keywords.add({
       id,
       name,

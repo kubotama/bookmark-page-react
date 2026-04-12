@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 
+import { DB_CONSTANTS } from '@shared/constants'
 import { KeywordIdSchema } from '@shared/schemas/keyword'
 import { MOCK_BOOKMARK_ENTITY_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 
@@ -14,7 +15,7 @@ describe('BookmarkDatabase', () => {
   })
 
   it('データベースが正常に初期化され、ストアが存在すること', async () => {
-    expect(db.name).toBe('BookmarkDatabase')
+    expect(db.name).toBe(DB_CONSTANTS.DB_NAME)
     expect(db.bookmarks).toBeDefined()
     expect(db.keywords).toBeDefined()
 
