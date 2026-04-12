@@ -7,7 +7,10 @@ export type KeywordId = z.infer<typeof KeywordIdSchema>
 
 export const keywordSchema = z.object({
   id: KeywordIdSchema,
-  name: z.string(),
+  name: z
+    .string()
+    .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
+    .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH),
 })
 export type Keyword = z.infer<typeof keywordSchema>
 
