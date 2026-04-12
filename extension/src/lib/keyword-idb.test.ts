@@ -7,6 +7,7 @@ import {
   MOCK_KEYWORDS,
   MOCK_IDS,
   TEST_STRINGS,
+  MOCK_BOOKMARK_ENTITY_1,
 } from '@shared/test/fixtures'
 
 import { db } from './idb'
@@ -99,6 +100,24 @@ describe('BookmarkDatabase - Keyword Operations', () => {
 
       const deleted = await db.keywords.get(keyword.id)
       expect(deleted).toBeUndefined()
+    })
+
+    it('キーワード削除時に、関連するブックマークからの紐付けも解除されること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      const bookmark = {
+        ...MOCK_BOOKMARK_ENTITY_1,
+        keywordIds: [keyword.id],
+      }
+      await db.keywords.add(keyword)
+      await db.bookmarks.add(bookmark)
+
+      // 削除実行
+      await db.deleteKeyword(keyword.id)
+
+      // ブックマークの keywordIds から削除されていることを確認
+      const updatedBookmark = await db.bookmarks.get(bookmark.id)
+      expect(updatedBookmark?.keywordIds).not.toContain(keyword.id)
+      expect(updatedBookmark?.keywordIds).toHaveLength(0)
     })
 
     it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {

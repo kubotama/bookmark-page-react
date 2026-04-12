@@ -5,6 +5,7 @@ import {
   MOCK_BOOKMARK_ENTITY_1,
   MOCK_BOOKMARK_ENTITY_2,
   VALID_URLS,
+  MOCK_BOOKMARK_TITLE_PREFIX,
 } from '@shared/test/fixtures'
 
 import { db } from './idb'
@@ -30,25 +31,35 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
     })
 
     it('addBookmark が最初のアイテムを追加する際、sortOrder 0 を割り当てること', async () => {
-      const params = { title: 'First', url: VALID_URLS.GOOGLE }
+      const params = { 
+        title: `${MOCK_BOOKMARK_TITLE_PREFIX} First`, 
+        url: VALID_URLS.GOOGLE 
+      }
       const id = await db.addBookmark(params)
 
       const saved = await db.bookmarks.get(id)
       expect(saved?.sortOrder).toBe(0)
+      expect(saved?.title).toBe(params.title)
     })
 
     it('addBookmark が既存アイテムがある場合、最小 sortOrder - 1 を割り当てること', async () => {
       // 既存データ (sortOrder: 0)
       await db.bookmarks.add({ ...MOCK_BOOKMARK_ENTITY_1, sortOrder: 0 })
 
-      const params = { title: 'New Top', url: VALID_URLS.HTTPS }
+      const params = { 
+        title: `${MOCK_BOOKMARK_TITLE_PREFIX} New Top`, 
+        url: VALID_URLS.HTTPS 
+      }
       const id = await db.addBookmark(params)
 
       const saved = await db.bookmarks.get(id)
       expect(saved?.sortOrder).toBe(-1)
 
       // さらに追加
-      const id2 = await db.addBookmark({ title: 'New Top 2', url: VALID_URLS.HTTP })
+      const id2 = await db.addBookmark({ 
+        title: `${MOCK_BOOKMARK_TITLE_PREFIX} New Top 2`, 
+        url: VALID_URLS.HTTP 
+      })
       const saved2 = await db.bookmarks.get(id2)
       expect(saved2?.sortOrder).toBe(-2)
     })

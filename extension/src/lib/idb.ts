@@ -4,8 +4,9 @@ import { DB_CONSTANTS, ERROR_MESSAGES } from '@shared/constants'
 import {
   type BookmarkEntity,
   type BookmarkId,
-  bookmarkSchema,
   BookmarkIdSchema,
+  createBookmarkSchema,
+  type CreateBookmarkRequest,
 } from '@shared/schemas/bookmark'
 import {
   type KeywordId,
@@ -39,9 +40,9 @@ export class BookmarkDatabase extends Dexie {
   /**
    * ブックマークを追加する
    */
-  async addBookmark(params: { title: string; url: string }): Promise<BookmarkId> {
-    // バリデーション
-    bookmarkSchema.pick({ title: true, url: true }).parse(params)
+  async addBookmark(params: CreateBookmarkRequest): Promise<BookmarkId> {
+    // バリデーションにプロジェクト標準のスキーマを使用
+    createBookmarkSchema.parse(params)
 
     return await this.transaction('rw', this.bookmarks, async () => {
       // 現在の最小 sortOrder を取得
