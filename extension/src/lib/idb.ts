@@ -90,17 +90,27 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
-   * キーワードを削除する
+   * キーワードを削除する。関連するブックマークからの紐付けも解除する。
    */
   async deleteKeyword(id: KeywordId): Promise<void> {
-    return await this.transaction('rw', this.keywords, async () => {
+    return await this.transaction('rw', [this.keywords, this.bookmarks], async () => {
       // 存在確認
       const existing = await this.keywords.get(id)
       if (!existing) {
         throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
       }
 
+      // キーワード自体を削除
       await this.keywords.delete(id)
+
+      // 関連するブックマークからキーワード ID を除去
+      // keywordIds はインデックスされているので高速にフィルタリング可能
+      await this.bookmarks
+        .where('keywordIds')
+        .equals(id)
+        .modify((bookmark) => {
+          bookmark.keywordIds = bookmark.keywordIds.filter((kId) => kId !== id)
+        })
     })
   }
 }
