@@ -81,7 +81,7 @@ export class BookmarkDatabase extends Dexie {
         .where('name')
         .equalsIgnoreCase(trimmedName)
         .first()
-      if (duplicate) {
+      if (duplicate && duplicate.id !== id) {
         throw new Error(ERROR_MESSAGES.DUPLICATE_KEYWORD)
       }
 

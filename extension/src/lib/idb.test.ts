@@ -84,6 +84,16 @@ describe('BookmarkDatabase', () => {
       expect(updated?.name).toBe(TEST_STRINGS.UPDATED_NAME)
     })
 
+    it('大文字小文字のみの変更（例: react -> React）が正常に行えること', async () => {
+      const keyword = { id: KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1), name: 'react', bookmarkCount: 0 }
+      await db.keywords.add(keyword)
+
+      await db.updateKeyword(keyword.id, 'React')
+
+      const updated = await db.keywords.get(keyword.id)
+      expect(updated?.name).toBe('React')
+    })
+
     it('存在しない ID の更新を試みた場合にエラーを投げること', async () => {
       const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
       await expect(
