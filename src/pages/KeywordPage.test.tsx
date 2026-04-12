@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import {
+  ARIA_ROLES,
   COMMON_MESSAGES,
   FIELD_LABELS,
   PLACEHOLDERS,
   UI_MESSAGES,
+  UI_STATUS,
 } from '@shared/constants'
 import { MOCK_KEYWORDS } from '@shared/test/fixtures'
 
@@ -27,6 +29,7 @@ describe('KeywordPage Component', () => {
     isUpdating: false,
     isDeleting: false,
     isSaveDisabled: true,
+    status: { type: UI_STATUS.IDLE, message: '' },
     handleUpdate: vi.fn(),
     handleDelete: vi.fn(),
     handleBack: vi.fn(),
@@ -93,5 +96,17 @@ describe('KeywordPage Component', () => {
         UI_MESSAGES.KEYWORD_NOT_FOUND(mockUseKeywordPage.id ?? ''),
       ),
     ).toBeInTheDocument()
+  })
+
+  it('ステータスメッセージがある場合に正しく表示されること', () => {
+    const message = 'Success Message'
+    vi.mocked(useKeywordPage).mockReturnValue({
+      ...mockUseKeywordPage,
+      status: { type: UI_STATUS.SUCCESS, message },
+    })
+
+    render(<KeywordPage />)
+    expect(screen.getByText(message)).toBeInTheDocument()
+    expect(screen.getByRole(ARIA_ROLES.STATUS)).toBeInTheDocument()
   })
 })
