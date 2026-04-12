@@ -5,6 +5,12 @@ import type { Bookmark, BookmarkEntity } from '../schemas/bookmark'
 import type { KeywordWithCount } from '../schemas/keyword'
 
 export const MOCK_BOOKMARK_TITLE_PREFIX = 'Test Bookmark'
+export const MOCK_KEYWORD_NAME_PREFIX = 'Test Keyword'
+
+export const TEST_STRINGS = {
+  UPDATED_NAME: 'Updated Name',
+  NEW_NAME: 'New Name',
+} as const
 
 // UUID v7 形式のモック ID (時間順ソート可能性を維持)
 export const MOCK_IDS = {

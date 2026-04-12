@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 
-import { DB_CONSTANTS } from '@shared/constants'
+import { DB_CONSTANTS, ERROR_MESSAGES } from '@shared/constants'
 import type { BookmarkEntity, BookmarkId } from '@shared/schemas/bookmark'
 import {
   type KeywordId,
@@ -54,6 +54,39 @@ export class BookmarkDatabase extends Dexie {
     })
 
     return id
+  }
+
+  /**
+   * キーワードの名前を更新する
+   */
+  async updateKeyword(id: KeywordId, name: string): Promise<void> {
+    const trimmedName = name.trim()
+    // バリデーション
+    keywordSchema.shape.name.parse(trimmedName)
+
+    return await this.transaction('rw', this.keywords, async () => {
+      // 存在確認
+      const existing = await this.keywords.get(id)
+      if (!existing) {
+        throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+      }
+
+      // 名前が変わらない場合は何もしない
+      if (existing.name === trimmedName) {
+        return
+      }
+
+      // 他のキーワードとの重複チェック
+      const duplicate = await this.keywords
+        .where('name')
+        .equalsIgnoreCase(trimmedName)
+        .first()
+      if (duplicate && duplicate.id !== id) {
+        throw new Error(ERROR_MESSAGES.DUPLICATE_KEYWORD)
+      }
+
+      await this.keywords.update(id, { name: trimmedName })
+    })
   }
 }
 
