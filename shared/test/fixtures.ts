@@ -10,6 +10,8 @@ export const MOCK_KEYWORD_NAME_PREFIX = 'Test Keyword'
 export const TEST_STRINGS = {
   UPDATED_NAME: 'Updated Name',
   NEW_NAME: 'New Name',
+  PRE_TRIMMED_NAME: '   TRIMMED NAME    ',
+  TRIMMED_NAME: 'TRIMMED NAME',
 } as const
 
 // UUID v7 形式のモック ID (時間順ソート可能性を維持)
@@ -74,7 +76,11 @@ export const MOCK_BOOKMARK_3: Bookmark = {
   keywords: [],
 }
 
-export const MOCK_BOOKMARKS = [MOCK_BOOKMARK_1, MOCK_BOOKMARK_2, MOCK_BOOKMARK_3]
+export const MOCK_BOOKMARKS = [
+  MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
+  MOCK_BOOKMARK_3,
+]
 
 /**
  * IndexedDB 用のエンティティフィクスチャ

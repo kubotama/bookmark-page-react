@@ -29,9 +29,9 @@ describe('BookmarkDatabase - Keyword Operations', () => {
     it('addKeyword が新しいキーワードを保存し、その ID を返すこと', async () => {
       const newKeyword = { name: TEST_STRINGS.NEW_NAME }
       const id = await db.addKeyword(newKeyword)
-      
+
       expect(KeywordIdSchema.safeParse(id).success).toBe(true)
-      
+
       const saved = await db.keywords.get(id)
       expect(saved?.name).toBe(TEST_STRINGS.NEW_NAME)
       expect(saved?.bookmarkCount).toBe(0)
@@ -42,7 +42,7 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       await db.keywords.add(existing)
 
       const id = await db.addKeyword({ name: existing.name })
-      
+
       expect(id).toBe(existing.id)
       const count = await db.keywords.count()
       expect(count).toBe(1)
@@ -51,6 +51,12 @@ describe('BookmarkDatabase - Keyword Operations', () => {
     it('不正な名前（空文字等）のキーワード追加を拒否すること', async () => {
       await expect(db.addKeyword({ name: '' })).rejects.toThrow()
       await expect(db.addKeyword({ name: '   ' })).rejects.toThrow()
+    })
+
+    it('前後の空白を含むキーワードが自動的にトリムされて保存されること', async () => {
+      const id = await db.addKeyword({ name: TEST_STRINGS.PRE_TRIMMED_NAME })
+      const saved = await db.keywords.get(id)
+      expect(saved?.name).toBe(TEST_STRINGS.TRIMMED_NAME)
     })
   })
 
@@ -66,13 +72,27 @@ describe('BookmarkDatabase - Keyword Operations', () => {
     })
 
     it('大文字小文字のみの変更（例: react -> React）が正常に行えること', async () => {
-      const keyword = { id: KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1), name: 'react', bookmarkCount: 0 }
+      const keyword = {
+        id: KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1),
+        name: 'react',
+        bookmarkCount: 0,
+      }
       await db.keywords.add(keyword)
 
       await db.updateKeyword(keyword.id, 'React')
 
       const updated = await db.keywords.get(keyword.id)
       expect(updated?.name).toBe('React')
+    })
+
+    it('更新時にも前後の空白が自動的にトリムされること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      await db.keywords.add(keyword)
+
+      await db.updateKeyword(keyword.id, TEST_STRINGS.PRE_TRIMMED_NAME)
+
+      const updated = await db.keywords.get(keyword.id)
+      expect(updated?.name).toBe(TEST_STRINGS.TRIMMED_NAME)
     })
 
     it('存在しない ID の更新を試みた場合にエラーを投げること', async () => {
@@ -122,7 +142,9 @@ describe('BookmarkDatabase - Keyword Operations', () => {
 
     it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {
       const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
-      await expect(db.deleteKeyword(unknownId)).rejects.toThrow(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+      await expect(db.deleteKeyword(unknownId)).rejects.toThrow(
+        ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+      )
     })
   })
 })
