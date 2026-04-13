@@ -7,6 +7,8 @@ import {
   BookmarkIdSchema,
   createBookmarkSchema,
   type CreateBookmarkRequest,
+  updateBookmarkSchema,
+  type UpdateBookmarkRequest,
 } from '@shared/schemas/bookmark'
 import {
   type KeywordId,
@@ -61,6 +63,22 @@ export class BookmarkDatabase extends Dexie {
       await this.bookmarks.add(newBookmark)
       return id
     })
+  }
+
+  /**
+   * ブックマークの内容を更新する
+   */
+  async updateBookmark(
+    id: BookmarkId,
+    updates: UpdateBookmarkRequest,
+  ): Promise<void> {
+    // バリデーション
+    const validated = updateBookmarkSchema.parse(updates)
+
+    const updatedCount = await this.bookmarks.update(id, validated)
+    if (updatedCount === 0) {
+      throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+    }
   }
 
   /**
