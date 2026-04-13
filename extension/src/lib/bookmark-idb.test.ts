@@ -1,11 +1,14 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 
+import { ERROR_MESSAGES } from '@shared/constants'
+import { BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_ENTITY_1,
   MOCK_BOOKMARK_ENTITY_2,
   VALID_URLS,
   MOCK_BOOKMARK_TITLE_PREFIX,
+  MOCK_IDS,
   TEST_STRINGS,
 } from '@shared/test/fixtures'
 
@@ -81,5 +84,51 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
       expect(saved?.title).toBe(TEST_STRINGS.TRIMMED_NAME)
       expect(saved?.url).toBe(VALID_URLS.GOOGLE)
     })
+  })
+
+  describe('Update', () => {
+    it('updateBookmark がタイトルの更新に成功すること', async () => {
+      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      await db.bookmarks.add(bookmark)
+
+      await db.updateBookmark(bookmark.id, { title: TEST_STRINGS.UPDATED_NAME })
+
+      const updated = await db.bookmarks.get(bookmark.id)
+      expect(updated?.title).toBe(TEST_STRINGS.UPDATED_NAME)
+      expect(updated?.url).toBe(bookmark.url) // URL は変わっていないこと
+    })
+
+    it('updateBookmark が URL の更新に成功すること', async () => {
+      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      await db.bookmarks.add(bookmark)
+
+      await db.updateBookmark(bookmark.id, { url: VALID_URLS.HTTPS })
+
+      const updated = await db.bookmarks.get(bookmark.id)
+      expect(updated?.title).toBe(bookmark.title)
+      expect(updated?.url).toBe(VALID_URLS.HTTPS)
+    })
+
+    it('存在しない ID の更新を試みた場合にエラーを投げること', async () => {
+      const unknownId = BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(
+        db.updateBookmark(unknownId, { title: 'New' }),
+      ).rejects.toThrow(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+    })
+
+    it.each([
+      { description: '空タイトル', updateData: { title: '' } },
+      { description: '空URL', updateData: { url: '' } },
+    ])(
+      '不正な形式への更新（ $description ）を拒否すること',
+      async ({ updateData }) => {
+        const bookmark = MOCK_BOOKMARK_ENTITY_1
+        await db.bookmarks.add(bookmark)
+
+        await expect(
+          db.updateBookmark(bookmark.id, updateData),
+        ).rejects.toThrow()
+      },
+    )
   })
 })
