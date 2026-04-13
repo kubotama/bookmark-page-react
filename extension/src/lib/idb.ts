@@ -42,7 +42,7 @@ export class BookmarkDatabase extends Dexie {
    */
   async addBookmark(params: CreateBookmarkRequest): Promise<BookmarkId> {
     // バリデーションにプロジェクト標準のスキーマを使用
-    createBookmarkSchema.parse(params)
+    const validated = createBookmarkSchema.parse(params)
 
     return await this.transaction('rw', this.bookmarks, async () => {
       // 現在の最小 sortOrder を取得
@@ -52,8 +52,8 @@ export class BookmarkDatabase extends Dexie {
       const id = BookmarkIdSchema.parse(generateId())
       const newBookmark: BookmarkEntity = {
         id,
-        title: params.title,
-        url: params.url,
+        title: validated.title,
+        url: validated.url,
         sortOrder: minSortOrder - 1,
         keywordIds: [],
       }
