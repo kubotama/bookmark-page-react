@@ -131,4 +131,28 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
       },
     )
   })
+
+  describe('Delete', () => {
+    it('deleteBookmark が正常にブックマークを削除すること', async () => {
+      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      await db.bookmarks.add(bookmark)
+
+      await db.deleteBookmark(bookmark.id)
+
+      const deleted = await db.bookmarks.get(bookmark.id)
+      expect(deleted).toBeUndefined()
+    })
+
+    it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {
+      const unknownId = BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(db.deleteBookmark(unknownId)).rejects.toThrow(
+        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+      )
+    })
+
+    it('不正な形式の ID での削除を試みた場合にバリデーションエラーを投げること', async () => {
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as import('@shared/schemas/bookmark').BookmarkId
+      await expect(db.deleteBookmark(invalidId)).rejects.toThrow()
+    })
+  })
 })
