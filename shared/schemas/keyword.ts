@@ -5,12 +5,18 @@ import { VALIDATION_MESSAGES } from '@shared/constants'
 export const KeywordIdSchema = z.string().uuid().brand<'KeywordId'>()
 export type KeywordId = z.infer<typeof KeywordIdSchema>
 
+/**
+ * キーワード名の共通バリデーションスキーマ
+ */
+const keywordNameSchema = z
+  .string()
+  .trim()
+  .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
+  .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH)
+
 export const keywordSchema = z.object({
   id: KeywordIdSchema,
-  name: z
-    .string()
-    .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
-    .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH),
+  name: keywordNameSchema,
 })
 export type Keyword = z.infer<typeof keywordSchema>
 
@@ -28,10 +34,7 @@ export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
  * キーワード作成リクエストのバリデーションスキーマ
  */
 export const createKeywordRequestSchema = z.object({
-  name: z
-    .string()
-    .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
-    .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH),
+  name: keywordNameSchema,
 })
 export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
 
@@ -39,7 +42,7 @@ export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
  * キーワード更新リクエストのバリデーションスキーマ
  */
 export const updateKeywordRequestSchema = z.object({
-  name: createKeywordRequestSchema.shape.name,
+  name: keywordNameSchema,
 })
 export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
 

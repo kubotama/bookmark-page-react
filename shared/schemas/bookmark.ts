@@ -14,15 +14,26 @@ export {
 export const BookmarkIdSchema = z.string().uuid().brand<'BookmarkId'>()
 export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 
+/**
+ * ブックマークタイトルの共通バリデーションスキーマ
+ */
+const bookmarkTitleSchema = z.string().trim().min(1, VALIDATION_MESSAGES.TITLE_REQUIRED)
+
+/**
+ * ブックマークURLの共通バリデーションスキーマ
+ */
+const bookmarkUrlSchema = z
+  .string()
+  .trim()
+  .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
+  .refine(isHttpUrl, {
+    message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+  })
+
 export const bookmarkSchema = z.object({
   id: BookmarkIdSchema,
-  title: z.string(),
-  url: z
-    .string()
-    .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
-    .refine(isHttpUrl, {
-      message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-    }),
+  title: bookmarkTitleSchema,
+  url: bookmarkUrlSchema,
   sortOrder: z.number(),
   keywords: z.array(keywordSchema),
 })
@@ -42,27 +53,16 @@ export const bookmarkEntitySchema = bookmarkSchema
 export type BookmarkEntity = z.infer<typeof bookmarkEntitySchema>
 
 export const createBookmarkSchema = z.object({
-  title: z.string().min(1, VALIDATION_MESSAGES.TITLE_REQUIRED),
-  url: z
-    .string()
-    .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
-    .refine(isHttpUrl, {
-      message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-    }),
+  title: bookmarkTitleSchema,
+  url: bookmarkUrlSchema,
 })
 
 export type CreateBookmarkRequest = z.infer<typeof createBookmarkSchema>
 
 export const updateBookmarkSchema = z
   .object({
-    title: z.string().min(1, VALIDATION_MESSAGES.TITLE_MIN_LENGTH).optional(),
-    url: z
-      .string()
-      .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
-      .refine(isHttpUrl, {
-        message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-      })
-      .optional(),
+    title: bookmarkTitleSchema.optional(),
+    url: bookmarkUrlSchema.optional(),
   })
   .refine((data) => data.title !== undefined || data.url !== undefined, {
     message: VALIDATION_MESSAGES.UPDATE_MIN_FIELDS,

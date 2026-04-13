@@ -75,9 +75,8 @@ export class BookmarkDatabase extends Dexie {
    * @param params 名前を含むキーワード情報（IDは任意）
    */
   async addKeyword(params: { name: string }): Promise<KeywordId> {
-    // バリデーション
-    const name = params.name.trim()
-    keywordSchema.shape.name.parse(name)
+    // バリデーション (スキーマで定義された trim 等を適用)
+    const name = keywordSchema.shape.name.parse(params.name)
 
     // 重複チェック
     const existing = await this.keywords.where('name').equalsIgnoreCase(name).first()
@@ -99,9 +98,8 @@ export class BookmarkDatabase extends Dexie {
    * キーワードの名前を更新する
    */
   async updateKeyword(id: KeywordId, name: string): Promise<void> {
-    const trimmedName = name.trim()
-    // バリデーション
-    keywordSchema.shape.name.parse(trimmedName)
+    // バリデーション (スキーマで定義された trim 等を適用)
+    const validatedName = keywordSchema.shape.name.parse(name)
 
     return await this.transaction('rw', this.keywords, async () => {
       // 存在確認
@@ -111,20 +109,20 @@ export class BookmarkDatabase extends Dexie {
       }
 
       // 名前が変わらない場合は何もしない
-      if (existing.name === trimmedName) {
+      if (existing.name === validatedName) {
         return
       }
 
       // 他のキーワードとの重複チェック
       const duplicate = await this.keywords
         .where('name')
-        .equalsIgnoreCase(trimmedName)
+        .equalsIgnoreCase(validatedName)
         .first()
       if (duplicate && duplicate.id !== id) {
         throw new Error(ERROR_MESSAGES.DUPLICATE_KEYWORD)
       }
 
-      await this.keywords.update(id, { name: trimmedName })
+      await this.keywords.update(id, { name: validatedName })
     })
   }
 

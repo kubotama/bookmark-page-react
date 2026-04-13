@@ -87,7 +87,7 @@ describe('updateBookmarkSchema', () => {
     {
       name: 'タイトルが空文字',
       data: { title: '' },
-      expected: VALIDATION_MESSAGES.TITLE_MIN_LENGTH,
+      expected: VALIDATION_MESSAGES.TITLE_REQUIRED,
     },
     {
       name: 'URL 形式が不正',
