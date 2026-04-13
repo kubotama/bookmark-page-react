@@ -1,7 +1,13 @@
 import Dexie, { type Table } from 'dexie'
 
 import { DB_CONSTANTS, ERROR_MESSAGES } from '@shared/constants'
-import type { BookmarkEntity, BookmarkId } from '@shared/schemas/bookmark'
+import {
+  type BookmarkEntity,
+  type BookmarkId,
+  BookmarkIdSchema,
+  createBookmarkSchema,
+  type CreateBookmarkRequest,
+} from '@shared/schemas/bookmark'
 import {
   type KeywordId,
   type KeywordWithCount,
@@ -22,6 +28,39 @@ export class BookmarkDatabase extends Dexie {
 
     // ストアの定義
     this.version(DB_CONSTANTS.IDB_VERSION).stores(DB_CONSTANTS.IDB_SCHEMA)
+  }
+
+  /**
+   * 全てのブックマークを取得する（ソート順）
+   */
+  async getAllBookmarks(): Promise<BookmarkEntity[]> {
+    return await this.bookmarks.orderBy('sortOrder').toArray()
+  }
+
+  /**
+   * ブックマークを追加する
+   */
+  async addBookmark(params: CreateBookmarkRequest): Promise<BookmarkId> {
+    // バリデーションにプロジェクト標準のスキーマを使用
+    const validated = createBookmarkSchema.parse(params)
+
+    return await this.transaction('rw', this.bookmarks, async () => {
+      // 現在の最小 sortOrder を取得
+      const firstBookmark = await this.bookmarks.orderBy('sortOrder').first()
+      const minSortOrder = firstBookmark ? firstBookmark.sortOrder : 1
+
+      const id = BookmarkIdSchema.parse(generateId())
+      const newBookmark: BookmarkEntity = {
+        id,
+        title: validated.title,
+        url: validated.url,
+        sortOrder: minSortOrder - 1,
+        keywordIds: [],
+      }
+
+      await this.bookmarks.add(newBookmark)
+      return id
+    })
   }
 
   /**
@@ -104,7 +143,6 @@ export class BookmarkDatabase extends Dexie {
       await this.keywords.delete(id)
 
       // 関連するブックマークからキーワード ID を除去
-      // keywordIds はインデックスされているので高速にフィルタリング可能
       await this.bookmarks
         .where('keywordIds')
         .equals(id)
