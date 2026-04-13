@@ -75,15 +75,10 @@ export class BookmarkDatabase extends Dexie {
     // バリデーション
     const validated = updateBookmarkSchema.parse(updates)
 
-    return await this.transaction('rw', this.bookmarks, async () => {
-      // 存在確認
-      const existing = await this.bookmarks.get(id)
-      if (!existing) {
-        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
-      }
-
-      await this.bookmarks.update(id, validated)
-    })
+    const updatedCount = await this.bookmarks.update(id, validated)
+    if (updatedCount === 0) {
+      throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+    }
   }
 
   /**
