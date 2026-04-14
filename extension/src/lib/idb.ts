@@ -72,10 +72,12 @@ export class BookmarkDatabase extends Dexie {
     id: BookmarkId,
     updates: UpdateBookmarkRequest,
   ): Promise<void> {
-    // バリデーション
+    // ID のバリデーション
+    const validatedId = BookmarkIdSchema.parse(id)
+    // 更新内容のバリデーション
     const validated = updateBookmarkSchema.parse(updates)
 
-    const updatedCount = await this.bookmarks.update(id, validated)
+    const updatedCount = await this.bookmarks.update(validatedId, validated)
     if (updatedCount === 0) {
       throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
     }
@@ -127,12 +129,14 @@ export class BookmarkDatabase extends Dexie {
    * キーワードの名前を更新する
    */
   async updateKeyword(id: KeywordId, name: string): Promise<void> {
+    // ID のバリデーション
+    const validatedId = KeywordIdSchema.parse(id)
     // バリデーション (スキーマで定義された trim 等を適用)
     const validatedName = keywordSchema.shape.name.parse(name)
 
     return await this.transaction('rw', this.keywords, async () => {
       // 存在確認
-      const existing = await this.keywords.get(id)
+      const existing = await this.keywords.get(validatedId)
       if (!existing) {
         throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
       }
@@ -147,11 +151,11 @@ export class BookmarkDatabase extends Dexie {
         .where('name')
         .equalsIgnoreCase(validatedName)
         .first()
-      if (duplicate && duplicate.id !== id) {
+      if (duplicate && duplicate.id !== validatedId) {
         throw new Error(ERROR_MESSAGES.DUPLICATE_KEYWORD)
       }
 
-      await this.keywords.update(id, { name: validatedName })
+      await this.keywords.update(validatedId, { name: validatedName })
     })
   }
 
@@ -159,22 +163,25 @@ export class BookmarkDatabase extends Dexie {
    * キーワードを削除する。関連するブックマークからの紐付けも解除する。
    */
   async deleteKeyword(id: KeywordId): Promise<void> {
+    // ID のバリデーション
+    const validatedId = KeywordIdSchema.parse(id)
+
     return await this.transaction('rw', [this.keywords, this.bookmarks], async () => {
       // 存在確認
-      const existing = await this.keywords.get(id)
+      const existing = await this.keywords.get(validatedId)
       if (!existing) {
         throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
       }
 
       // キーワード自体を削除
-      await this.keywords.delete(id)
+      await this.keywords.delete(validatedId)
 
       // 関連するブックマークからキーワード ID を除去
       await this.bookmarks
         .where('keywordIds')
-        .equals(id)
+        .equals(validatedId)
         .modify((bookmark) => {
-          bookmark.keywordIds = bookmark.keywordIds.filter((kId) => kId !== id)
+          bookmark.keywordIds = bookmark.keywordIds.filter((kId) => kId !== validatedId)
         })
     })
   }

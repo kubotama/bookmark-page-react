@@ -2,7 +2,10 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { ERROR_MESSAGES } from '@shared/constants'
-import { BookmarkIdSchema } from '@shared/schemas/bookmark'
+import {
+  type BookmarkId,
+  BookmarkIdSchema,
+} from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_ENTITY_1,
   MOCK_BOOKMARK_ENTITY_2,
@@ -116,6 +119,13 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
       ).rejects.toThrow(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
     })
 
+    it('不正な形式の ID での更新を試みた場合にバリデーションエラーを投げること', async () => {
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as BookmarkId
+      await expect(
+        db.updateBookmark(invalidId, { title: 'New' }),
+      ).rejects.toThrow()
+    })
+
     it.each([
       { description: '空タイトル', updateData: { title: '' } },
       { description: '空URL', updateData: { url: '' } },
@@ -151,7 +161,7 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
     })
 
     it('不正な形式の ID での削除を試みた場合にバリデーションエラーを投げること', async () => {
-      const invalidId = TEST_STRINGS.INVALID_ID as unknown as import('@shared/schemas/bookmark').BookmarkId
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as BookmarkId
       await expect(db.deleteBookmark(invalidId)).rejects.toThrow()
     })
   })
