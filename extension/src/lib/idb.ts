@@ -82,6 +82,17 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
+   * ブックマークを削除する
+   */
+  async deleteBookmark(id: BookmarkId): Promise<void> {
+    const validatedId = BookmarkIdSchema.parse(id)
+    const deletedCount = await this.bookmarks.where('id').equals(validatedId).delete()
+    if (deletedCount === 0) {
+      throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+    }
+  }
+
+  /**
    * 全てのキーワードを取得する
    */
   async getAllKeywords(): Promise<KeywordWithCount[]> {
