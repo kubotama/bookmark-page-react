@@ -7,7 +7,11 @@ import {
   keywordsResponseSchema,
   updateKeywordRequestSchema,
 } from './keyword'
-import { MOCK_BOOKMARK_TITLE_PREFIX, MOCK_IDS } from '../test/fixtures'
+import {
+  MOCK_BOOKMARK_TITLE_PREFIX,
+  MOCK_IDS,
+  TEST_STRINGS,
+} from '../test/fixtures'
 
 describe('Keyword Schemas', () => {
   describe('KeywordIdSchema', () => {
@@ -17,7 +21,7 @@ describe('Keyword Schemas', () => {
 
     it('不正な形式の文字列を拒否すること', () => {
       expect(() => KeywordIdSchema.parse('1')).toThrow()
-      expect(() => KeywordIdSchema.parse('not-a-uuid')).toThrow()
+      expect(() => KeywordIdSchema.parse(TEST_STRINGS.INVALID_ID)).toThrow()
     })
   })
 

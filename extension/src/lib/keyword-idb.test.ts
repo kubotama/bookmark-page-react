@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { ERROR_MESSAGES } from '@shared/constants'
-import { KeywordIdSchema } from '@shared/schemas/keyword'
+import { type KeywordId, KeywordIdSchema } from '@shared/schemas/keyword'
 import {
   MOCK_KEYWORDS,
   MOCK_IDS,
@@ -102,6 +102,13 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       ).rejects.toThrow(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
     })
 
+    it('不正な形式の ID での更新を試みた場合にバリデーションエラーを投げること', async () => {
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as KeywordId
+      await expect(
+        db.updateKeyword(invalidId, TEST_STRINGS.UPDATED_NAME),
+      ).rejects.toThrow()
+    })
+
     it('他のキーワードと重複する名前への更新を拒否すること', async () => {
       await db.keywords.bulkAdd([MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]])
 
@@ -145,6 +152,11 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       await expect(db.deleteKeyword(unknownId)).rejects.toThrow(
         ERROR_MESSAGES.KEYWORD_NOT_FOUND,
       )
+    })
+
+    it('不正な形式の ID での削除を試みた場合にバリデーションエラーを投げること', async () => {
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as KeywordId
+      await expect(db.deleteKeyword(invalidId)).rejects.toThrow()
     })
   })
 })
