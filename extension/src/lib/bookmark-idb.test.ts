@@ -115,14 +115,14 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
     it('存在しない ID の更新を試みた場合にエラーを投げること', async () => {
       const unknownId = BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
       await expect(
-        db.updateBookmark(unknownId, { title: 'New' }),
+        db.updateBookmark(unknownId, { title: TEST_STRINGS.NEW_NAME }),
       ).rejects.toThrow(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
     })
 
     it('不正な形式の ID での更新を試みた場合にバリデーションエラーを投げること', async () => {
-      const invalidId = TEST_STRINGS.INVALID_ID as unknown as BookmarkId
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as import('@shared/schemas/bookmark').BookmarkId
       await expect(
-        db.updateBookmark(invalidId, { title: 'New' }),
+        db.updateBookmark(invalidId, { title: TEST_STRINGS.NEW_NAME }),
       ).rejects.toThrow()
     })
 

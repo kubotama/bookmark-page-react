@@ -154,7 +154,7 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       )
     })
 
-    it('不正な形式 of ID での削除を試みた場合にバリデーションエラーを投げること', async () => {
+    it('不正な形式の ID での削除を試みた場合にバリデーションエラーを投げること', async () => {
       const invalidId = TEST_STRINGS.INVALID_ID as unknown as KeywordId
       await expect(db.deleteKeyword(invalidId)).rejects.toThrow()
     })
