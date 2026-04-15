@@ -123,6 +123,11 @@ export class BookmarkDatabase extends Dexie {
       await this.bookmarks.update(vBookmarkId, {
         keywordIds: [...bookmark.keywordIds, vKeywordId],
       })
+
+      // キーワード側の統計情報を更新 (カウントアップ)
+      await this.keywords.update(vKeywordId, {
+        bookmarkCount: keyword.bookmarkCount + 1,
+      })
     })
   }
 
