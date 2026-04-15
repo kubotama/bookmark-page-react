@@ -95,6 +95,43 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
+   * ブックマークにキーワードを紐付ける
+   */
+  async attachKeyword(bookmarkId: BookmarkId, keywordId: KeywordId): Promise<void> {
+    // ID のバリデーション
+    const vBookmarkId = BookmarkIdSchema.parse(bookmarkId)
+    const vKeywordId = KeywordIdSchema.parse(keywordId)
+
+    return await this.transaction('rw', [this.bookmarks, this.keywords], async () => {
+      // 存在確認
+      const bookmark = await this.bookmarks.get(vBookmarkId)
+      if (!bookmark) {
+        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+      }
+
+      const keyword = await this.keywords.get(vKeywordId)
+      if (!keyword) {
+        throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+      }
+
+      // 既に紐付けられているか確認
+      if (bookmark.keywordIds.includes(vKeywordId)) {
+        return
+      }
+
+      // 紐付け追加
+      await this.bookmarks.update(vBookmarkId, {
+        keywordIds: [...bookmark.keywordIds, vKeywordId],
+      })
+
+      // キーワード側の統計情報を更新 (カウントアップ)
+      await this.keywords.update(vKeywordId, {
+        bookmarkCount: keyword.bookmarkCount + 1,
+      })
+    })
+  }
+
+  /**
    * 全てのキーワードを取得する
    */
   async getAllKeywords(): Promise<KeywordWithCount[]> {
