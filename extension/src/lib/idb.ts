@@ -46,24 +46,27 @@ export class BookmarkDatabase extends Dexie {
   async getAllWithKeywords(): Promise<Bookmark[]> {
     const entities = await this.getAllBookmarks()
 
-    return await Promise.all(
-      entities.map(async (entity) => {
-        // 各ブックマークのキーワード詳細を取得
-        const keywordObjects = await this.keywords
-          .bulkGet(entity.keywordIds)
-        
-        // undefined (存在しないキーワード) を除外して Bookmark 型に変換
-        const keywords = keywordObjects.filter((k): k is KeywordWithCount => k !== undefined)
+    // 全てのブックマークから、関連するキーワード ID を重複なく抽出
+    const allKeywordIds = [...new Set(entities.flatMap((e) => e.keywordIds))]
 
-        return {
-          id: entity.id,
-          title: entity.title,
-          url: entity.url,
-          sortOrder: entity.sortOrder,
-          keywords,
-        }
-      })
+    // キーワード情報を一括取得 (N+1 問題の回避)
+    const allKeywords = await this.keywords.bulkGet(allKeywordIds)
+    const keywordMap = new Map(
+      allKeywords
+        .filter((k): k is KeywordWithCount => k !== undefined)
+        .map((k) => [k.id, k]),
     )
+
+    // メモリ上でエンティティとキーワードを結合して返す
+    return entities.map((entity) => ({
+      id: entity.id,
+      title: entity.title,
+      url: entity.url,
+      sortOrder: entity.sortOrder,
+      keywords: entity.keywordIds
+        .map((id) => keywordMap.get(id))
+        .filter((k): k is KeywordWithCount => k !== undefined),
+    }))
   }
 
   /**
