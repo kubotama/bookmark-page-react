@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
+import { ZodError } from 'zod'
 
 import { ERROR_MESSAGES } from '@shared/constants'
-import { BookmarkIdSchema } from '@shared/schemas/bookmark'
+import { BookmarkIdSchema, type BookmarkId } from '@shared/schemas/bookmark'
 import { type KeywordId, KeywordIdSchema } from '@shared/schemas/keyword'
 import {
   MOCK_BOOKMARK_ENTITY_1,
@@ -76,7 +77,80 @@ describe('BookmarkDatabase - Relation Operations', () => {
     it('不正な形式の ID での紐付けを試みた場合にバリデーションエラーを投げること', async () => {
       const invalidId = TEST_STRINGS.INVALID_ID as unknown as KeywordId
       const validBookmarkId = BookmarkIdSchema.parse(MOCK_IDS.BOOKMARK_1)
-      await expect(db.attachKeyword(validBookmarkId, invalidId)).rejects.toThrow()
+      await expect(
+        db.attachKeyword(validBookmarkId, invalidId),
+      ).rejects.toThrow(ZodError)
+    })
+  })
+
+  describe('detachKeyword', () => {
+    it('ブックマークからキーワードを解除し、カウントを減らすこと', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      const bookmark = { ...MOCK_BOOKMARK_ENTITY_1, keywordIds: [keyword.id] }
+      await db.bookmarks.add(bookmark)
+      await db.keywords.add({ ...keyword, bookmarkCount: 1 })
+
+      await db.detachKeyword(bookmark.id, keyword.id)
+
+      // ブックマーク側の検証
+      const updatedBookmark = await db.bookmarks.get(bookmark.id)
+      expect(updatedBookmark?.keywordIds).not.toContain(keyword.id)
+
+      // キーワード側の検証 (カウントダウン)
+      const updatedKeyword = await db.keywords.get(keyword.id)
+      expect(updatedKeyword?.bookmarkCount).toBe(0)
+    })
+
+    it('紐付けられていないキーワードを解除してもエラーにならず、カウントも変わらないこと (冪等性)', async () => {
+      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      const keyword = MOCK_KEYWORDS[0]
+      await db.bookmarks.add(bookmark)
+      await db.keywords.add({ ...keyword, bookmarkCount: 0 })
+
+      await db.detachKeyword(bookmark.id, keyword.id)
+
+      const updatedBookmark = await db.bookmarks.get(bookmark.id)
+      expect(updatedBookmark?.keywordIds).toHaveLength(0)
+
+      const updatedKeyword = await db.keywords.get(keyword.id)
+      expect(updatedKeyword?.bookmarkCount).toBe(0)
+    })
+
+    it('存在しないブックマーク ID を指定した場合にエラーを投げること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      await db.keywords.add(keyword)
+
+      const unknownId = BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(db.detachKeyword(unknownId, keyword.id)).rejects.toThrow(
+        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+      )
+    })
+
+    it('存在しないキーワード ID を指定した場合にエラーを投げること', async () => {
+      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      await db.bookmarks.add(bookmark)
+
+      const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await expect(db.detachKeyword(bookmark.id, unknownId)).rejects.toThrow(
+        ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+      )
+    })
+
+    it('不正な形式の ブックマークID での解除を試みた場合にバリデーションエラーを投げること', async () => {
+      const keyword = MOCK_KEYWORDS[0]
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as BookmarkId
+
+      await expect(db.detachKeyword(invalidId, keyword.id)).rejects.toThrow(
+        ZodError,
+      )
+    })
+
+    it('不正な形式の キーワードID での解除を試みた場合にバリデーションエラーを投げること', async () => {
+      const invalidId = TEST_STRINGS.INVALID_ID as unknown as KeywordId
+      const validBookmarkId = BookmarkIdSchema.parse(MOCK_IDS.BOOKMARK_1)
+      await expect(
+        db.detachKeyword(validBookmarkId, invalidId),
+      ).rejects.toThrow(ZodError)
     })
   })
 })
