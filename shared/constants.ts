@@ -334,6 +334,28 @@ export const DB_CONSTANTS = {
 } as const
 
 /**
+ * メッセージングで使用するアクション名
+ */
+export const API_ACTIONS = {
+  // ブックマーク操作
+  GET_BOOKMARKS: 'GET_BOOKMARKS',
+  ADD_BOOKMARK: 'ADD_BOOKMARK',
+  UPDATE_BOOKMARK: 'UPDATE_BOOKMARK',
+  DELETE_BOOKMARK: 'DELETE_BOOKMARK',
+  REORDER_BOOKMARKS: 'REORDER_BOOKMARKS',
+
+  // キーワード操作
+  GET_KEYWORDS: 'GET_KEYWORDS',
+  ADD_KEYWORD: 'ADD_KEYWORD',
+  UPDATE_KEYWORD: 'UPDATE_KEYWORD',
+  DELETE_KEYWORD: 'DELETE_KEYWORD',
+
+  // リレーション操作
+  ATTACH_KEYWORD: 'ATTACH_KEYWORD',
+  DETACH_KEYWORD: 'DETACH_KEYWORD',
+} as const
+
+/**
  * 環境変数名の定数
  */
 export const ENV_NAMES = {
