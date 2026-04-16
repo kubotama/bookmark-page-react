@@ -114,14 +114,37 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
-   * ブックマークを削除する
+   * ブックマークを削除する。関連するキーワードの統計情報も更新する。
    */
   async deleteBookmark(id: BookmarkId): Promise<void> {
     const validatedId = BookmarkIdSchema.parse(id)
-    const deletedCount = await this.bookmarks.where('id').equals(validatedId).delete()
-    if (deletedCount === 0) {
-      throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
-    }
+
+    return await this.transaction('rw', [this.bookmarks, this.keywords], async () => {
+      // 存在確認
+      const bookmark = await this.bookmarks.get(validatedId)
+      if (!bookmark) {
+        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+      }
+
+      // ブックマークを削除
+      await this.bookmarks.delete(validatedId)
+
+      // 紐付いていた各キーワードの統計情報を更新 (カウントダウン)
+      if (bookmark.keywordIds.length > 0) {
+        // キーワードを一括取得
+        const associatedKeywords = await this.keywords.bulkGet(bookmark.keywordIds)
+        
+        await Promise.all(
+          associatedKeywords.map(async (kw) => {
+            if (kw) {
+              await this.keywords.update(kw.id, {
+                bookmarkCount: Math.max(0, kw.bookmarkCount - 1),
+              })
+            }
+          })
+        )
+      }
+    })
   }
 
   /**
