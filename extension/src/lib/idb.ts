@@ -10,6 +10,7 @@ import {
   type CreateBookmarkRequest,
   updateBookmarkSchema,
   type UpdateBookmarkRequest,
+  reorderBookmarksSchema,
 } from '@shared/schemas/bookmark'
 import {
   type KeywordId,
@@ -138,6 +139,40 @@ export class BookmarkDatabase extends Dexie {
             kw.bookmarkCount = Math.max(0, kw.bookmarkCount - 1)
           })
       }
+    })
+  }
+
+  /**
+   * ブックマークの順序を一括更新する
+   */
+  async reorderBookmarks(ids: BookmarkId[]): Promise<void> {
+    // バリデーション
+    const validatedIds = reorderBookmarksSchema.parse({ ids }).ids
+
+    return await this.transaction('rw', this.bookmarks, async () => {
+      // 全ての ID が存在するか、件数をチェック
+      const existingCount = await this.bookmarks
+        .where('id')
+        .anyOf(validatedIds)
+        .count()
+
+      if (existingCount !== validatedIds.length) {
+        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+      }
+
+      // ID と新しい順序のマッピングを作成
+      const orderMap = new Map(validatedIds.map((id, index) => [id, index]))
+
+      // 順序を一括更新 (modify を使用して効率化)
+      await this.bookmarks
+        .where('id')
+        .anyOf(validatedIds)
+        .modify((bookmark) => {
+          const newOrder = orderMap.get(bookmark.id)
+          if (newOrder !== undefined) {
+            bookmark.sortOrder = newOrder
+          }
+        })
     })
   }
 
