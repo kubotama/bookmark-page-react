@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie'
 
 import { DB_CONSTANTS, ERROR_MESSAGES } from '@shared/constants'
 import {
+  type Bookmark,
   type BookmarkEntity,
   type BookmarkId,
   BookmarkIdSchema,
@@ -37,6 +38,32 @@ export class BookmarkDatabase extends Dexie {
    */
   async getAllBookmarks(): Promise<BookmarkEntity[]> {
     return await this.bookmarks.orderBy('sortOrder').toArray()
+  }
+
+  /**
+   * キーワード詳細を含めた全てのブックマークを取得する
+   */
+  async getAllWithKeywords(): Promise<Bookmark[]> {
+    const entities = await this.getAllBookmarks()
+
+    return await Promise.all(
+      entities.map(async (entity) => {
+        // 各ブックマークのキーワード詳細を取得
+        const keywordObjects = await this.keywords
+          .bulkGet(entity.keywordIds)
+        
+        // undefined (存在しないキーワード) を除外して Bookmark 型に変換
+        const keywords = keywordObjects.filter((k): k is KeywordWithCount => k !== undefined)
+
+        return {
+          id: entity.id,
+          title: entity.title,
+          url: entity.url,
+          sortOrder: entity.sortOrder,
+          keywords,
+        }
+      })
+    )
   }
 
   /**
