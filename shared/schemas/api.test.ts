@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { z } from 'zod'
+import { z, ZodError } from 'zod'
 
 import { API_ACTIONS } from '../constants'
 import {
@@ -7,7 +7,10 @@ import {
   ApiErrorSchema,
   ApiActionSchema,
   baseMessageRequestSchema,
+  getKeywordsRequestSchema,
+  getKeywordsResponseSchema,
 } from './api'
+import { MOCK_KEYWORDS } from '../test/fixtures'
 
 describe('API Schemas', () => {
   describe('createApiSuccessSchema', () => {
@@ -37,7 +40,7 @@ describe('API Schemas', () => {
     })
 
     it('未定義のアクションを拒否すること', () => {
-      expect(() => ApiActionSchema.parse('INVALID_ACTION')).toThrow()
+      expect(() => ApiActionSchema.parse('INVALID_ACTION')).toThrow(ZodError)
     })
   })
 
@@ -49,15 +52,35 @@ describe('API Schemas', () => {
       }
       expect(baseMessageRequestSchema.parse(validRequest)).toEqual(validRequest)
     })
+  })
 
-    it('payload がなくても受け入れること', () => {
+  describe('getKeywordsRequestSchema', () => {
+    it('正しい GET_KEYWORDS リクエストを受け入れること', () => {
       const validRequest = { action: API_ACTIONS.GET_KEYWORDS }
-      expect(baseMessageRequestSchema.parse(validRequest)).toEqual(validRequest)
+      expect(getKeywordsRequestSchema.parse(validRequest)).toEqual(validRequest)
     })
 
-    it('不正なアクションを含む構造を拒否すること', () => {
-      const invalidRequest = { action: 'UNKNOWN' }
-      expect(() => baseMessageRequestSchema.parse(invalidRequest)).toThrow()
+    it('不正なアクションを持つリクエストを拒否すること', () => {
+      const invalidRequest = { action: API_ACTIONS.GET_BOOKMARKS }
+      expect(() => getKeywordsRequestSchema.parse(invalidRequest)).toThrow(ZodError)
+    })
+  })
+
+  describe('getKeywordsResponseSchema', () => {
+    it('キーワード一覧を含むレスポンスを検証できること', () => {
+      const validResponse = {
+        success: true,
+        data: { keywords: MOCK_KEYWORDS },
+      }
+      expect(getKeywordsResponseSchema.parse(validResponse)).toEqual(validResponse)
+    })
+
+    it('不正なデータ（キーワード欠落など）を拒否すること', () => {
+      const invalidResponse = {
+        success: true,
+        data: { keywords: [{ id: 'invalid' }] },
+      }
+      expect(() => getKeywordsResponseSchema.parse(invalidResponse)).toThrow(ZodError)
     })
   })
 })
