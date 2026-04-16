@@ -209,4 +209,31 @@ describe('BookmarkDatabase - Relation Operations', () => {
       expect(result[0].keywords).toEqual([])
     })
   })
+
+  describe('Cascade Counter Updates', () => {
+    it('ブックマークを削除した際、紐付いていた全キーワードのカウントが減ること', async () => {
+      const kw1 = MOCK_KEYWORDS[0]
+      const kw2 = MOCK_KEYWORDS[1]
+      // 初期状態でカウント1ずつ
+      await db.keywords.bulkAdd([
+        { ...kw1, bookmarkCount: 1 },
+        { ...kw2, bookmarkCount: 1 },
+      ])
+
+      const bookmark = {
+        ...MOCK_BOOKMARK_ENTITY_1,
+        keywordIds: [kw1.id, kw2.id],
+      }
+      await db.bookmarks.add(bookmark)
+
+      // 削除実行
+      await db.deleteBookmark(bookmark.id)
+
+      // キーワードのカウントが減っていることを検証
+      const updatedKw1 = await db.keywords.get(kw1.id)
+      const updatedKw2 = await db.keywords.get(kw2.id)
+      expect(updatedKw1?.bookmarkCount).toBe(0)
+      expect(updatedKw2?.bookmarkCount).toBe(0)
+    })
+  })
 })
