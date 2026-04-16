@@ -3,10 +3,11 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { ZodError } from 'zod'
 
 import { ERROR_MESSAGES } from '@shared/constants'
-import { BookmarkIdSchema, type BookmarkId } from '@shared/schemas/bookmark'
+import { type BookmarkId, BookmarkIdSchema } from '@shared/schemas/bookmark'
 import { type KeywordId, KeywordIdSchema } from '@shared/schemas/keyword'
 import {
   MOCK_BOOKMARK_ENTITY_1,
+  MOCK_BOOKMARK_ENTITY_2,
   MOCK_KEYWORDS,
   MOCK_IDS,
   TEST_STRINGS,
@@ -151,6 +152,61 @@ describe('BookmarkDatabase - Relation Operations', () => {
       await expect(
         db.detachKeyword(validBookmarkId, invalidId),
       ).rejects.toThrow(ZodError)
+    })
+  })
+
+  describe('getAllWithKeywords', () => {
+    it('キーワード情報が結合されたブックマーク一覧を sortOrder 昇順で取得できること', async () => {
+      const kw1 = MOCK_KEYWORDS[0] // React
+      const kw2 = MOCK_KEYWORDS[1] // TypeScript
+      await db.keywords.bulkAdd([kw1, kw2])
+
+      const b1 = {
+        ...MOCK_BOOKMARK_ENTITY_1,
+        sortOrder: 1,
+        keywordIds: [kw1.id],
+      }
+      const b2 = {
+        ...MOCK_BOOKMARK_ENTITY_2,
+        sortOrder: 0,
+        keywordIds: [kw1.id, kw2.id],
+      }
+      await db.bookmarks.bulkAdd([b1, b2])
+
+      const result = await db.getAllWithKeywords()
+
+      expect(result).toHaveLength(2)
+
+      // sortOrder 順の確認 (b2 -> b1)
+      expect(result[0].id).toBe(b2.id)
+      expect(result[1].id).toBe(b1.id)
+
+      // キーワード結合の確認 (b2 は kw1, kw2 両方持つ)
+      expect(result[0].keywords).toHaveLength(2)
+      expect(result[0].keywords.map((k) => k.name)).toContain(kw1.name)
+      expect(result[0].keywords.map((k) => k.name)).toContain(kw2.name)
+
+      // b1 は kw1 のみ
+      expect(result[1].keywords).toHaveLength(1)
+      expect(result[1].keywords[0].name).toBe(kw1.name)
+    })
+
+    it('キーワードが紐付いていないブックマークも正しく取得できること', async () => {
+      await db.bookmarks.add({ ...MOCK_BOOKMARK_ENTITY_1, keywordIds: [] })
+
+      const result = await db.getAllWithKeywords()
+      expect(result[0].keywords).toEqual([])
+    })
+
+    it('存在しないキーワード ID が紐付いている場合、そのキーワードは無視されること (整合性フォールバック)', async () => {
+      const unknownKwId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
+      await db.bookmarks.add({
+        ...MOCK_BOOKMARK_ENTITY_1,
+        keywordIds: [unknownKwId],
+      })
+
+      const result = await db.getAllWithKeywords()
+      expect(result[0].keywords).toEqual([])
     })
   })
 })
