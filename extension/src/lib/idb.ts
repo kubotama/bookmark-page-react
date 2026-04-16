@@ -131,18 +131,12 @@ export class BookmarkDatabase extends Dexie {
 
       // 紐付いていた各キーワードの統計情報を更新 (カウントダウン)
       if (bookmark.keywordIds.length > 0) {
-        // キーワードを一括取得
-        const associatedKeywords = await this.keywords.bulkGet(bookmark.keywordIds)
-        
-        await Promise.all(
-          associatedKeywords.map(async (kw) => {
-            if (kw) {
-              await this.keywords.update(kw.id, {
-                bookmarkCount: Math.max(0, kw.bookmarkCount - 1),
-              })
-            }
+        await this.keywords
+          .where('id')
+          .anyOf(bookmark.keywordIds)
+          .modify((kw) => {
+            kw.bookmarkCount = Math.max(0, kw.bookmarkCount - 1)
           })
-        )
       }
     })
   }
