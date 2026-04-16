@@ -150,22 +150,29 @@ export class BookmarkDatabase extends Dexie {
     const validatedIds = reorderBookmarksSchema.parse({ ids }).ids
 
     return await this.transaction('rw', this.bookmarks, async () => {
-      // 全ての ID が存在するか、より効率的に確認するために件数をチェック
+      // 全ての ID が存在するか、件数をチェック
       const existingCount = await this.bookmarks
         .where('id')
         .anyOf(validatedIds)
         .count()
-      
+
       if (existingCount !== validatedIds.length) {
         throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
       }
 
-      // 順序を更新
-      await Promise.all(
-        validatedIds.map((id, index) =>
-          this.bookmarks.update(id, { sortOrder: index })
-        )
-      )
+      // ID と新しい順序のマッピングを作成
+      const orderMap = new Map(validatedIds.map((id, index) => [id, index]))
+
+      // 順序を一括更新 (modify を使用して効率化)
+      await this.bookmarks
+        .where('id')
+        .anyOf(validatedIds)
+        .modify((bookmark) => {
+          const newOrder = orderMap.get(bookmark.id)
+          if (newOrder !== undefined) {
+            bookmark.sortOrder = newOrder
+          }
+        })
     })
   }
 
