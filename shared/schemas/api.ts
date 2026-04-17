@@ -3,8 +3,10 @@ import { z } from 'zod'
 import { API_ACTIONS } from '../constants'
 import {
   createKeywordRequestSchema,
+  KeywordIdSchema,
   keywordResponseSchema,
   keywordsResponseSchema,
+  updateKeywordRequestSchema,
 } from './keyword'
 
 /**
@@ -86,3 +88,25 @@ export const addKeywordResponseSchema = createApiResponseSchema(
 )
 
 export type AddKeywordResponse = z.infer<typeof addKeywordResponseSchema>
+
+/**
+ * キーワード更新 (UPDATE_KEYWORD)
+ */
+export const updateKeywordMessageRequestSchema = baseMessageRequestSchema.extend({
+  action: z.literal(API_ACTIONS.UPDATE_KEYWORD),
+  payload: updateKeywordRequestSchema.extend({
+    id: KeywordIdSchema,
+  }),
+})
+
+export type UpdateKeywordMessageRequest = z.infer<
+  typeof updateKeywordMessageRequestSchema
+>
+
+export const updateKeywordMessageResponseSchema = createApiResponseSchema(
+  z.null(), // 更新時はデータなし（成功フラグのみ）
+)
+
+export type UpdateKeywordMessageResponse = z.infer<
+  typeof updateKeywordMessageResponseSchema
+>

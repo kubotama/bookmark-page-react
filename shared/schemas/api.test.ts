@@ -11,8 +11,10 @@ import {
   getKeywordsResponseSchema,
   addKeywordRequestSchema,
   addKeywordResponseSchema,
+  updateKeywordMessageRequestSchema,
+  updateKeywordMessageResponseSchema,
 } from './api'
-import { MOCK_KEYWORDS, TEST_STRINGS } from '../test/fixtures'
+import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
 
 describe('API Schemas', () => {
   describe('createApiSuccessSchema', () => {
@@ -110,6 +112,47 @@ describe('API Schemas', () => {
         data: { keyword },
       }
       expect(addKeywordResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+  })
+
+  describe('updateKeywordMessageRequestSchema', () => {
+    it('正しい UPDATE_KEYWORD リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.UPDATE_KEYWORD,
+        payload: { id: MOCK_IDS.KEYWORD_1, name: TEST_STRINGS.UPDATED_NAME },
+      }
+      expect(updateKeywordMessageRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('不正な形式の ID を拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.UPDATE_KEYWORD,
+        payload: { id: 'invalid-id', name: 'Valid Name' },
+      }
+      expect(() =>
+        updateKeywordMessageRequestSchema.parse(invalidRequest),
+      ).toThrow(ZodError)
+    })
+
+    it('名前が空のリクエストを拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.UPDATE_KEYWORD,
+        payload: { id: MOCK_IDS.KEYWORD_1, name: '' },
+      }
+      expect(() =>
+        updateKeywordMessageRequestSchema.parse(invalidRequest),
+      ).toThrow(ZodError)
+    })
+  })
+
+  describe('updateKeywordMessageResponseSchema', () => {
+    it('成功時のレスポンスを検証できること', () => {
+      const validResponse = { success: true, data: null }
+      expect(updateKeywordMessageResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })
