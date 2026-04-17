@@ -9,8 +9,10 @@ import {
   baseMessageRequestSchema,
   getKeywordsRequestSchema,
   getKeywordsResponseSchema,
+  addKeywordRequestSchema,
+  addKeywordResponseSchema,
 } from './api'
-import { MOCK_KEYWORDS } from '../test/fixtures'
+import { MOCK_KEYWORDS, TEST_STRINGS } from '../test/fixtures'
 
 describe('API Schemas', () => {
   describe('createApiSuccessSchema', () => {
@@ -62,7 +64,9 @@ describe('API Schemas', () => {
 
     it('不正なアクションを持つリクエストを拒否すること', () => {
       const invalidRequest = { action: API_ACTIONS.GET_BOOKMARKS }
-      expect(() => getKeywordsRequestSchema.parse(invalidRequest)).toThrow(ZodError)
+      expect(() => getKeywordsRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
     })
   })
 
@@ -72,15 +76,42 @@ describe('API Schemas', () => {
         success: true,
         data: { keywords: MOCK_KEYWORDS },
       }
-      expect(getKeywordsResponseSchema.parse(validResponse)).toEqual(validResponse)
+      expect(getKeywordsResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+  })
+
+  describe('addKeywordRequestSchema', () => {
+    it('正しい ADD_KEYWORD リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.ADD_KEYWORD,
+        payload: { name: TEST_STRINGS.NEW_NAME },
+      }
+      expect(addKeywordRequestSchema.parse(validRequest)).toEqual(validRequest)
     })
 
-    it('不正なデータ（キーワード欠落など）を拒否すること', () => {
-      const invalidResponse = {
-        success: true,
-        data: { keywords: [{ id: 'invalid' }] },
+    it('payload が不正（名前が空）なリクエストを拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.ADD_KEYWORD,
+        payload: { name: '' },
       }
-      expect(() => getKeywordsResponseSchema.parse(invalidResponse)).toThrow(ZodError)
+      expect(() => addKeywordRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+  })
+
+  describe('addKeywordResponseSchema', () => {
+    it('追加されたキーワードを含むレスポンスを検証できること', () => {
+      const keyword = { id: MOCK_KEYWORDS[0].id, name: MOCK_KEYWORDS[0].name }
+      const validResponse = {
+        success: true,
+        data: { keyword },
+      }
+      expect(addKeywordResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
     })
   })
 })
