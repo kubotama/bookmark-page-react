@@ -12,6 +12,7 @@ export const TEST_STRINGS = {
   NEW_NAME: 'New Name',
   PRE_TRIMMED_NAME: '   TRIMMED NAME    ',
   TRIMMED_NAME: 'TRIMMED NAME',
+  INVALID_ACTION: 'INVALID ACTION',
   INVALID_ID: 'not-a-uuid',
   ERROR_CODE: 'TEST_ERROR_CODE',
 } as const
