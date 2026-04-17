@@ -118,3 +118,25 @@ export const updateKeywordMessageResponseSchema = createApiResponseSchema(
 export type UpdateKeywordMessageResponse = z.infer<
   typeof updateKeywordMessageResponseSchema
 >
+
+/**
+ * キーワード削除 (DELETE_KEYWORD)
+ */
+export const deleteKeywordMessageRequestSchema = baseMessageRequestSchema.extend({
+  action: z.literal(API_ACTIONS.DELETE_KEYWORD),
+  payload: z.object({
+    id: KeywordIdSchema,
+  }),
+})
+
+export type DeleteKeywordMessageRequest = z.infer<
+  typeof deleteKeywordMessageRequestSchema
+>
+
+export const deleteKeywordMessageResponseSchema = createApiResponseSchema(
+  z.null(), // 削除時はデータなし
+)
+
+export type DeleteKeywordMessageResponse = z.infer<
+  typeof deleteKeywordMessageResponseSchema
+>
