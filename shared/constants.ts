@@ -121,6 +121,17 @@ export const COMMON_MESSAGES = {
 } as const
 
 /**
+ * API エラーコード
+ */
+export const ERROR_CODES = {
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+  NOT_FOUND: 'NOT_FOUND',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  CONFLICT: 'CONFLICT',
+  BAD_REQUEST: 'BAD_REQUEST',
+} as const
+
+/**
  * API サーバーが返す共通のエラーメッセージ
  */
 export const ERROR_MESSAGES = {
