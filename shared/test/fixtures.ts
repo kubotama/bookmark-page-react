@@ -13,6 +13,7 @@ export const TEST_STRINGS = {
   PRE_TRIMMED_NAME: '   TRIMMED NAME    ',
   TRIMMED_NAME: 'TRIMMED NAME',
   INVALID_ID: 'not-a-uuid',
+  ERROR_CODE: 'TEST_ERROR_CODE',
 } as const
 
 // UUID v7 形式のモック ID (時間順ソート可能性を維持)

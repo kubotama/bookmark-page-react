@@ -104,7 +104,7 @@ export type UpdateKeywordMessageRequest = z.infer<
 >
 
 export const updateKeywordMessageResponseSchema = createApiResponseSchema(
-  z.null(), // 更新時はデータなし（成功フラグのみ）
+  keywordResponseSchema,
 )
 
 export type UpdateKeywordMessageResponse = z.infer<
