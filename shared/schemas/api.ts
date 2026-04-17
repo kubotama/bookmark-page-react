@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { API_ACTIONS, ERROR_CODES } from '../constants'
+import { bookmarksResponseSchema } from './bookmark'
 import {
   createKeywordRequestSchema,
   KeywordIdSchema,
@@ -140,3 +141,19 @@ export const deleteKeywordMessageResponseSchema = createApiResponseSchema(
 export type DeleteKeywordMessageResponse = z.infer<
   typeof deleteKeywordMessageResponseSchema
 >
+
+/**
+ * ブックマーク一覧取得 (GET_BOOKMARKS)
+ */
+export const getBookmarksRequestSchema = baseMessageRequestSchema.extend({
+  action: z.literal(API_ACTIONS.GET_BOOKMARKS),
+  payload: z.undefined().optional(),
+})
+
+export type GetBookmarksRequest = z.infer<typeof getBookmarksRequestSchema>
+
+export const getBookmarksResponseSchema = createApiResponseSchema(
+  bookmarksResponseSchema,
+)
+
+export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
