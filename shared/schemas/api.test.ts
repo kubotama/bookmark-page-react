@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { z, ZodError } from 'zod'
 
-import { API_ACTIONS, ERROR_MESSAGES } from '../constants'
+import { API_ACTIONS, ERROR_MESSAGES, ERROR_CODES } from '../constants'
 import {
   createApiSuccessSchema,
   ApiErrorSchema,
@@ -32,7 +32,7 @@ describe('API Schemas', () => {
         success: false,
         error: {
           message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-          code: TEST_STRINGS.ERROR_CODE,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         },
       }
       expect(ApiErrorSchema.parse(errorData)).toEqual(errorData)
@@ -169,7 +169,7 @@ describe('API Schemas', () => {
         success: false,
         error: {
           message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
-          code: TEST_STRINGS.ERROR_CODE,
+          code: ERROR_CODES.NOT_FOUND,
         },
       }
       expect(updateKeywordMessageResponseSchema.parse(errorResponse)).toEqual(

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { API_ACTIONS } from '../constants'
+import { API_ACTIONS, ERROR_CODES } from '../constants'
 import {
   createKeywordRequestSchema,
   KeywordIdSchema,
@@ -8,6 +8,14 @@ import {
   keywordsResponseSchema,
   updateKeywordRequestSchema,
 } from './keyword'
+
+/**
+ * エラーコードのスキーマ
+ */
+export const ErrorCodeSchema = z.enum(
+  Object.values(ERROR_CODES) as [string, ...string[]],
+)
+export type ErrorCode = z.infer<typeof ErrorCodeSchema>
 
 /**
  * API 成功時の共通レスポンス形式
@@ -25,7 +33,7 @@ export const ApiErrorSchema = z.object({
   success: z.literal(false),
   error: z.object({
     message: z.string(),
-    code: z.string(),
+    code: ErrorCodeSchema,
     details: z.unknown().optional(),
   }),
 })
