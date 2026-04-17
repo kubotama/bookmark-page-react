@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { API_ACTIONS } from '../constants'
+import { keywordsResponseSchema } from './keyword'
 
 /**
  * API 成功時の共通レスポンス形式
@@ -49,3 +50,19 @@ export const baseMessageRequestSchema = z.object({
 })
 
 export type BaseMessageRequest = z.infer<typeof baseMessageRequestSchema>
+
+/**
+ * キーワード一覧取得 (GET_KEYWORDS)
+ */
+export const getKeywordsRequestSchema = baseMessageRequestSchema.extend({
+  action: z.literal(API_ACTIONS.GET_KEYWORDS),
+  payload: z.undefined().optional(),
+})
+
+export type GetKeywordsRequest = z.infer<typeof getKeywordsRequestSchema>
+
+export const getKeywordsResponseSchema = createApiResponseSchema(
+  keywordsResponseSchema,
+)
+
+export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
