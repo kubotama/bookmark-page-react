@@ -13,6 +13,8 @@ import {
   addKeywordResponseSchema,
   updateKeywordMessageRequestSchema,
   updateKeywordMessageResponseSchema,
+  deleteKeywordMessageRequestSchema,
+  deleteKeywordMessageResponseSchema,
 } from './api'
 import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
 
@@ -154,7 +156,10 @@ describe('API Schemas', () => {
 
   describe('updateKeywordMessageResponseSchema', () => {
     it('成功時のレスポンスを検証できること', () => {
-      const keyword = { id: MOCK_IDS.KEYWORD_1, name: TEST_STRINGS.UPDATED_NAME }
+      const keyword = {
+        id: MOCK_IDS.KEYWORD_1,
+        name: TEST_STRINGS.UPDATED_NAME,
+      }
       const validResponse = {
         success: true,
         data: { keyword },
@@ -173,6 +178,50 @@ describe('API Schemas', () => {
         },
       }
       expect(updateKeywordMessageResponseSchema.parse(errorResponse)).toEqual(
+        errorResponse,
+      )
+    })
+  })
+
+  describe('deleteKeywordMessageRequestSchema', () => {
+    it('正しい DELETE_KEYWORD リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.DELETE_KEYWORD,
+        payload: { id: MOCK_IDS.KEYWORD_1 },
+      }
+      expect(deleteKeywordMessageRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('不正な形式の ID を拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.DELETE_KEYWORD,
+        payload: { id: TEST_STRINGS.INVALID_ID },
+      }
+      expect(() =>
+        deleteKeywordMessageRequestSchema.parse(invalidRequest),
+      ).toThrow(ZodError)
+    })
+  })
+
+  describe('deleteKeywordMessageResponseSchema', () => {
+    it('成功時のレスポンスを検証できること', () => {
+      const validResponse = { success: true, data: null }
+      expect(deleteKeywordMessageResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+
+    it('エラー時のレスポンスを検証できること', () => {
+      const errorResponse = {
+        success: false,
+        error: {
+          message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+          code: ERROR_CODES.NOT_FOUND,
+        },
+      }
+      expect(deleteKeywordMessageResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
