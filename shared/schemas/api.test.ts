@@ -6,7 +6,7 @@ import {
   createApiSuccessSchema,
   ApiErrorSchema,
   ApiActionSchema,
-  baseMessageRequestSchema,
+  baseApiRequestSchema,
 } from './api'
 import { MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
 
@@ -47,18 +47,18 @@ describe('API Schemas - Messaging Foundation', () => {
     })
   })
 
-  describe('baseMessageRequestSchema', () => {
+  describe('baseApiRequestSchema', () => {
     it('正しいメッセージ構造を受け入れること', () => {
       const validRequest = {
         action: API_ACTIONS.GET_BOOKMARKS,
         payload: { some: TEST_STRINGS.NEW_NAME },
       }
-      expect(baseMessageRequestSchema.parse(validRequest)).toEqual(validRequest)
+      expect(baseApiRequestSchema.parse(validRequest)).toEqual(validRequest)
     })
 
     it('不正な形式のリクエストを拒否すること', () => {
       const invalidRequest = { action: TEST_STRINGS.INVALID_ACTION }
-      expect(() => baseMessageRequestSchema.parse(invalidRequest)).toThrow(
+      expect(() => baseApiRequestSchema.parse(invalidRequest)).toThrow(
         ZodError,
       )
     })

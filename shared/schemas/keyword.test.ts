@@ -5,7 +5,8 @@ import {
   keywordSchema,
   keywordWithCountSchema,
   keywordsResponseSchema,
-  updateKeywordRequestSchema,
+  updateKeywordSchema,
+  createKeywordSchema,
 } from './keyword'
 import {
   MOCK_BOOKMARK_TITLE_PREFIX,
@@ -37,7 +38,7 @@ describe('Keyword Schemas', () => {
     it('不正なデータを拒否すること', () => {
       expect(() =>
         keywordSchema.parse({
-          id: 'invalid',
+          id: TEST_STRINGS.INVALID_ID,
           name: MOCK_BOOKMARK_TITLE_PREFIX,
         }),
       ).toThrow()
@@ -77,20 +78,27 @@ describe('Keyword Schemas', () => {
     })
   })
 
-  describe('updateKeywordRequestSchema', () => {
+  describe('updateKeywordSchema', () => {
     it('有効な名前を受け入れること', () => {
-      const validData = { name: 'Updated Name' }
-      expect(updateKeywordRequestSchema.parse(validData)).toEqual(validData)
+      const validData = { name: TEST_STRINGS.UPDATED_NAME }
+      expect(updateKeywordSchema.parse(validData)).toEqual(validData)
     })
 
     it('名前が空の場合にエラーになること', () => {
-      expect(() => updateKeywordRequestSchema.parse({ name: '' })).toThrow()
+      expect(() => updateKeywordSchema.parse({ name: '' })).toThrow()
     })
 
     it('名前が50文字を超える場合にエラーになること', () => {
       expect(() =>
-        updateKeywordRequestSchema.parse({ name: 'a'.repeat(51) }),
+        updateKeywordSchema.parse({ name: 'a'.repeat(51) }),
       ).toThrow()
+    })
+  })
+
+  describe('createKeywordSchema', () => {
+    it('有効な名前を受け入れること', () => {
+      const validData = { name: TEST_STRINGS.NEW_NAME }
+      expect(createKeywordSchema.parse(validData)).toEqual(validData)
     })
   })
 })

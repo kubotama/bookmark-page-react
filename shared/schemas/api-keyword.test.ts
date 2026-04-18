@@ -7,10 +7,10 @@ import {
   getKeywordsResponseSchema,
   addKeywordRequestSchema,
   addKeywordResponseSchema,
-  updateKeywordMessageRequestSchema,
-  updateKeywordMessageResponseSchema,
-  deleteKeywordMessageRequestSchema,
-  deleteKeywordMessageResponseSchema,
+  updateKeywordRequestSchema,
+  updateKeywordResponseSchema,
+  deleteKeywordRequestSchema,
+  deleteKeywordResponseSchema,
 } from './api'
 import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
 
@@ -63,8 +63,7 @@ describe('API Schemas - Keyword Operations', () => {
 
   describe('addKeywordResponseSchema', () => {
     it('追加されたキーワードを含むレスポンスを検証できること', () => {
-      const mock = MOCK_KEYWORDS[0]
-      const keyword = { id: mock.id, name: mock.name }
+      const keyword = { id: MOCK_KEYWORDS[0].id, name: MOCK_KEYWORDS[0].name }
       const validResponse = {
         success: true,
         data: { keyword },
@@ -75,13 +74,13 @@ describe('API Schemas - Keyword Operations', () => {
     })
   })
 
-  describe('updateKeywordMessageRequestSchema', () => {
+  describe('updateKeywordRequestSchema', () => {
     it('正しい UPDATE_KEYWORD リクエストを受け入れること', () => {
       const validRequest = {
         action: API_ACTIONS.UPDATE_KEYWORD,
         payload: { id: MOCK_IDS.KEYWORD_1, name: TEST_STRINGS.UPDATED_NAME },
       }
-      expect(updateKeywordMessageRequestSchema.parse(validRequest)).toEqual(
+      expect(updateKeywordRequestSchema.parse(validRequest)).toEqual(
         validRequest,
       )
     })
@@ -92,7 +91,7 @@ describe('API Schemas - Keyword Operations', () => {
         payload: { id: TEST_STRINGS.INVALID_ID, name: TEST_STRINGS.NEW_NAME },
       }
       expect(() =>
-        updateKeywordMessageRequestSchema.parse(invalidRequest),
+        updateKeywordRequestSchema.parse(invalidRequest),
       ).toThrow(ZodError)
     })
 
@@ -102,12 +101,12 @@ describe('API Schemas - Keyword Operations', () => {
         payload: { id: MOCK_IDS.KEYWORD_1, name: '' },
       }
       expect(() =>
-        updateKeywordMessageRequestSchema.parse(invalidRequest),
+        updateKeywordRequestSchema.parse(invalidRequest),
       ).toThrow(ZodError)
     })
   })
 
-  describe('updateKeywordMessageResponseSchema', () => {
+  describe('updateKeywordResponseSchema', () => {
     it('成功時のレスポンスを検証できること', () => {
       const keyword = {
         id: MOCK_IDS.KEYWORD_1,
@@ -117,7 +116,7 @@ describe('API Schemas - Keyword Operations', () => {
         success: true,
         data: { keyword },
       }
-      expect(updateKeywordMessageResponseSchema.parse(validResponse)).toEqual(
+      expect(updateKeywordResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })
@@ -130,19 +129,19 @@ describe('API Schemas - Keyword Operations', () => {
           code: ERROR_CODES.NOT_FOUND,
         },
       }
-      expect(updateKeywordMessageResponseSchema.parse(errorResponse)).toEqual(
+      expect(updateKeywordResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
   })
 
-  describe('deleteKeywordMessageRequestSchema', () => {
+  describe('deleteKeywordRequestSchema', () => {
     it('正しい DELETE_KEYWORD リクエストを受け入れること', () => {
       const validRequest = {
         action: API_ACTIONS.DELETE_KEYWORD,
         payload: { id: MOCK_IDS.KEYWORD_1 },
       }
-      expect(deleteKeywordMessageRequestSchema.parse(validRequest)).toEqual(
+      expect(deleteKeywordRequestSchema.parse(validRequest)).toEqual(
         validRequest,
       )
     })
@@ -153,15 +152,15 @@ describe('API Schemas - Keyword Operations', () => {
         payload: { id: TEST_STRINGS.INVALID_ID },
       }
       expect(() =>
-        deleteKeywordMessageRequestSchema.parse(invalidRequest),
+        deleteKeywordRequestSchema.parse(invalidRequest),
       ).toThrow(ZodError)
     })
   })
 
-  describe('deleteKeywordMessageResponseSchema', () => {
+  describe('deleteKeywordResponseSchema', () => {
     it('成功時のレスポンスを検証できること', () => {
       const validResponse = { success: true, data: null }
-      expect(deleteKeywordMessageResponseSchema.parse(validResponse)).toEqual(
+      expect(deleteKeywordResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })
@@ -174,7 +173,7 @@ describe('API Schemas - Keyword Operations', () => {
           code: ERROR_CODES.NOT_FOUND,
         },
       }
-      expect(deleteKeywordMessageResponseSchema.parse(errorResponse)).toEqual(
+      expect(deleteKeywordResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
