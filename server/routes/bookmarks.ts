@@ -7,7 +7,7 @@ import { ERROR_MESSAGES, LOG_MESSAGES, HTTP_STATUS } from '@shared/constants'
 import {
   BookmarkIdSchema,
   KeywordIdSchema,
-  bookmarksResponseSchema,
+  bookmarksSchema,
   createBookmarkInputSchema,
   updateBookmarkInputSchema,
   reorderBookmarksSchema,
@@ -70,7 +70,7 @@ const bookmarksRoute = new Hono()
 
       const bookmarks = rows.map(toBookmarkDto)
 
-      const result = bookmarksResponseSchema.parse({ bookmarks })
+      const result = bookmarksSchema.parse({ bookmarks })
       return c.json({
         success: true,
         data: result,

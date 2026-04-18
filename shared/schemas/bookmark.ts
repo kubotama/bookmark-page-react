@@ -84,8 +84,8 @@ export const reorderBookmarksSchema = z.object({
 
 export type ReorderBookmarksRequest = z.infer<typeof reorderBookmarksSchema>
 
-export const bookmarksResponseSchema = z.object({
+export const bookmarksSchema = z.object({
   bookmarks: z.array(bookmarkSchema),
 })
 
-export type BookmarksResponse = z.infer<typeof bookmarksResponseSchema>
+export type Bookmarks = z.infer<typeof bookmarksSchema>

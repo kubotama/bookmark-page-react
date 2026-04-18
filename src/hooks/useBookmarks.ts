@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
 import type {
   BookmarkId,
-  BookmarksResponse,
+  Bookmarks,
   ReorderBookmarksRequest,
   UpdateBookmarkInput,
 } from '@shared/schemas/bookmark'
@@ -67,7 +67,7 @@ export const useBookmarks = () => {
     queryKey: QUERY_KEYS.BOOKMARKS.LIST(),
     queryFn: async () => {
       const res = await client.api.bookmarks.$get()
-      return await parseResponse<BookmarksResponse>(
+      return await parseResponse<Bookmarks>(
         res,
         UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
       )
@@ -157,7 +157,7 @@ export const useReorderBookmarks = () => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
 
       // 2. 現在の状態を保存
-      const previousData = queryClient.getQueryData<BookmarksResponse>(
+      const previousData = queryClient.getQueryData<Bookmarks>(
         QUERY_KEYS.BOOKMARKS.LIST(),
       )
 
@@ -170,13 +170,10 @@ export const useReorderBookmarks = () => {
           .map((id) => bookmarkMap.get(id))
           .filter((b): b is import('@shared/schemas/bookmark').Bookmark => !!b)
 
-        queryClient.setQueryData<BookmarksResponse>(
-          QUERY_KEYS.BOOKMARKS.LIST(),
-          {
-            ...previousData,
-            bookmarks: newBookmarks,
-          },
-        )
+        queryClient.setQueryData<Bookmarks>(QUERY_KEYS.BOOKMARKS.LIST(), {
+          ...previousData,
+          bookmarks: newBookmarks,
+        })
       }
 
       return { previousData }

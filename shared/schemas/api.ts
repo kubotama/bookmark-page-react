@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { API_ACTIONS, ERROR_CODES } from '../constants'
 import {
   bookmarkSchema,
-  bookmarksResponseSchema,
+  bookmarksSchema,
   createBookmarkInputSchema,
 } from './bookmark'
 import {
@@ -147,9 +147,8 @@ export const getBookmarksRequestSchema = baseApiRequestSchema.extend({
 
 export type GetBookmarksRequest = z.infer<typeof getBookmarksRequestSchema>
 
-export const getBookmarksResponseSchema = createApiResponseSchema(
-  bookmarksResponseSchema,
-)
+export const getBookmarksResponseSchema =
+  createApiResponseSchema(bookmarksSchema)
 
 export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
 
