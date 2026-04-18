@@ -8,7 +8,7 @@ import {
   createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
-  keywordsResponseSchema,
+  keywordsSchema,
   updateKeywordSchema,
 } from '@shared/schemas/keyword'
 
@@ -41,7 +41,7 @@ const keywordsRoute = new Hono()
         bookmarkCount: row.bookmarkCount,
       }))
 
-      const result = keywordsResponseSchema.parse({ keywords })
+      const result = keywordsSchema.parse({ keywords })
       return c.json({
         success: true,
         data: result,

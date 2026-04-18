@@ -10,7 +10,7 @@ import {
   createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
-  keywordsResponseSchema,
+  keywordsSchema,
   updateKeywordSchema,
 } from './keyword'
 
@@ -79,9 +79,7 @@ export const getKeywordsRequestSchema = baseApiRequestSchema.extend({
 
 export type GetKeywordsRequest = z.infer<typeof getKeywordsRequestSchema>
 
-export const getKeywordsResponseSchema = createApiResponseSchema(
-  keywordsResponseSchema,
-)
+export const getKeywordsResponseSchema = createApiResponseSchema(keywordsSchema)
 
 export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
 

@@ -4,7 +4,7 @@ import {
   KeywordIdSchema,
   keywordSchema,
   keywordWithCountSchema,
-  keywordsResponseSchema,
+  keywordsSchema,
   updateKeywordSchema,
   createKeywordInputSchema,
 } from './keyword'
@@ -66,7 +66,7 @@ describe('Keyword Schemas', () => {
     })
   })
 
-  describe('keywordsResponseSchema', () => {
+  describe('keywordsSchema', () => {
     it('キーワードリストを含むレスポンスを受け入れること', () => {
       const validResponse = {
         keywords: [
@@ -74,7 +74,7 @@ describe('Keyword Schemas', () => {
           { id: MOCK_IDS.KEYWORD_2, name: 'Tag2', bookmarkCount: 0 },
         ],
       }
-      expect(keywordsResponseSchema.parse(validResponse)).toEqual(validResponse)
+      expect(keywordsSchema.parse(validResponse)).toEqual(validResponse)
     })
   })
 

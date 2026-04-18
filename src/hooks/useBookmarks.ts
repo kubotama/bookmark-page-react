@@ -10,7 +10,7 @@ import type {
 import type {
   KeywordId,
   KeywordResponse,
-  KeywordsResponse,
+  Keywords,
   CreateKeywordInput,
   UpdateKeywordInput,
 } from '@shared/schemas/keyword'
@@ -82,7 +82,7 @@ export const useKeywords = () => {
     queryKey: QUERY_KEYS.KEYWORDS.LIST(),
     queryFn: async () => {
       const res = await client.api.keywords.$get()
-      return await parseResponse<KeywordsResponse>(
+      return await parseResponse<Keywords>(
         res,
         UI_MESSAGES.FETCH_KEYWORDS_FAILED,
       )
@@ -245,7 +245,7 @@ export const useUpdateKeyword = () => {
     onSuccess: (data) => {
       // キャッシュを直接更新して即座に UI に反映させる
       const updatedKeyword = data.keyword
-      queryClient.setQueryData<KeywordsResponse>(
+      queryClient.setQueryData<Keywords>(
         QUERY_KEYS.KEYWORDS.LIST(),
         (oldData) => {
           if (!oldData) return oldData
@@ -287,7 +287,7 @@ export const useDeleteKeyword = () => {
     },
     onSuccess: (deletedId) => {
       // キャッシュから削除対象を取り除く
-      queryClient.setQueryData<KeywordsResponse>(
+      queryClient.setQueryData<Keywords>(
         QUERY_KEYS.KEYWORDS.LIST(),
         (oldData) => {
           if (!oldData) return oldData

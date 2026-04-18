@@ -25,10 +25,10 @@ export const keywordWithCountSchema = keywordSchema.extend({
 })
 export type KeywordWithCount = z.infer<typeof keywordWithCountSchema>
 
-export const keywordsResponseSchema = z.object({
+export const keywordsSchema = z.object({
   keywords: z.array(keywordWithCountSchema),
 })
-export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
+export type Keywords = z.infer<typeof keywordsSchema>
 
 /**
  * キーワード作成のバリデーションスキーマ
