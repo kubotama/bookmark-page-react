@@ -4,7 +4,7 @@ import {
   bookmarkSchema,
   createBookmarkInputSchema,
   reorderBookmarksSchema,
-  updateBookmarkSchema,
+  updateBookmarkInputSchema,
 } from './bookmark'
 import { VALIDATION_MESSAGES } from '../constants'
 import {
@@ -69,13 +69,13 @@ describe('createBookmarkInputSchema', () => {
   })
 })
 
-describe('updateBookmarkSchema', () => {
+describe('updateBookmarkInputSchema', () => {
   it.each([
     { name: 'タイトルのみ', data: { title: 'Updated' } },
     { name: 'URLのみ', data: { url: VALID_URLS.HTTP } },
     { name: '両方', data: { title: 'Updated', url: VALID_URLS.HTTP } },
   ])('正常系: $name の場合に成功すること', ({ data }) => {
-    expect(updateBookmarkSchema.safeParse(data).success).toBe(true)
+    expect(updateBookmarkInputSchema.safeParse(data).success).toBe(true)
   })
 
   it.each([
@@ -95,7 +95,7 @@ describe('updateBookmarkSchema', () => {
       expected: VALIDATION_MESSAGES.URL_INVALID_FORMAT,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
-    const result = updateBookmarkSchema.safeParse(data)
+    const result = updateBookmarkInputSchema.safeParse(data)
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(expected)

@@ -5,7 +5,7 @@ import type {
   BookmarkId,
   BookmarksResponse,
   ReorderBookmarksRequest,
-  UpdateBookmarkRequest,
+  UpdateBookmarkInput,
 } from '@shared/schemas/bookmark'
 import type {
   KeywordId,
@@ -100,7 +100,7 @@ export const useUpdateBookmark = () => {
       updates,
     }: {
       id: BookmarkId
-      updates: UpdateBookmarkRequest
+      updates: UpdateBookmarkInput
     }) => {
       const res = await client.api.bookmarks[':id'].$patch({
         param: { id },

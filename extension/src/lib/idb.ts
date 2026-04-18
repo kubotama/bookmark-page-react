@@ -8,8 +8,8 @@ import {
   BookmarkIdSchema,
   createBookmarkInputSchema,
   type CreateBookmarkInput,
-  updateBookmarkSchema,
-  type UpdateBookmarkRequest,
+  updateBookmarkInputSchema,
+  type UpdateBookmarkInput,
   reorderBookmarksSchema,
 } from '@shared/schemas/bookmark'
 import {
@@ -101,12 +101,12 @@ export class BookmarkDatabase extends Dexie {
    */
   async updateBookmark(
     id: BookmarkId,
-    updates: UpdateBookmarkRequest,
+    updates: UpdateBookmarkInput,
   ): Promise<void> {
     // ID のバリデーション
     const validatedId = BookmarkIdSchema.parse(id)
     // 更新内容のバリデーション
-    const validated = updateBookmarkSchema.parse(updates)
+    const validated = updateBookmarkInputSchema.parse(updates)
 
     const updatedCount = await this.bookmarks.update(validatedId, validated)
     if (updatedCount === 0) {

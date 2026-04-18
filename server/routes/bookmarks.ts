@@ -9,7 +9,7 @@ import {
   KeywordIdSchema,
   bookmarksResponseSchema,
   createBookmarkInputSchema,
-  updateBookmarkSchema,
+  updateBookmarkInputSchema,
   reorderBookmarksSchema,
   type Bookmark,
 } from '@shared/schemas/bookmark'
@@ -157,7 +157,7 @@ const bookmarksRoute = new Hono()
   .patch(
     '/:id',
     zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
-    zValidator('json', updateBookmarkSchema),
+    zValidator('json', updateBookmarkInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const bookmarkId = parseInt(id, 10)

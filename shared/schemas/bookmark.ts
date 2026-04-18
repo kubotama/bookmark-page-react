@@ -62,7 +62,7 @@ export const createBookmarkInputSchema = z.object({
 
 export type CreateBookmarkInput = z.infer<typeof createBookmarkInputSchema>
 
-export const updateBookmarkSchema = z
+export const updateBookmarkInputSchema = z
   .object({
     title: bookmarkTitleSchema.optional(),
     url: bookmarkUrlSchema.optional(),
@@ -71,7 +71,7 @@ export const updateBookmarkSchema = z
     message: VALIDATION_MESSAGES.UPDATE_MIN_FIELDS,
   })
 
-export type UpdateBookmarkRequest = z.infer<typeof updateBookmarkSchema>
+export type UpdateBookmarkInput = z.infer<typeof updateBookmarkInputSchema>
 
 export const reorderBookmarksSchema = z.object({
   ids: z
