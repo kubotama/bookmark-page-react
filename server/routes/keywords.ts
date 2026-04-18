@@ -9,7 +9,7 @@ import {
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsSchema,
-  updateKeywordSchema,
+  updateKeywordInputSchema,
 } from '@shared/schemas/keyword'
 
 import { db } from '../db'
@@ -106,7 +106,7 @@ const keywordsRoute = new Hono()
   .patch(
     '/:id',
     zValidator('param', z.object({ id: KeywordIdSchema })),
-    zValidator('json', updateKeywordSchema),
+    zValidator('json', updateKeywordInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const { name } = c.req.valid('json')

@@ -11,7 +11,7 @@ import {
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsSchema,
-  updateKeywordSchema,
+  updateKeywordInputSchema,
 } from './keyword'
 
 /**
@@ -104,7 +104,7 @@ export type AddKeywordResponse = z.infer<typeof addKeywordResponseSchema>
  */
 export const updateKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.UPDATE_KEYWORD),
-  payload: updateKeywordSchema.extend({
+  payload: updateKeywordInputSchema.extend({
     id: KeywordIdSchema,
   }),
 })

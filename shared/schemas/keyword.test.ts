@@ -5,7 +5,7 @@ import {
   keywordSchema,
   keywordWithCountSchema,
   keywordsSchema,
-  updateKeywordSchema,
+  updateKeywordInputSchema,
   createKeywordInputSchema,
 } from './keyword'
 import {
@@ -78,19 +78,19 @@ describe('Keyword Schemas', () => {
     })
   })
 
-  describe('updateKeywordSchema', () => {
+  describe('updateKeywordInputSchema', () => {
     it('有効な名前を受け入れること', () => {
       const validData = { name: TEST_STRINGS.UPDATED_NAME }
-      expect(updateKeywordSchema.parse(validData)).toEqual(validData)
+      expect(updateKeywordInputSchema.parse(validData)).toEqual(validData)
     })
 
     it('名前が空の場合にエラーになること', () => {
-      expect(() => updateKeywordSchema.parse({ name: '' })).toThrow()
+      expect(() => updateKeywordInputSchema.parse({ name: '' })).toThrow()
     })
 
     it('名前が50文字を超える場合にエラーになること', () => {
       expect(() =>
-        updateKeywordSchema.parse({ name: 'a'.repeat(51) }),
+        updateKeywordInputSchema.parse({ name: 'a'.repeat(51) }),
       ).toThrow()
     })
   })

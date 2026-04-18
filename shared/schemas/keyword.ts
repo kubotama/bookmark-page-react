@@ -41,10 +41,10 @@ export type CreateKeywordInput = z.infer<typeof createKeywordInputSchema>
 /**
  * キーワード更新のバリデーションスキーマ
  */
-export const updateKeywordSchema = z.object({
+export const updateKeywordInputSchema = z.object({
   name: keywordNameSchema,
 })
-export type UpdateKeywordInput = z.infer<typeof updateKeywordSchema>
+export type UpdateKeywordInput = z.infer<typeof updateKeywordInputSchema>
 
 /**
  * 単一キーワードのレスポンススキーマ
