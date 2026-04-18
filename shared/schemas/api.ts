@@ -7,11 +7,11 @@ import {
   createBookmarkSchema,
 } from './bookmark'
 import {
-  createKeywordRequestSchema,
+  createKeywordSchema,
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsResponseSchema,
-  updateKeywordRequestSchema,
+  updateKeywordSchema,
 } from './keyword'
 
 /**
@@ -63,17 +63,15 @@ export type ApiAction = z.infer<typeof ApiActionSchema>
  * 共通のメッセージリクエスト構造
  * 個別のアクションごとのスキーマはこれらを拡張して定義する
  */
-export const baseMessageRequestSchema = z.object({
+export const baseApiRequestSchema = z.object({
   action: ApiActionSchema,
   payload: z.unknown().optional(),
 })
 
-export type BaseMessageRequest = z.infer<typeof baseMessageRequestSchema>
-
 /**
  * キーワード一覧取得 (GET_KEYWORDS)
  */
-export const getKeywordsRequestSchema = baseMessageRequestSchema.extend({
+export const getKeywordsRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.GET_KEYWORDS),
   payload: z.undefined().optional(),
 })
@@ -89,9 +87,9 @@ export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
 /**
  * キーワード追加 (ADD_KEYWORD)
  */
-export const addKeywordRequestSchema = baseMessageRequestSchema.extend({
+export const addKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_KEYWORD),
-  payload: createKeywordRequestSchema,
+  payload: createKeywordSchema,
 })
 
 export type AddKeywordRequest = z.infer<typeof addKeywordRequestSchema>
@@ -105,51 +103,43 @@ export type AddKeywordResponse = z.infer<typeof addKeywordResponseSchema>
 /**
  * キーワード更新 (UPDATE_KEYWORD)
  */
-export const updateKeywordMessageRequestSchema = baseMessageRequestSchema.extend({
+export const updateKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.UPDATE_KEYWORD),
-  payload: updateKeywordRequestSchema.extend({
+  payload: updateKeywordSchema.extend({
     id: KeywordIdSchema,
   }),
 })
 
-export type UpdateKeywordMessageRequest = z.infer<
-  typeof updateKeywordMessageRequestSchema
->
+export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
 
-export const updateKeywordMessageResponseSchema = createApiResponseSchema(
+export const updateKeywordResponseSchema = createApiResponseSchema(
   keywordResponseSchema,
 )
 
-export type UpdateKeywordMessageResponse = z.infer<
-  typeof updateKeywordMessageResponseSchema
->
+export type UpdateKeywordResponse = z.infer<typeof updateKeywordResponseSchema>
 
 /**
  * キーワード削除 (DELETE_KEYWORD)
  */
-export const deleteKeywordMessageRequestSchema = baseMessageRequestSchema.extend({
+export const deleteKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.DELETE_KEYWORD),
   payload: z.object({
     id: KeywordIdSchema,
   }),
 })
 
-export type DeleteKeywordMessageRequest = z.infer<
-  typeof deleteKeywordMessageRequestSchema
->
+export type DeleteKeywordRequest = z.infer<typeof deleteKeywordRequestSchema>
 
-export const deleteKeywordMessageResponseSchema = createApiResponseSchema(
+export const deleteKeywordResponseSchema = createApiResponseSchema(
   z.null(), // 削除時はデータなし
 )
 
-export type DeleteKeywordMessageResponse = z.infer<
-  typeof deleteKeywordMessageResponseSchema
->
+export type DeleteKeywordResponse = z.infer<typeof deleteKeywordResponseSchema>
 
 /**
  * ブックマーク一覧取得 (GET_BOOKMARKS)
  */
-export const getBookmarksRequestSchema = baseMessageRequestSchema.extend({
+export const getBookmarksRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.GET_BOOKMARKS),
   payload: z.undefined().optional(),
 })
@@ -165,7 +155,7 @@ export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
 /**
  * ブックマーク追加 (ADD_BOOKMARK)
  */
-export const addBookmarkRequestSchema = baseMessageRequestSchema.extend({
+export const addBookmarkRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_BOOKMARK),
   payload: createBookmarkSchema,
 })
@@ -177,3 +167,24 @@ export const addBookmarkResponseSchema = createApiResponseSchema(
 )
 
 export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
+
+/**
+ * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
+ * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
+ */
+export const ApiRequestSchema = z.discriminatedUnion('action', [
+  getKeywordsRequestSchema,
+  addKeywordRequestSchema,
+  updateKeywordRequestSchema,
+  deleteKeywordRequestSchema,
+  getBookmarksRequestSchema,
+  addBookmarkRequestSchema,
+])
+
+export type ApiRequest = z.infer<typeof ApiRequestSchema>
+
+/**
+ * 任意の API リクエストを表す基底型
+ * メッセージハンドラの汎用的な引数型などに使用する
+ */
+export type BaseApiRequest = z.infer<typeof baseApiRequestSchema>

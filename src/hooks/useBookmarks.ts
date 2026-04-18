@@ -11,8 +11,8 @@ import type {
   KeywordId,
   KeywordResponse,
   KeywordsResponse,
-  CreateKeywordRequest,
-  UpdateKeywordRequest,
+  CreateKeywordInput,
+  UpdateKeywordInput,
 } from '@shared/schemas/keyword'
 
 import { useApi } from '../contexts/ApiContext'
@@ -207,7 +207,7 @@ export const useCreateKeyword = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (req: CreateKeywordRequest) => {
+    mutationFn: async (req: CreateKeywordInput) => {
       const res = await client.api.keywords.$post({
         json: req,
       })
@@ -233,7 +233,7 @@ export const useUpdateKeyword = () => {
       updates,
     }: {
       id: KeywordId
-      updates: UpdateKeywordRequest
+      updates: UpdateKeywordInput
     }) => {
       const res = await client.api.keywords[':id'].$patch({
         param: { id },

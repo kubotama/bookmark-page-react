@@ -31,20 +31,20 @@ export const keywordsResponseSchema = z.object({
 export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
 
 /**
- * キーワード作成リクエストのバリデーションスキーマ
+ * キーワード作成のバリデーションスキーマ
  */
-export const createKeywordRequestSchema = z.object({
+export const createKeywordSchema = z.object({
   name: keywordNameSchema,
 })
-export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
+export type CreateKeywordInput = z.infer<typeof createKeywordSchema>
 
 /**
- * キーワード更新リクエストのバリデーションスキーマ
+ * キーワード更新のバリデーションスキーマ
  */
-export const updateKeywordRequestSchema = z.object({
+export const updateKeywordSchema = z.object({
   name: keywordNameSchema,
 })
-export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
+export type UpdateKeywordInput = z.infer<typeof updateKeywordSchema>
 
 /**
  * 単一キーワードのレスポンススキーマ

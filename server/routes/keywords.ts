@@ -5,11 +5,11 @@ import { z } from 'zod'
 
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import {
-  createKeywordRequestSchema,
+  createKeywordSchema,
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsResponseSchema,
-  updateKeywordRequestSchema,
+  updateKeywordSchema,
 } from '@shared/schemas/keyword'
 
 import { db } from '../db'
@@ -51,7 +51,7 @@ const keywordsRoute = new Hono()
       throw error
     }
   })
-  .post('/', zValidator('json', createKeywordRequestSchema), async (c) => {
+  .post('/', zValidator('json', createKeywordSchema), async (c) => {
     const { name } = c.req.valid('json')
 
     try {
@@ -106,7 +106,7 @@ const keywordsRoute = new Hono()
   .patch(
     '/:id',
     zValidator('param', z.object({ id: KeywordIdSchema })),
-    zValidator('json', updateKeywordRequestSchema),
+    zValidator('json', updateKeywordSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const { name } = c.req.valid('json')
@@ -116,7 +116,7 @@ const keywordsRoute = new Hono()
         const existing = await db
           .select()
           .from(keywordsTable)
-          .where(eq(keywordsTable.keywordId, Number(id)))
+          .where(eq(keywordsTable.keywordId, Number(id as string)))
           .get()
 
         if (!existing) {
@@ -139,7 +139,7 @@ const keywordsRoute = new Hono()
           .where(eq(keywordsTable.keywordName, name))
           .get()
 
-        if (duplicate && duplicate.keywordId !== Number(id)) {
+        if (duplicate && duplicate.keywordId !== Number(id as string)) {
           return c.json(
             {
               success: false,
@@ -156,7 +156,7 @@ const keywordsRoute = new Hono()
         const result = await db
           .update(keywordsTable)
           .set({ keywordName: name })
-          .where(eq(keywordsTable.keywordId, Number(id)))
+          .where(eq(keywordsTable.keywordId, Number(id as string)))
           .returning()
           .get()
 
@@ -187,10 +187,9 @@ const keywordsRoute = new Hono()
 
       try {
         // 削除実行と結果の取得を同時に行う
-        // 中間テーブル (bookmarkKeywords) は外部キー制約 (ON DELETE CASCADE) により自動的に削除される
         const result = await db
           .delete(keywordsTable)
-          .where(eq(keywordsTable.keywordId, Number(id)))
+          .where(eq(keywordsTable.keywordId, Number(id as string)))
           .returning()
           .get()
 
