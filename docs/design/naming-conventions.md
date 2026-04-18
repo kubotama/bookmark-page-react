@@ -21,22 +21,23 @@
 | カテゴリ | 役割 | Zod スキーマ例 | TypeScript 型例 | 定義ファイル |
 | :--- | :--- | :--- | :--- | :--- |
 | **Entity** | DB保存形式（正規化済み） | `bookmarkEntitySchema` | `BookmarkEntity` | `shared/schemas/[domain].ts` |
-| **Object** | アプリ内形式（結合済み） | `bookmarkSchema` | `Bookmark` | `shared/schemas/[domain].ts` |
+| **Object** | アプリ内形式（単体または集合） | `bookmarkSchema`<br>`bookmarksSchema` | `Bookmark`<br>`Bookmarks` | `shared/schemas/[domain].ts` |
 | **Input** | 処理の引数（データ部のみ） | `updateBookmarkInputSchema` | `UpdateBookmarkInput` | `shared/schemas/[domain].ts` |
-| **Request** | 通信の封筒（action付） | `updateBookmarkRequestSchema` | `UpdateBookmarkRequest` | `shared/schemas/api.ts` |
-| **Response** | 通信の結果（共通形式） | `updateBookmarkResponseSchema` | `UpdateBookmarkResponse` | `shared/schemas/api.ts` |
+| **Request** | 通信の封筒（action付） | `readBookmarksRequestSchema` | `ReadBookmarksRequest` | `shared/schemas/api.ts` |
+| **Response** | 通信の結果（共通形式） | `readBookmarksResponseSchema` | `ReadBookmarksResponse` | `shared/schemas/api.ts` |
 
 ## 3. 具体的な適用例
 
 ### ブックマーク取得 (READ_BOOKMARKS)
 
 1. **ドメイン層 (`bookmark.ts`)**
-   - 取得結果の形状を定義します。
-   - `bookmarksResponseSchema` / `BookmarksResponse`
+   - データの集合としての形状を定義します。
+   - `bookmarksSchema` / `Bookmarks` (内容: `{ bookmarks: Bookmark[] }`)
 
 2. **通信層 (`api.ts`)**
-   - 取得要求（リクエスト）を定義します。
+   - ドメインの Object をレスポンスに包みます。
    - `readBookmarksRequestSchema` / `ReadBookmarksRequest`
+   - `readBookmarksResponseSchema` / `ReadBookmarksResponse` (内容: `ApiResponse<Bookmarks>`)
 
 ### ブックマーク更新 (UPDATE_BOOKMARK)
 
@@ -50,6 +51,6 @@
 
 ## 4. 運用ルール
 
-- **名称の重複禁止**: `api.ts` で定義する型は、ドメイン層の型と必ずサフィックス（`Input` vs `Request`）で区別できるようにします。
-- **インポート**: `idb.ts` などの内部ロジックは `Input` を、メッセージ送信側は `Request` を使用します。
-- **DRY原則**: `Request` の `payload` 定義には、必ずドメイン層の `Input` スキーマを `.extend()` または組み合わせる形で再利用します。
+- **Response 名の独占**: `...ResponseSchema` という名称は **`shared/schemas/api.ts` でのみ使用** します。ドメイン層では `...Schema` (Object) を使用することで、インポート時の名称衝突を回避します。
+- **インポート**: `idb.ts` などの内部ロジックは `Input` / `Entity` を、メッセージ送信側は `Request` / `Response` を使用します。
+- **DRY原則**: `Request` や `Response` の定義には、必ずドメイン層のスキーマを再利用（`.extend()` や型引数への適用）します。
