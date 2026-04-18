@@ -13,7 +13,7 @@ import {
   reorderBookmarksInputSchema,
   type Bookmark,
 } from '@shared/schemas/bookmark'
-import { attachKeywordRequestSchema } from '@shared/schemas/keyword'
+import { attachKeywordInputSchema } from '@shared/schemas/keyword'
 
 import { db } from '../db'
 import {
@@ -259,7 +259,7 @@ const bookmarksRoute = new Hono()
   .post(
     '/:id/keywords',
     zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
-    zValidator('json', attachKeywordRequestSchema),
+    zValidator('json', attachKeywordInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const { keywordId } = c.req.valid('json')

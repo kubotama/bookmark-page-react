@@ -57,7 +57,7 @@ export type KeywordResponse = z.infer<typeof keywordResponseSchema>
 /**
  * キーワード紐付けリクエストのバリデーションスキーマ
  */
-export const attachKeywordRequestSchema = z.object({
+export const attachKeywordInputSchema = z.object({
   keywordId: KeywordIdSchema,
 })
-export type AttachKeywordRequest = z.infer<typeof attachKeywordRequestSchema>
+export type AttachKeywordInput = z.infer<typeof attachKeywordInputSchema>
