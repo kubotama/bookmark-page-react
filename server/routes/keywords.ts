@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import {
-  createKeywordSchema,
+  createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsResponseSchema,
@@ -51,7 +51,7 @@ const keywordsRoute = new Hono()
       throw error
     }
   })
-  .post('/', zValidator('json', createKeywordSchema), async (c) => {
+  .post('/', zValidator('json', createKeywordInputSchema), async (c) => {
     const { name } = c.req.valid('json')
 
     try {

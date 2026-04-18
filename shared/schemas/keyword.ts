@@ -33,10 +33,10 @@ export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
 /**
  * キーワード作成のバリデーションスキーマ
  */
-export const createKeywordSchema = z.object({
+export const createKeywordInputSchema = z.object({
   name: keywordNameSchema,
 })
-export type CreateKeywordInput = z.infer<typeof createKeywordSchema>
+export type CreateKeywordInput = z.infer<typeof createKeywordInputSchema>
 
 /**
  * キーワード更新のバリデーションスキーマ

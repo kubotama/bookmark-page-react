@@ -7,7 +7,7 @@ import {
   createBookmarkInputSchema,
 } from './bookmark'
 import {
-  createKeywordSchema,
+  createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
   keywordsResponseSchema,
@@ -90,7 +90,7 @@ export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
  */
 export const addKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_KEYWORD),
-  payload: createKeywordSchema,
+  payload: createKeywordInputSchema,
 })
 
 export type AddKeywordRequest = z.infer<typeof addKeywordRequestSchema>

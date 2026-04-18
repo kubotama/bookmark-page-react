@@ -6,7 +6,7 @@ import {
   keywordWithCountSchema,
   keywordsResponseSchema,
   updateKeywordSchema,
-  createKeywordSchema,
+  createKeywordInputSchema,
 } from './keyword'
 import {
   MOCK_BOOKMARK_TITLE_PREFIX,
@@ -95,10 +95,10 @@ describe('Keyword Schemas', () => {
     })
   })
 
-  describe('createKeywordSchema', () => {
+  describe('createKeywordInputSchema', () => {
     it('有効な名前を受け入れること', () => {
       const validData = { name: TEST_STRINGS.NEW_NAME }
-      expect(createKeywordSchema.parse(validData)).toEqual(validData)
+      expect(createKeywordInputSchema.parse(validData)).toEqual(validData)
     })
   })
 })
