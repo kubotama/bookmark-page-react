@@ -4,7 +4,7 @@ import { API_ACTIONS, ERROR_CODES } from '../constants'
 import {
   bookmarkSchema,
   bookmarksResponseSchema,
-  createBookmarkSchema,
+  createBookmarkInputSchema,
 } from './bookmark'
 import {
   createKeywordSchema,
@@ -48,8 +48,9 @@ export type ApiError = z.infer<typeof ApiErrorSchema>
 /**
  * API レスポンスのユニオン型
  */
-export const createApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
-  z.union([createApiSuccessSchema(dataSchema), ApiErrorSchema])
+export const createApiResponseSchema = <T extends z.ZodTypeAny>(
+  dataSchema: T,
+) => z.union([createApiSuccessSchema(dataSchema), ApiErrorSchema])
 
 /**
  * メッセージングで使用するアクションのリテラル型
@@ -157,14 +158,12 @@ export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
  */
 export const addBookmarkRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_BOOKMARK),
-  payload: createBookmarkSchema,
+  payload: createBookmarkInputSchema,
 })
 
 export type AddBookmarkRequest = z.infer<typeof addBookmarkRequestSchema>
 
-export const addBookmarkResponseSchema = createApiResponseSchema(
-  bookmarkSchema,
-)
+export const addBookmarkResponseSchema = createApiResponseSchema(bookmarkSchema)
 
 export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
 

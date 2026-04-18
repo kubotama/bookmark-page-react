@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   bookmarkSchema,
-  createBookmarkSchema,
+  createBookmarkInputSchema,
   reorderBookmarksSchema,
   updateBookmarkSchema,
 } from './bookmark'
@@ -38,10 +38,10 @@ describe('bookmarkSchema', () => {
   })
 })
 
-describe('createBookmarkSchema', () => {
+describe('createBookmarkInputSchema', () => {
   it('正常なデータを受け入れること', () => {
     const valid = { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTP }
-    expect(createBookmarkSchema.safeParse(valid).success).toBe(true)
+    expect(createBookmarkInputSchema.safeParse(valid).success).toBe(true)
   })
 
   it.each([
@@ -61,7 +61,7 @@ describe('createBookmarkSchema', () => {
       expected: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
-    const result = createBookmarkSchema.safeParse(data)
+    const result = createBookmarkInputSchema.safeParse(data)
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(expected)
@@ -124,7 +124,9 @@ describe('reorderBookmarksSchema', () => {
 
   it('上限を超える ID リストを拒否すること', () => {
     // 1001個の有効な UUID v7 を生成
-    const manyIds = Array.from({ length: 1001 }, (_, i) => generateMockUuidV7(i))
+    const manyIds = Array.from({ length: 1001 }, (_, i) =>
+      generateMockUuidV7(i),
+    )
     const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)
     if (!result.success) {

@@ -17,7 +17,10 @@ export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 /**
  * ブックマークタイトルの共通バリデーションスキーマ
  */
-const bookmarkTitleSchema = z.string().trim().min(1, VALIDATION_MESSAGES.TITLE_REQUIRED)
+const bookmarkTitleSchema = z
+  .string()
+  .trim()
+  .min(1, VALIDATION_MESSAGES.TITLE_REQUIRED)
 
 /**
  * ブックマークURLの共通バリデーションスキーマ
@@ -52,12 +55,12 @@ export const bookmarkEntitySchema = bookmarkSchema
 
 export type BookmarkEntity = z.infer<typeof bookmarkEntitySchema>
 
-export const createBookmarkSchema = z.object({
+export const createBookmarkInputSchema = z.object({
   title: bookmarkTitleSchema,
   url: bookmarkUrlSchema,
 })
 
-export type CreateBookmarkRequest = z.infer<typeof createBookmarkSchema>
+export type CreateBookmarkInput = z.infer<typeof createBookmarkInputSchema>
 
 export const updateBookmarkSchema = z
   .object({

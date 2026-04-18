@@ -8,7 +8,7 @@ import {
   BookmarkIdSchema,
   KeywordIdSchema,
   bookmarksResponseSchema,
-  createBookmarkSchema,
+  createBookmarkInputSchema,
   updateBookmarkSchema,
   reorderBookmarksSchema,
   type Bookmark,
@@ -80,7 +80,7 @@ const bookmarksRoute = new Hono()
       throw error // Global handler will catch this
     }
   })
-  .post('/', zValidator('json', createBookmarkSchema), async (c) => {
+  .post('/', zValidator('json', createBookmarkInputSchema), async (c) => {
     const { title, url } = c.req.valid('json')
 
     try {
