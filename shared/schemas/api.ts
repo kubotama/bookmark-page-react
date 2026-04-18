@@ -2,9 +2,11 @@ import { z } from 'zod'
 
 import { API_ACTIONS, ERROR_CODES } from '../constants'
 import {
+  BookmarkIdSchema,
   bookmarkSchema,
   bookmarksSchema,
   createBookmarkInputSchema,
+  updateBookmarkInputSchema,
 } from './bookmark'
 import {
   createKeywordInputSchema,
@@ -167,6 +169,25 @@ export type CreateBookmarkResponse = z.infer<
 >
 
 /**
+ * ブックマーク更新 (UPDATE_BOOKMARK)
+ */
+export const updateBookmarkRequestSchema = baseApiRequestSchema.extend({
+  action: z.literal(API_ACTIONS.UPDATE_BOOKMARK),
+  payload: updateBookmarkInputSchema.extend({
+    id: BookmarkIdSchema,
+  }),
+})
+
+export type UpdateBookmarkRequest = z.infer<typeof updateBookmarkRequestSchema>
+
+export const updateBookmarkResponseSchema =
+  baseApiResponseSchema(bookmarkSchema)
+
+export type UpdateBookmarkResponse = z.infer<
+  typeof updateBookmarkResponseSchema
+>
+
+/**
  * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
  * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
  */
@@ -177,6 +198,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   deleteKeywordRequestSchema,
   readBookmarksRequestSchema,
   createBookmarkRequestSchema,
+  updateBookmarkRequestSchema,
 ])
 
 export type ApiRequest = z.infer<typeof ApiRequestSchema>
