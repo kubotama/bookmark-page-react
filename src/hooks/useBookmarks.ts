@@ -4,7 +4,7 @@ import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
 import type {
   BookmarkId,
   Bookmarks,
-  ReorderBookmarksRequest,
+  ReorderBookmarksInput,
   UpdateBookmarkInput,
 } from '@shared/schemas/bookmark'
 import type {
@@ -145,7 +145,7 @@ export const useReorderBookmarks = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (req: ReorderBookmarksRequest) => {
+    mutationFn: async (req: ReorderBookmarksInput) => {
       const res = await client.api.bookmarks.reorder.$put({
         json: req,
       })

@@ -10,7 +10,7 @@ import {
   type CreateBookmarkInput,
   updateBookmarkInputSchema,
   type UpdateBookmarkInput,
-  reorderBookmarksSchema,
+  reorderBookmarksInputSchema,
 } from '@shared/schemas/bookmark'
 import {
   type KeywordId,
@@ -151,7 +151,7 @@ export class BookmarkDatabase extends Dexie {
    */
   async reorderBookmarks(ids: BookmarkId[]): Promise<void> {
     // バリデーション
-    const validatedIds = reorderBookmarksSchema.parse({ ids }).ids
+    const validatedIds = reorderBookmarksInputSchema.parse({ ids }).ids
 
     return await this.transaction('rw', this.bookmarks, async () => {
       // 全ての ID が存在するか、件数をチェック

@@ -73,7 +73,7 @@ export const updateBookmarkInputSchema = z
 
 export type UpdateBookmarkInput = z.infer<typeof updateBookmarkInputSchema>
 
-export const reorderBookmarksSchema = z.object({
+export const reorderBookmarksInputSchema = z.object({
   ids: z
     .array(BookmarkIdSchema)
     .max(1000, VALIDATION_MESSAGES.REORDER_MAX_ITEMS)
@@ -82,7 +82,7 @@ export const reorderBookmarksSchema = z.object({
     }),
 })
 
-export type ReorderBookmarksRequest = z.infer<typeof reorderBookmarksSchema>
+export type ReorderBookmarksInput = z.infer<typeof reorderBookmarksInputSchema>
 
 export const bookmarksSchema = z.object({
   bookmarks: z.array(bookmarkSchema),

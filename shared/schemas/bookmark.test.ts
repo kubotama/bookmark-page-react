@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   bookmarkSchema,
   createBookmarkInputSchema,
-  reorderBookmarksSchema,
+  reorderBookmarksInputSchema,
   updateBookmarkInputSchema,
 } from './bookmark'
 import { VALIDATION_MESSAGES } from '../constants'
@@ -103,17 +103,17 @@ describe('updateBookmarkInputSchema', () => {
   })
 })
 
-describe('reorderBookmarksSchema', () => {
+describe('reorderBookmarksInputSchema', () => {
   it('正常な ID リストを受け入れること', () => {
     const valid = { ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2] }
-    expect(reorderBookmarksSchema.safeParse(valid).success).toBe(true)
+    expect(reorderBookmarksInputSchema.safeParse(valid).success).toBe(true)
   })
 
   it('重複した ID が含まれる場合にエラーを返すこと', () => {
     const invalid = {
       ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2, MOCK_IDS.BOOKMARK_1],
     }
-    const result = reorderBookmarksSchema.safeParse(invalid)
+    const result = reorderBookmarksInputSchema.safeParse(invalid)
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
@@ -127,7 +127,7 @@ describe('reorderBookmarksSchema', () => {
     const manyIds = Array.from({ length: 1001 }, (_, i) =>
       generateMockUuidV7(i),
     )
-    const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
+    const result = reorderBookmarksInputSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
