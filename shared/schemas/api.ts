@@ -71,16 +71,16 @@ export const baseApiRequestSchema = z.object({
 /**
  * キーワード一覧取得 (GET_KEYWORDS)
  */
-export const getKeywordsRequestSchema = baseApiRequestSchema.extend({
+export const readKeywordsRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.GET_KEYWORDS),
   payload: z.undefined().optional(),
 })
 
-export type GetKeywordsRequest = z.infer<typeof getKeywordsRequestSchema>
+export type ReadKeywordsRequest = z.infer<typeof readKeywordsRequestSchema>
 
-export const getKeywordsResponseSchema = baseApiResponseSchema(keywordsSchema)
+export const readKeywordsResponseSchema = baseApiResponseSchema(keywordsSchema)
 
-export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
+export type ReadKeywordsResponse = z.infer<typeof readKeywordsResponseSchema>
 
 /**
  * キーワード追加 (ADD_KEYWORD)
@@ -167,7 +167,7 @@ export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
  * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
  */
 export const ApiRequestSchema = z.discriminatedUnion('action', [
-  getKeywordsRequestSchema,
+  readKeywordsRequestSchema,
   addKeywordRequestSchema,
   updateKeywordRequestSchema,
   deleteKeywordRequestSchema,

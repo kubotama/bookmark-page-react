@@ -3,8 +3,8 @@ import { ZodError } from 'zod'
 
 import { API_ACTIONS, ERROR_MESSAGES, ERROR_CODES } from '../constants'
 import {
-  getKeywordsRequestSchema,
-  getKeywordsResponseSchema,
+  readKeywordsRequestSchema,
+  readKeywordsResponseSchema,
   addKeywordRequestSchema,
   addKeywordResponseSchema,
   updateKeywordRequestSchema,
@@ -15,27 +15,29 @@ import {
 import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
 
 describe('API Schemas - Keyword Operations', () => {
-  describe('getKeywordsRequestSchema', () => {
+  describe('readKeywordsRequestSchema', () => {
     it('正しい GET_KEYWORDS リクエストを受け入れること', () => {
       const validRequest = { action: API_ACTIONS.GET_KEYWORDS }
-      expect(getKeywordsRequestSchema.parse(validRequest)).toEqual(validRequest)
+      expect(readKeywordsRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
     })
 
     it('不正なアクションを持つリクエストを拒否すること', () => {
       const invalidRequest = { action: API_ACTIONS.GET_BOOKMARKS }
-      expect(() => getKeywordsRequestSchema.parse(invalidRequest)).toThrow(
+      expect(() => readKeywordsRequestSchema.parse(invalidRequest)).toThrow(
         ZodError,
       )
     })
   })
 
-  describe('getKeywordsResponseSchema', () => {
+  describe('readKeywordsResponseSchema', () => {
     it('キーワード一覧を含むレスポンスを検証できること', () => {
       const validResponse = {
         success: true,
         data: { keywords: MOCK_KEYWORDS },
       }
-      expect(getKeywordsResponseSchema.parse(validResponse)).toEqual(
+      expect(readKeywordsResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })
@@ -90,9 +92,9 @@ describe('API Schemas - Keyword Operations', () => {
         action: API_ACTIONS.UPDATE_KEYWORD,
         payload: { id: TEST_STRINGS.INVALID_ID, name: TEST_STRINGS.NEW_NAME },
       }
-      expect(() =>
-        updateKeywordRequestSchema.parse(invalidRequest),
-      ).toThrow(ZodError)
+      expect(() => updateKeywordRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
     })
 
     it('名前が空のリクエストを拒否すること', () => {
@@ -100,9 +102,9 @@ describe('API Schemas - Keyword Operations', () => {
         action: API_ACTIONS.UPDATE_KEYWORD,
         payload: { id: MOCK_IDS.KEYWORD_1, name: '' },
       }
-      expect(() =>
-        updateKeywordRequestSchema.parse(invalidRequest),
-      ).toThrow(ZodError)
+      expect(() => updateKeywordRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
     })
   })
 
@@ -151,9 +153,9 @@ describe('API Schemas - Keyword Operations', () => {
         action: API_ACTIONS.DELETE_KEYWORD,
         payload: { id: TEST_STRINGS.INVALID_ID },
       }
-      expect(() =>
-        deleteKeywordRequestSchema.parse(invalidRequest),
-      ).toThrow(ZodError)
+      expect(() => deleteKeywordRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
     })
   })
 
