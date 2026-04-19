@@ -7,12 +7,15 @@ import {
   readBookmarksResponseSchema,
   createBookmarkRequestSchema,
   createBookmarkResponseSchema,
+  updateBookmarkRequestSchema,
+  updateBookmarkResponseSchema,
 } from './api'
 import {
   MOCK_BOOKMARKS,
   MOCK_BOOKMARK_1,
   VALID_URLS,
   TEST_STRINGS,
+  MOCK_IDS,
 } from '../test/fixtures'
 
 describe('API Schemas - Bookmark Operations', () => {
@@ -117,6 +120,98 @@ describe('API Schemas - Bookmark Operations', () => {
         },
       }
       expect(createBookmarkResponseSchema.parse(errorResponse)).toEqual(
+        errorResponse,
+      )
+    })
+  })
+
+  describe('updateBookmarkRequestSchema', () => {
+    it('正しい UPDATE_BOOKMARK リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_IDS.BOOKMARK_1,
+          title: TEST_STRINGS.UPDATED_NAME,
+          url: VALID_URLS.HTTPS,
+        },
+      }
+      expect(updateBookmarkRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('一部のフィールドのみの更新を受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_IDS.BOOKMARK_1,
+          title: TEST_STRINGS.UPDATED_NAME,
+        },
+      }
+      expect(updateBookmarkRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('不正な形式の ID を拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: TEST_STRINGS.INVALID_ID,
+          title: TEST_STRINGS.UPDATED_NAME,
+        },
+      }
+      expect(() => updateBookmarkRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+
+    it('タイトルとURLが両方欠落している場合に拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_IDS.BOOKMARK_1,
+        },
+      }
+      expect(() => updateBookmarkRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+
+    it('不正な URL 形式を拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_IDS.BOOKMARK_1,
+          url: TEST_STRINGS.INVALID_ID,
+        },
+      }
+      expect(() => updateBookmarkRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+  })
+
+  describe('updateBookmarkResponseSchema', () => {
+    it('更新後のブックマーク詳細を含むレスポンスを検証できること', () => {
+      const validResponse = {
+        success: true,
+        data: MOCK_BOOKMARK_1,
+      }
+      expect(updateBookmarkResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+
+    it('エラー時のレスポンスを検証できること', () => {
+      const errorResponse = {
+        success: false,
+        error: {
+          message: ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+          code: ERROR_CODES.NOT_FOUND,
+        },
+      }
+      expect(updateBookmarkResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
