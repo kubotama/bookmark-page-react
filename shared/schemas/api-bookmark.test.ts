@@ -11,6 +11,8 @@ import {
   updateBookmarkResponseSchema,
   deleteBookmarkRequestSchema,
   deleteBookmarkResponseSchema,
+  reorderBookmarksRequestSchema,
+  reorderBookmarksResponseSchema,
 } from './api'
 import {
   MOCK_BOOKMARKS,
@@ -18,6 +20,7 @@ import {
   VALID_URLS,
   TEST_STRINGS,
   MOCK_IDS,
+  generateMockUuidV7,
 } from '../test/fixtures'
 
 describe('API Schemas - Bookmark Operations', () => {
@@ -265,6 +268,84 @@ describe('API Schemas - Bookmark Operations', () => {
         },
       }
       expect(deleteBookmarkResponseSchema.parse(errorResponse)).toEqual(
+        errorResponse,
+      )
+    })
+  })
+
+  describe('reorderBookmarksRequestSchema', () => {
+    it('正しい REORDER_BOOKMARKS リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: {
+          ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2],
+        },
+      }
+      expect(reorderBookmarksRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('空の ID リストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: {
+          ids: [],
+        },
+      }
+      expect(reorderBookmarksRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('IDリストが重複している場合に拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: {
+          ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_1],
+        },
+      }
+      expect(() => reorderBookmarksRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+
+    it('1000件を超える ID リストを拒否すること', () => {
+      const manyIds = Array.from({ length: 1001 }, (_, i) =>
+        generateMockUuidV7(i),
+      )
+      const invalidRequest = {
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: {
+          ids: manyIds,
+        },
+      }
+      expect(() => reorderBookmarksRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+  })
+
+  describe('reorderBookmarksResponseSchema', () => {
+    it('成功時の空データレスポンスを検証できること', () => {
+      const validResponse = {
+        success: true,
+        data: null,
+      }
+      expect(reorderBookmarksResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+
+    it('エラー時のレスポンスを検証できること', () => {
+      const errorResponse = {
+        success: false,
+        error: {
+          message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      }
+      expect(reorderBookmarksResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })

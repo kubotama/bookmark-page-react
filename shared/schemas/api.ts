@@ -7,6 +7,7 @@ import {
   bookmarksSchema,
   createBookmarkInputSchema,
   deleteBookmarkInputSchema,
+  reorderBookmarksInputSchema,
   updateBookmarkInputSchema,
 } from './bookmark'
 import {
@@ -205,6 +206,26 @@ export type DeleteBookmarkResponse = z.infer<
 >
 
 /**
+ * ブックマーク並べ替え (REORDER_BOOKMARKS)
+ */
+export const reorderBookmarksRequestSchema = baseApiRequestSchema.extend({
+  action: z.literal(API_ACTIONS.REORDER_BOOKMARKS),
+  payload: reorderBookmarksInputSchema,
+})
+
+export type ReorderBookmarksRequest = z.infer<
+  typeof reorderBookmarksRequestSchema
+>
+
+export const reorderBookmarksResponseSchema = baseApiResponseSchema(
+  z.null(), // 並べ替え成功時はデータなし
+)
+
+export type ReorderBookmarksResponse = z.infer<
+  typeof reorderBookmarksResponseSchema
+>
+
+/**
  * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
  * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
  */
@@ -217,6 +238,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   createBookmarkRequestSchema,
   updateBookmarkRequestSchema,
   deleteBookmarkRequestSchema,
+  reorderBookmarksRequestSchema,
 ])
 
 export type ApiRequest = z.infer<typeof ApiRequestSchema>
