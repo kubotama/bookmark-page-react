@@ -152,16 +152,19 @@ export type ReadBookmarksResponse = z.infer<typeof readBookmarksResponseSchema>
 /**
  * ブックマーク追加 (ADD_BOOKMARK)
  */
-export const addBookmarkRequestSchema = baseApiRequestSchema.extend({
+export const createBookmarkRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_BOOKMARK),
   payload: createBookmarkInputSchema,
 })
 
-export type AddBookmarkRequest = z.infer<typeof addBookmarkRequestSchema>
+export type CreateBookmarkRequest = z.infer<typeof createBookmarkRequestSchema>
 
-export const addBookmarkResponseSchema = baseApiResponseSchema(bookmarkSchema)
+export const createBookmarkResponseSchema =
+  baseApiResponseSchema(bookmarkSchema)
 
-export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
+export type CreateBookmarkResponse = z.infer<
+  typeof createBookmarkResponseSchema
+>
 
 /**
  * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
@@ -173,7 +176,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   updateKeywordRequestSchema,
   deleteKeywordRequestSchema,
   readBookmarksRequestSchema,
-  addBookmarkRequestSchema,
+  createBookmarkRequestSchema,
 ])
 
 export type ApiRequest = z.infer<typeof ApiRequestSchema>

@@ -5,8 +5,8 @@ import { API_ACTIONS, ERROR_MESSAGES, ERROR_CODES } from '../constants'
 import {
   readBookmarksRequestSchema,
   readBookmarksResponseSchema,
-  addBookmarkRequestSchema,
-  addBookmarkResponseSchema,
+  createBookmarkRequestSchema,
+  createBookmarkResponseSchema,
 } from './api'
 import {
   MOCK_BOOKMARKS,
@@ -57,7 +57,7 @@ describe('API Schemas - Bookmark Operations', () => {
     })
   })
 
-  describe('addBookmarkRequestSchema', () => {
+  describe('createBookmarkRequestSchema', () => {
     it('正しい ADD_BOOKMARK リクエストを受け入れること', () => {
       const validRequest = {
         action: API_ACTIONS.ADD_BOOKMARK,
@@ -66,7 +66,9 @@ describe('API Schemas - Bookmark Operations', () => {
           url: VALID_URLS.GOOGLE,
         },
       }
-      expect(addBookmarkRequestSchema.parse(validRequest)).toEqual(validRequest)
+      expect(createBookmarkRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
     })
 
     it('不正な形式のペイロード（空タイトル）を拒否すること', () => {
@@ -77,7 +79,7 @@ describe('API Schemas - Bookmark Operations', () => {
           url: VALID_URLS.GOOGLE,
         },
       }
-      expect(() => addBookmarkRequestSchema.parse(invalidRequest)).toThrow(
+      expect(() => createBookmarkRequestSchema.parse(invalidRequest)).toThrow(
         ZodError,
       )
     })
@@ -90,18 +92,18 @@ describe('API Schemas - Bookmark Operations', () => {
           url: VALID_URLS.GOOGLE,
         },
       }
-      const validated = addBookmarkRequestSchema.parse(request)
+      const validated = createBookmarkRequestSchema.parse(request)
       expect(validated.payload.title).toBe(TEST_STRINGS.TRIMMED_NAME)
     })
   })
 
-  describe('addBookmarkResponseSchema', () => {
+  describe('createBookmarkResponseSchema', () => {
     it('追加されたブックマーク詳細を含むレスポンスを検証できること', () => {
       const validResponse = {
         success: true,
         data: MOCK_BOOKMARK_1,
       }
-      expect(addBookmarkResponseSchema.parse(validResponse)).toEqual(
+      expect(createBookmarkResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })
@@ -114,7 +116,7 @@ describe('API Schemas - Bookmark Operations', () => {
           code: ERROR_CODES.CONFLICT,
         },
       }
-      expect(addBookmarkResponseSchema.parse(errorResponse)).toEqual(
+      expect(createBookmarkResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
