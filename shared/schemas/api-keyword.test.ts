@@ -5,8 +5,8 @@ import { API_ACTIONS, ERROR_MESSAGES, ERROR_CODES } from '../constants'
 import {
   readKeywordsRequestSchema,
   readKeywordsResponseSchema,
-  addKeywordRequestSchema,
-  addKeywordResponseSchema,
+  createKeywordRequestSchema,
+  createKeywordResponseSchema,
   updateKeywordRequestSchema,
   updateKeywordResponseSchema,
   deleteKeywordRequestSchema,
@@ -43,13 +43,15 @@ describe('API Schemas - Keyword Operations', () => {
     })
   })
 
-  describe('addKeywordRequestSchema', () => {
+  describe('createKeywordRequestSchema', () => {
     it('正しい ADD_KEYWORD リクエストを受け入れること', () => {
       const validRequest = {
         action: API_ACTIONS.ADD_KEYWORD,
         payload: { name: TEST_STRINGS.NEW_NAME },
       }
-      expect(addKeywordRequestSchema.parse(validRequest)).toEqual(validRequest)
+      expect(createKeywordRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
     })
 
     it('payload が不正（名前が空）なリクエストを拒否すること', () => {
@@ -57,20 +59,20 @@ describe('API Schemas - Keyword Operations', () => {
         action: API_ACTIONS.ADD_KEYWORD,
         payload: { name: '' },
       }
-      expect(() => addKeywordRequestSchema.parse(invalidRequest)).toThrow(
+      expect(() => createKeywordRequestSchema.parse(invalidRequest)).toThrow(
         ZodError,
       )
     })
   })
 
-  describe('addKeywordResponseSchema', () => {
+  describe('createKeywordResponseSchema', () => {
     it('追加されたキーワードを含むレスポンスを検証できること', () => {
       const keyword = { id: MOCK_KEYWORDS[0].id, name: MOCK_KEYWORDS[0].name }
       const validResponse = {
         success: true,
         data: { keyword },
       }
-      expect(addKeywordResponseSchema.parse(validResponse)).toEqual(
+      expect(createKeywordResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })

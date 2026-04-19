@@ -85,18 +85,18 @@ export type ReadKeywordsResponse = z.infer<typeof readKeywordsResponseSchema>
 /**
  * キーワード追加 (ADD_KEYWORD)
  */
-export const addKeywordRequestSchema = baseApiRequestSchema.extend({
+export const createKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_KEYWORD),
   payload: createKeywordInputSchema,
 })
 
-export type AddKeywordRequest = z.infer<typeof addKeywordRequestSchema>
+export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
 
-export const addKeywordResponseSchema = baseApiResponseSchema(
+export const createKeywordResponseSchema = baseApiResponseSchema(
   keywordResponseSchema,
 )
 
-export type AddKeywordResponse = z.infer<typeof addKeywordResponseSchema>
+export type CreateKeywordResponse = z.infer<typeof createKeywordResponseSchema>
 
 /**
  * キーワード更新 (UPDATE_KEYWORD)
@@ -168,7 +168,7 @@ export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
  */
 export const ApiRequestSchema = z.discriminatedUnion('action', [
   readKeywordsRequestSchema,
-  addKeywordRequestSchema,
+  createKeywordRequestSchema,
   updateKeywordRequestSchema,
   deleteKeywordRequestSchema,
   getBookmarksRequestSchema,
