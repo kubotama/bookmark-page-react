@@ -137,16 +137,17 @@ export type DeleteKeywordResponse = z.infer<typeof deleteKeywordResponseSchema>
 /**
  * ブックマーク一覧取得 (GET_BOOKMARKS)
  */
-export const getBookmarksRequestSchema = baseApiRequestSchema.extend({
+export const readBookmarksRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.GET_BOOKMARKS),
   payload: z.undefined().optional(),
 })
 
-export type GetBookmarksRequest = z.infer<typeof getBookmarksRequestSchema>
+export type ReadBookmarksRequest = z.infer<typeof readBookmarksRequestSchema>
 
-export const getBookmarksResponseSchema = baseApiResponseSchema(bookmarksSchema)
+export const readBookmarksResponseSchema =
+  baseApiResponseSchema(bookmarksSchema)
 
-export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
+export type ReadBookmarksResponse = z.infer<typeof readBookmarksResponseSchema>
 
 /**
  * ブックマーク追加 (ADD_BOOKMARK)
@@ -171,7 +172,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   createKeywordRequestSchema,
   updateKeywordRequestSchema,
   deleteKeywordRequestSchema,
-  getBookmarksRequestSchema,
+  readBookmarksRequestSchema,
   addBookmarkRequestSchema,
 ])
 

@@ -3,8 +3,8 @@ import { ZodError } from 'zod'
 
 import { API_ACTIONS, ERROR_MESSAGES, ERROR_CODES } from '../constants'
 import {
-  getBookmarksRequestSchema,
-  getBookmarksResponseSchema,
+  readBookmarksRequestSchema,
+  readBookmarksResponseSchema,
   addBookmarkRequestSchema,
   addBookmarkResponseSchema,
 } from './api'
@@ -16,29 +16,29 @@ import {
 } from '../test/fixtures'
 
 describe('API Schemas - Bookmark Operations', () => {
-  describe('getBookmarksRequestSchema', () => {
+  describe('readBookmarksRequestSchema', () => {
     it('正しい GET_BOOKMARKS リクエストを受け入れること', () => {
       const validRequest = { action: API_ACTIONS.GET_BOOKMARKS }
-      expect(getBookmarksRequestSchema.parse(validRequest)).toEqual(
+      expect(readBookmarksRequestSchema.parse(validRequest)).toEqual(
         validRequest,
       )
     })
 
     it('不正なアクションを持つリクエストを拒否すること', () => {
       const invalidRequest = { action: API_ACTIONS.GET_KEYWORDS }
-      expect(() => getBookmarksRequestSchema.parse(invalidRequest)).toThrow(
+      expect(() => readBookmarksRequestSchema.parse(invalidRequest)).toThrow(
         ZodError,
       )
     })
   })
 
-  describe('getBookmarksResponseSchema', () => {
+  describe('readBookmarksResponseSchema', () => {
     it('ブックマーク一覧を含むレスポンスを検証できること', () => {
       const validResponse = {
         success: true,
         data: { bookmarks: MOCK_BOOKMARKS },
       }
-      expect(getBookmarksResponseSchema.parse(validResponse)).toEqual(
+      expect(readBookmarksResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
     })
@@ -51,7 +51,7 @@ describe('API Schemas - Bookmark Operations', () => {
           code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         },
       }
-      expect(getBookmarksResponseSchema.parse(errorResponse)).toEqual(
+      expect(readBookmarksResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
@@ -66,9 +66,7 @@ describe('API Schemas - Bookmark Operations', () => {
           url: VALID_URLS.GOOGLE,
         },
       }
-      expect(addBookmarkRequestSchema.parse(validRequest)).toEqual(
-        validRequest,
-      )
+      expect(addBookmarkRequestSchema.parse(validRequest)).toEqual(validRequest)
     })
 
     it('不正な形式のペイロード（空タイトル）を拒否すること', () => {
@@ -79,9 +77,9 @@ describe('API Schemas - Bookmark Operations', () => {
           url: VALID_URLS.GOOGLE,
         },
       }
-      expect(() =>
-        addBookmarkRequestSchema.parse(invalidRequest),
-      ).toThrow(ZodError)
+      expect(() => addBookmarkRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
     })
 
     it('前後の空白を含むタイトルがトリムされること', () => {
