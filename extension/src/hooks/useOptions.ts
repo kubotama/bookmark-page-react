@@ -13,7 +13,7 @@ import {
   UI_STATUS,
   type StatusInfo,
 } from '@shared/constants'
-import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
+import { bookmarksSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, validateUrl, getOrigin } from '@shared/utils/url'
 
 import { storage } from '../lib/storage'
@@ -24,7 +24,7 @@ const DEFAULT_SETTINGS = {
 }
 
 // レスポンス全体のスキーマを定義
-const apiResponseSchema = bookmarksResponseSchema
+const apiResponseSchema = bookmarksSchema
 
 export const useOptions = () => {
   const [apiUrl, setApiUrl] = useState('')

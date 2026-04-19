@@ -11,7 +11,7 @@ import {
   LOG_MESSAGES,
   UI_MESSAGES,
 } from '@shared/constants'
-import { updateBookmarkSchema } from '@shared/schemas/bookmark'
+import { updateBookmarkInputSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
@@ -80,7 +80,7 @@ describe('BookmarkPage Component', () => {
     server.use(
       http.patch('*/api/bookmarks/:id', async ({ request }) => {
         const body = await request.json()
-        const parsed = updateBookmarkSchema.parse(body)
+        const parsed = updateBookmarkInputSchema.parse(body)
         expect(parsed.title).toBe('New Title')
         expect(parsed.url).toBe('https://new-url.com')
         patchCalled = true

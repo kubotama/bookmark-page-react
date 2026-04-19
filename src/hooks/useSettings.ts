@@ -10,7 +10,7 @@ import {
   EXTENSION_CONSTANTS,
   type StatusInfo,
 } from '@shared/constants'
-import { bookmarksResponseSchema } from '@shared/schemas/bookmark'
+import { bookmarksSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
 import { useApi } from '../contexts/ApiContext'
@@ -100,7 +100,7 @@ export const useSettings = () => {
 
       if (result.success) {
         // Zod スキーマを使用してレスポンス形式を厳格に検証
-        const parsed = bookmarksResponseSchema.safeParse(result.data)
+        const parsed = bookmarksSchema.safeParse(result.data)
         if (parsed.success) {
           setConnectionStatus({
             type: UI_STATUS.SUCCESS,

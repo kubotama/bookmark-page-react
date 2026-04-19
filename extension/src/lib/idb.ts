@@ -6,11 +6,11 @@ import {
   type BookmarkEntity,
   type BookmarkId,
   BookmarkIdSchema,
-  createBookmarkSchema,
-  type CreateBookmarkRequest,
-  updateBookmarkSchema,
-  type UpdateBookmarkRequest,
-  reorderBookmarksSchema,
+  createBookmarkInputSchema,
+  type CreateBookmarkInput,
+  updateBookmarkInputSchema,
+  type UpdateBookmarkInput,
+  reorderBookmarksInputSchema,
 } from '@shared/schemas/bookmark'
 import {
   type KeywordId,
@@ -73,9 +73,9 @@ export class BookmarkDatabase extends Dexie {
   /**
    * ブックマークを追加する
    */
-  async addBookmark(params: CreateBookmarkRequest): Promise<BookmarkId> {
+  async addBookmark(params: CreateBookmarkInput): Promise<BookmarkId> {
     // バリデーションにプロジェクト標準のスキーマを使用
-    const validated = createBookmarkSchema.parse(params)
+    const validated = createBookmarkInputSchema.parse(params)
 
     return await this.transaction('rw', this.bookmarks, async () => {
       // 現在の最小 sortOrder を取得
@@ -101,12 +101,12 @@ export class BookmarkDatabase extends Dexie {
    */
   async updateBookmark(
     id: BookmarkId,
-    updates: UpdateBookmarkRequest,
+    updates: UpdateBookmarkInput,
   ): Promise<void> {
     // ID のバリデーション
     const validatedId = BookmarkIdSchema.parse(id)
     // 更新内容のバリデーション
-    const validated = updateBookmarkSchema.parse(updates)
+    const validated = updateBookmarkInputSchema.parse(updates)
 
     const updatedCount = await this.bookmarks.update(validatedId, validated)
     if (updatedCount === 0) {
@@ -120,26 +120,30 @@ export class BookmarkDatabase extends Dexie {
   async deleteBookmark(id: BookmarkId): Promise<void> {
     const validatedId = BookmarkIdSchema.parse(id)
 
-    return await this.transaction('rw', [this.bookmarks, this.keywords], async () => {
-      // 存在確認
-      const bookmark = await this.bookmarks.get(validatedId)
-      if (!bookmark) {
-        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
-      }
+    return await this.transaction(
+      'rw',
+      [this.bookmarks, this.keywords],
+      async () => {
+        // 存在確認
+        const bookmark = await this.bookmarks.get(validatedId)
+        if (!bookmark) {
+          throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+        }
 
-      // ブックマークを削除
-      await this.bookmarks.delete(validatedId)
+        // ブックマークを削除
+        await this.bookmarks.delete(validatedId)
 
-      // 紐付いていた各キーワードの統計情報を更新 (カウントダウン)
-      if (bookmark.keywordIds.length > 0) {
-        await this.keywords
-          .where('id')
-          .anyOf(bookmark.keywordIds)
-          .modify((kw) => {
-            kw.bookmarkCount = Math.max(0, kw.bookmarkCount - 1)
-          })
-      }
-    })
+        // 紐付いていた各キーワードの統計情報を更新 (カウントダウン)
+        if (bookmark.keywordIds.length > 0) {
+          await this.keywords
+            .where('id')
+            .anyOf(bookmark.keywordIds)
+            .modify((kw) => {
+              kw.bookmarkCount = Math.max(0, kw.bookmarkCount - 1)
+            })
+        }
+      },
+    )
   }
 
   /**
@@ -147,7 +151,7 @@ export class BookmarkDatabase extends Dexie {
    */
   async reorderBookmarks(ids: BookmarkId[]): Promise<void> {
     // バリデーション
-    const validatedIds = reorderBookmarksSchema.parse({ ids }).ids
+    const validatedIds = reorderBookmarksInputSchema.parse({ ids }).ids
 
     return await this.transaction('rw', this.bookmarks, async () => {
       // 全ての ID が存在するか、件数をチェック
@@ -179,75 +183,89 @@ export class BookmarkDatabase extends Dexie {
   /**
    * ブックマークにキーワードを紐付ける
    */
-  async attachKeyword(bookmarkId: BookmarkId, keywordId: KeywordId): Promise<void> {
+  async attachKeyword(
+    bookmarkId: BookmarkId,
+    keywordId: KeywordId,
+  ): Promise<void> {
     // ID のバリデーション
     const vBookmarkId = BookmarkIdSchema.parse(bookmarkId)
     const vKeywordId = KeywordIdSchema.parse(keywordId)
 
-    return await this.transaction('rw', [this.bookmarks, this.keywords], async () => {
-      // 存在確認
-      const bookmark = await this.bookmarks.get(vBookmarkId)
-      if (!bookmark) {
-        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
-      }
+    return await this.transaction(
+      'rw',
+      [this.bookmarks, this.keywords],
+      async () => {
+        // 存在確認
+        const bookmark = await this.bookmarks.get(vBookmarkId)
+        if (!bookmark) {
+          throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+        }
 
-      const keyword = await this.keywords.get(vKeywordId)
-      if (!keyword) {
-        throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
-      }
+        const keyword = await this.keywords.get(vKeywordId)
+        if (!keyword) {
+          throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+        }
 
-      // 既に紐付けられているか確認
-      if (bookmark.keywordIds.includes(vKeywordId)) {
-        return
-      }
+        // 既に紐付けられているか確認
+        if (bookmark.keywordIds.includes(vKeywordId)) {
+          return
+        }
 
-      // 紐付け追加
-      await this.bookmarks.update(vBookmarkId, {
-        keywordIds: [...bookmark.keywordIds, vKeywordId],
-      })
+        // 紐付け追加
+        await this.bookmarks.update(vBookmarkId, {
+          keywordIds: [...bookmark.keywordIds, vKeywordId],
+        })
 
-      // キーワード側の統計情報を更新 (カウントアップ)
-      await this.keywords.update(vKeywordId, {
-        bookmarkCount: keyword.bookmarkCount + 1,
-      })
-    })
+        // キーワード側の統計情報を更新 (カウントアップ)
+        await this.keywords.update(vKeywordId, {
+          bookmarkCount: keyword.bookmarkCount + 1,
+        })
+      },
+    )
   }
 
   /**
    * ブックマークからキーワードを解除する
    */
-  async detachKeyword(bookmarkId: BookmarkId, keywordId: KeywordId): Promise<void> {
+  async detachKeyword(
+    bookmarkId: BookmarkId,
+    keywordId: KeywordId,
+  ): Promise<void> {
     // ID のバリデーション
     const vBookmarkId = BookmarkIdSchema.parse(bookmarkId)
     const vKeywordId = KeywordIdSchema.parse(keywordId)
 
-    return await this.transaction('rw', [this.bookmarks, this.keywords], async () => {
-      // 存在確認
-      const bookmark = await this.bookmarks.get(vBookmarkId)
-      if (!bookmark) {
-        throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
-      }
+    return await this.transaction(
+      'rw',
+      [this.bookmarks, this.keywords],
+      async () => {
+        // 存在確認
+        const bookmark = await this.bookmarks.get(vBookmarkId)
+        if (!bookmark) {
+          throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+        }
 
-      const keyword = await this.keywords.get(vKeywordId)
-      if (!keyword) {
-        throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
-      }
+        const keyword = await this.keywords.get(vKeywordId)
+        if (!keyword) {
+          throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+        }
 
-      // 紐付けられていない場合は何もしない
-      if (!bookmark.keywordIds.includes(vKeywordId)) {
-        return
-      }
+        // 紐付けられていない場合は何もしない
+        if (!bookmark.keywordIds.includes(vKeywordId)) {
+          return
+        }
 
-      // 紐付け解除
-      await this.bookmarks.update(vBookmarkId, {
-        keywordIds: bookmark.keywordIds.filter((id) => id !== vKeywordId),
-      })
+        // 紐付け解除
+        await this.bookmarks.update(vBookmarkId, {
+          keywordIds: bookmark.keywordIds.filter((id) => id !== vKeywordId),
+        })
 
-      // キーワード側の統計情報を更新 (カウントダウン)
-      await this.keywords.update(vKeywordId, {
-        bookmarkCount: Math.max(0, keyword.bookmarkCount - 1),
-      })
-    })
+        // キーワード側の統計情報を更新 (カウントダウン)
+        await this.keywords.update(vKeywordId, {
+          bookmarkCount: Math.max(0, keyword.bookmarkCount - 1),
+        })
+      },
+    )
   }
 
   /**
@@ -266,7 +284,10 @@ export class BookmarkDatabase extends Dexie {
     const name = keywordSchema.shape.name.parse(params.name)
 
     // 重複チェック
-    const existing = await this.keywords.where('name').equalsIgnoreCase(name).first()
+    const existing = await this.keywords
+      .where('name')
+      .equalsIgnoreCase(name)
+      .first()
     if (existing) {
       return existing.id
     }
@@ -322,24 +343,30 @@ export class BookmarkDatabase extends Dexie {
     // ID のバリデーション
     const validatedId = KeywordIdSchema.parse(id)
 
-    return await this.transaction('rw', [this.keywords, this.bookmarks], async () => {
-      // 存在確認
-      const existing = await this.keywords.get(validatedId)
-      if (!existing) {
-        throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
-      }
+    return await this.transaction(
+      'rw',
+      [this.keywords, this.bookmarks],
+      async () => {
+        // 存在確認
+        const existing = await this.keywords.get(validatedId)
+        if (!existing) {
+          throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+        }
 
-      // キーワード自体を削除
-      await this.keywords.delete(validatedId)
+        // キーワード自体を削除
+        await this.keywords.delete(validatedId)
 
-      // 関連するブックマークからキーワード ID を除去
-      await this.bookmarks
-        .where('keywordIds')
-        .equals(validatedId)
-        .modify((bookmark) => {
-          bookmark.keywordIds = bookmark.keywordIds.filter((kId) => kId !== validatedId)
-        })
-    })
+        // 関連するブックマークからキーワード ID を除去
+        await this.bookmarks
+          .where('keywordIds')
+          .equals(validatedId)
+          .modify((bookmark) => {
+            bookmark.keywordIds = bookmark.keywordIds.filter(
+              (kId) => kId !== validatedId,
+            )
+          })
+      },
+    )
   }
 }
 

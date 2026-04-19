@@ -3,14 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
 import type {
   BookmarkId,
-  BookmarksResponse,
-  ReorderBookmarksRequest,
-  UpdateBookmarkRequest,
+  Bookmarks,
+  ReorderBookmarksInput,
+  UpdateBookmarkInput,
 } from '@shared/schemas/bookmark'
 import type {
   KeywordId,
   KeywordResponse,
-  KeywordsResponse,
+  Keywords,
   CreateKeywordInput,
   UpdateKeywordInput,
 } from '@shared/schemas/keyword'
@@ -67,7 +67,7 @@ export const useBookmarks = () => {
     queryKey: QUERY_KEYS.BOOKMARKS.LIST(),
     queryFn: async () => {
       const res = await client.api.bookmarks.$get()
-      return await parseResponse<BookmarksResponse>(
+      return await parseResponse<Bookmarks>(
         res,
         UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
       )
@@ -82,7 +82,7 @@ export const useKeywords = () => {
     queryKey: QUERY_KEYS.KEYWORDS.LIST(),
     queryFn: async () => {
       const res = await client.api.keywords.$get()
-      return await parseResponse<KeywordsResponse>(
+      return await parseResponse<Keywords>(
         res,
         UI_MESSAGES.FETCH_KEYWORDS_FAILED,
       )
@@ -100,7 +100,7 @@ export const useUpdateBookmark = () => {
       updates,
     }: {
       id: BookmarkId
-      updates: UpdateBookmarkRequest
+      updates: UpdateBookmarkInput
     }) => {
       const res = await client.api.bookmarks[':id'].$patch({
         param: { id },
@@ -145,7 +145,7 @@ export const useReorderBookmarks = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (req: ReorderBookmarksRequest) => {
+    mutationFn: async (req: ReorderBookmarksInput) => {
       const res = await client.api.bookmarks.reorder.$put({
         json: req,
       })
@@ -157,7 +157,7 @@ export const useReorderBookmarks = () => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
 
       // 2. 現在の状態を保存
-      const previousData = queryClient.getQueryData<BookmarksResponse>(
+      const previousData = queryClient.getQueryData<Bookmarks>(
         QUERY_KEYS.BOOKMARKS.LIST(),
       )
 
@@ -170,13 +170,10 @@ export const useReorderBookmarks = () => {
           .map((id) => bookmarkMap.get(id))
           .filter((b): b is import('@shared/schemas/bookmark').Bookmark => !!b)
 
-        queryClient.setQueryData<BookmarksResponse>(
-          QUERY_KEYS.BOOKMARKS.LIST(),
-          {
-            ...previousData,
-            bookmarks: newBookmarks,
-          },
-        )
+        queryClient.setQueryData<Bookmarks>(QUERY_KEYS.BOOKMARKS.LIST(), {
+          ...previousData,
+          bookmarks: newBookmarks,
+        })
       }
 
       return { previousData }
@@ -248,7 +245,7 @@ export const useUpdateKeyword = () => {
     onSuccess: (data) => {
       // キャッシュを直接更新して即座に UI に反映させる
       const updatedKeyword = data.keyword
-      queryClient.setQueryData<KeywordsResponse>(
+      queryClient.setQueryData<Keywords>(
         QUERY_KEYS.KEYWORDS.LIST(),
         (oldData) => {
           if (!oldData) return oldData
@@ -290,7 +287,7 @@ export const useDeleteKeyword = () => {
     },
     onSuccess: (deletedId) => {
       // キャッシュから削除対象を取り除く
-      queryClient.setQueryData<KeywordsResponse>(
+      queryClient.setQueryData<Keywords>(
         QUERY_KEYS.KEYWORDS.LIST(),
         (oldData) => {
           if (!oldData) return oldData

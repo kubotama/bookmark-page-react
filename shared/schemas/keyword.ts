@@ -25,26 +25,26 @@ export const keywordWithCountSchema = keywordSchema.extend({
 })
 export type KeywordWithCount = z.infer<typeof keywordWithCountSchema>
 
-export const keywordsResponseSchema = z.object({
+export const keywordsSchema = z.object({
   keywords: z.array(keywordWithCountSchema),
 })
-export type KeywordsResponse = z.infer<typeof keywordsResponseSchema>
+export type Keywords = z.infer<typeof keywordsSchema>
 
 /**
  * キーワード作成のバリデーションスキーマ
  */
-export const createKeywordSchema = z.object({
+export const createKeywordInputSchema = z.object({
   name: keywordNameSchema,
 })
-export type CreateKeywordInput = z.infer<typeof createKeywordSchema>
+export type CreateKeywordInput = z.infer<typeof createKeywordInputSchema>
 
 /**
  * キーワード更新のバリデーションスキーマ
  */
-export const updateKeywordSchema = z.object({
+export const updateKeywordInputSchema = z.object({
   name: keywordNameSchema,
 })
-export type UpdateKeywordInput = z.infer<typeof updateKeywordSchema>
+export type UpdateKeywordInput = z.infer<typeof updateKeywordInputSchema>
 
 /**
  * 単一キーワードのレスポンススキーマ
@@ -57,7 +57,7 @@ export type KeywordResponse = z.infer<typeof keywordResponseSchema>
 /**
  * キーワード紐付けリクエストのバリデーションスキーマ
  */
-export const attachKeywordRequestSchema = z.object({
+export const attachKeywordInputSchema = z.object({
   keywordId: KeywordIdSchema,
 })
-export type AttachKeywordRequest = z.infer<typeof attachKeywordRequestSchema>
+export type AttachKeywordInput = z.infer<typeof attachKeywordInputSchema>

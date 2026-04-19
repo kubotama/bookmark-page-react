@@ -7,13 +7,13 @@ import { ERROR_MESSAGES, LOG_MESSAGES, HTTP_STATUS } from '@shared/constants'
 import {
   BookmarkIdSchema,
   KeywordIdSchema,
-  bookmarksResponseSchema,
-  createBookmarkSchema,
-  updateBookmarkSchema,
-  reorderBookmarksSchema,
+  bookmarksSchema,
+  createBookmarkInputSchema,
+  updateBookmarkInputSchema,
+  reorderBookmarksInputSchema,
   type Bookmark,
 } from '@shared/schemas/bookmark'
-import { attachKeywordRequestSchema } from '@shared/schemas/keyword'
+import { attachKeywordInputSchema } from '@shared/schemas/keyword'
 
 import { db } from '../db'
 import {
@@ -70,7 +70,7 @@ const bookmarksRoute = new Hono()
 
       const bookmarks = rows.map(toBookmarkDto)
 
-      const result = bookmarksResponseSchema.parse({ bookmarks })
+      const result = bookmarksSchema.parse({ bookmarks })
       return c.json({
         success: true,
         data: result,
@@ -80,7 +80,7 @@ const bookmarksRoute = new Hono()
       throw error // Global handler will catch this
     }
   })
-  .post('/', zValidator('json', createBookmarkSchema), async (c) => {
+  .post('/', zValidator('json', createBookmarkInputSchema), async (c) => {
     const { title, url } = c.req.valid('json')
 
     try {
@@ -157,7 +157,7 @@ const bookmarksRoute = new Hono()
   .patch(
     '/:id',
     zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
-    zValidator('json', updateBookmarkSchema),
+    zValidator('json', updateBookmarkInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const bookmarkId = parseInt(id, 10)
@@ -220,42 +220,46 @@ const bookmarksRoute = new Hono()
       }
     },
   )
-  .put('/reorder', zValidator('json', reorderBookmarksSchema), async (c) => {
-    const { ids } = c.req.valid('json')
+  .put(
+    '/reorder',
+    zValidator('json', reorderBookmarksInputSchema),
+    async (c) => {
+      const { ids } = c.req.valid('json')
 
-    if (ids.length === 0) {
-      return c.json({ success: true, data: null })
-    }
+      if (ids.length === 0) {
+        return c.json({ success: true, data: null })
+      }
 
-    try {
-      const numericIds = ids.map((id) => parseInt(id, 10))
+      try {
+        const numericIds = ids.map((id) => parseInt(id, 10))
 
-      // CASE WHEN 構文を組み立てて一括更新
-      const cases = numericIds.map(
-        (id, index) =>
-          sql`WHEN ${bookmarksTable.bookmarkId} = ${id} THEN ${index}`,
-      )
+        // CASE WHEN 構文を組み立てて一括更新
+        const cases = numericIds.map(
+          (id, index) =>
+            sql`WHEN ${bookmarksTable.bookmarkId} = ${id} THEN ${index}`,
+        )
 
-      await db
-        .update(bookmarksTable)
-        .set({
-          sortOrder: sql`CASE ${sql.join(cases, sql` `)} END`,
+        await db
+          .update(bookmarksTable)
+          .set({
+            sortOrder: sql`CASE ${sql.join(cases, sql` `)} END`,
+          })
+          .where(inArray(bookmarksTable.bookmarkId, numericIds))
+
+        return c.json({
+          success: true,
+          data: null,
         })
-        .where(inArray(bookmarksTable.bookmarkId, numericIds))
-
-      return c.json({
-        success: true,
-        data: null,
-      })
-    } catch (error) {
-      console.error(LOG_MESSAGES.REORDER_FAILED_CONSOLE, error)
-      throw error
-    }
-  })
+      } catch (error) {
+        console.error(LOG_MESSAGES.REORDER_FAILED_CONSOLE, error)
+        throw error
+      }
+    },
+  )
   .post(
     '/:id/keywords',
     zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
-    zValidator('json', attachKeywordRequestSchema),
+    zValidator('json', attachKeywordInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const { keywordId } = c.req.valid('json')

@@ -8,7 +8,7 @@ import {
   STORAGE_KEYS,
   LOG_MESSAGES,
 } from '@shared/constants'
-import type { BookmarksResponse } from '@shared/schemas/bookmark'
+import type { Bookmarks } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
 import {
@@ -42,7 +42,7 @@ const getBookmarksData = async (apiUrl: string) => {
 
   const sanitizedBaseUrl = getOrigin(apiUrl)
 
-  return await queryClient.fetchQuery<BookmarksResponse>({
+  return await queryClient.fetchQuery<Bookmarks>({
     queryKey: [...QUERY_KEYS.BOOKMARKS.ALL, sanitizedBaseUrl],
     queryFn: async () => {
       const res = await fetch(`${sanitizedBaseUrl}/api/bookmarks`)

@@ -3,15 +3,15 @@ import { z } from 'zod'
 import { API_ACTIONS, ERROR_CODES } from '../constants'
 import {
   bookmarkSchema,
-  bookmarksResponseSchema,
-  createBookmarkSchema,
+  bookmarksSchema,
+  createBookmarkInputSchema,
 } from './bookmark'
 import {
-  createKeywordSchema,
+  createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
-  keywordsResponseSchema,
-  updateKeywordSchema,
+  keywordsSchema,
+  updateKeywordInputSchema,
 } from './keyword'
 
 /**
@@ -48,7 +48,7 @@ export type ApiError = z.infer<typeof ApiErrorSchema>
 /**
  * API レスポンスのユニオン型
  */
-export const createApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
+export const baseApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.union([createApiSuccessSchema(dataSchema), ApiErrorSchema])
 
 /**
@@ -71,48 +71,46 @@ export const baseApiRequestSchema = z.object({
 /**
  * キーワード一覧取得 (GET_KEYWORDS)
  */
-export const getKeywordsRequestSchema = baseApiRequestSchema.extend({
+export const readKeywordsRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.GET_KEYWORDS),
   payload: z.undefined().optional(),
 })
 
-export type GetKeywordsRequest = z.infer<typeof getKeywordsRequestSchema>
+export type ReadKeywordsRequest = z.infer<typeof readKeywordsRequestSchema>
 
-export const getKeywordsResponseSchema = createApiResponseSchema(
-  keywordsResponseSchema,
-)
+export const readKeywordsResponseSchema = baseApiResponseSchema(keywordsSchema)
 
-export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
+export type ReadKeywordsResponse = z.infer<typeof readKeywordsResponseSchema>
 
 /**
  * キーワード追加 (ADD_KEYWORD)
  */
-export const addKeywordRequestSchema = baseApiRequestSchema.extend({
+export const createKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_KEYWORD),
-  payload: createKeywordSchema,
+  payload: createKeywordInputSchema,
 })
 
-export type AddKeywordRequest = z.infer<typeof addKeywordRequestSchema>
+export type CreateKeywordRequest = z.infer<typeof createKeywordRequestSchema>
 
-export const addKeywordResponseSchema = createApiResponseSchema(
+export const createKeywordResponseSchema = baseApiResponseSchema(
   keywordResponseSchema,
 )
 
-export type AddKeywordResponse = z.infer<typeof addKeywordResponseSchema>
+export type CreateKeywordResponse = z.infer<typeof createKeywordResponseSchema>
 
 /**
  * キーワード更新 (UPDATE_KEYWORD)
  */
 export const updateKeywordRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.UPDATE_KEYWORD),
-  payload: updateKeywordSchema.extend({
+  payload: updateKeywordInputSchema.extend({
     id: KeywordIdSchema,
   }),
 })
 
 export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
 
-export const updateKeywordResponseSchema = createApiResponseSchema(
+export const updateKeywordResponseSchema = baseApiResponseSchema(
   keywordResponseSchema,
 )
 
@@ -130,7 +128,7 @@ export const deleteKeywordRequestSchema = baseApiRequestSchema.extend({
 
 export type DeleteKeywordRequest = z.infer<typeof deleteKeywordRequestSchema>
 
-export const deleteKeywordResponseSchema = createApiResponseSchema(
+export const deleteKeywordResponseSchema = baseApiResponseSchema(
   z.null(), // 削除時はデータなし
 )
 
@@ -139,46 +137,46 @@ export type DeleteKeywordResponse = z.infer<typeof deleteKeywordResponseSchema>
 /**
  * ブックマーク一覧取得 (GET_BOOKMARKS)
  */
-export const getBookmarksRequestSchema = baseApiRequestSchema.extend({
+export const readBookmarksRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.GET_BOOKMARKS),
   payload: z.undefined().optional(),
 })
 
-export type GetBookmarksRequest = z.infer<typeof getBookmarksRequestSchema>
+export type ReadBookmarksRequest = z.infer<typeof readBookmarksRequestSchema>
 
-export const getBookmarksResponseSchema = createApiResponseSchema(
-  bookmarksResponseSchema,
-)
+export const readBookmarksResponseSchema =
+  baseApiResponseSchema(bookmarksSchema)
 
-export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
+export type ReadBookmarksResponse = z.infer<typeof readBookmarksResponseSchema>
 
 /**
  * ブックマーク追加 (ADD_BOOKMARK)
  */
-export const addBookmarkRequestSchema = baseApiRequestSchema.extend({
+export const createBookmarkRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.ADD_BOOKMARK),
-  payload: createBookmarkSchema,
+  payload: createBookmarkInputSchema,
 })
 
-export type AddBookmarkRequest = z.infer<typeof addBookmarkRequestSchema>
+export type CreateBookmarkRequest = z.infer<typeof createBookmarkRequestSchema>
 
-export const addBookmarkResponseSchema = createApiResponseSchema(
-  bookmarkSchema,
-)
+export const createBookmarkResponseSchema =
+  baseApiResponseSchema(bookmarkSchema)
 
-export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
+export type CreateBookmarkResponse = z.infer<
+  typeof createBookmarkResponseSchema
+>
 
 /**
  * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
  * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
  */
 export const ApiRequestSchema = z.discriminatedUnion('action', [
-  getKeywordsRequestSchema,
-  addKeywordRequestSchema,
+  readKeywordsRequestSchema,
+  createKeywordRequestSchema,
   updateKeywordRequestSchema,
   deleteKeywordRequestSchema,
-  getBookmarksRequestSchema,
-  addBookmarkRequestSchema,
+  readBookmarksRequestSchema,
+  createBookmarkRequestSchema,
 ])
 
 export type ApiRequest = z.infer<typeof ApiRequestSchema>

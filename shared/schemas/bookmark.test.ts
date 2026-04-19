@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 
 import {
   bookmarkSchema,
-  createBookmarkSchema,
-  reorderBookmarksSchema,
-  updateBookmarkSchema,
+  createBookmarkInputSchema,
+  reorderBookmarksInputSchema,
+  updateBookmarkInputSchema,
 } from './bookmark'
 import { VALIDATION_MESSAGES } from '../constants'
 import {
@@ -38,10 +38,10 @@ describe('bookmarkSchema', () => {
   })
 })
 
-describe('createBookmarkSchema', () => {
+describe('createBookmarkInputSchema', () => {
   it('正常なデータを受け入れること', () => {
     const valid = { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.HTTP }
-    expect(createBookmarkSchema.safeParse(valid).success).toBe(true)
+    expect(createBookmarkInputSchema.safeParse(valid).success).toBe(true)
   })
 
   it.each([
@@ -61,7 +61,7 @@ describe('createBookmarkSchema', () => {
       expected: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
-    const result = createBookmarkSchema.safeParse(data)
+    const result = createBookmarkInputSchema.safeParse(data)
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(expected)
@@ -69,13 +69,13 @@ describe('createBookmarkSchema', () => {
   })
 })
 
-describe('updateBookmarkSchema', () => {
+describe('updateBookmarkInputSchema', () => {
   it.each([
     { name: 'タイトルのみ', data: { title: 'Updated' } },
     { name: 'URLのみ', data: { url: VALID_URLS.HTTP } },
     { name: '両方', data: { title: 'Updated', url: VALID_URLS.HTTP } },
   ])('正常系: $name の場合に成功すること', ({ data }) => {
-    expect(updateBookmarkSchema.safeParse(data).success).toBe(true)
+    expect(updateBookmarkInputSchema.safeParse(data).success).toBe(true)
   })
 
   it.each([
@@ -95,7 +95,7 @@ describe('updateBookmarkSchema', () => {
       expected: VALIDATION_MESSAGES.URL_INVALID_FORMAT,
     },
   ])('異常系: $name の場合に正しいエラーを返すこと', ({ data, expected }) => {
-    const result = updateBookmarkSchema.safeParse(data)
+    const result = updateBookmarkInputSchema.safeParse(data)
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(expected)
@@ -103,17 +103,17 @@ describe('updateBookmarkSchema', () => {
   })
 })
 
-describe('reorderBookmarksSchema', () => {
+describe('reorderBookmarksInputSchema', () => {
   it('正常な ID リストを受け入れること', () => {
     const valid = { ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2] }
-    expect(reorderBookmarksSchema.safeParse(valid).success).toBe(true)
+    expect(reorderBookmarksInputSchema.safeParse(valid).success).toBe(true)
   })
 
   it('重複した ID が含まれる場合にエラーを返すこと', () => {
     const invalid = {
       ids: [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_2, MOCK_IDS.BOOKMARK_1],
     }
-    const result = reorderBookmarksSchema.safeParse(invalid)
+    const result = reorderBookmarksInputSchema.safeParse(invalid)
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
@@ -124,8 +124,10 @@ describe('reorderBookmarksSchema', () => {
 
   it('上限を超える ID リストを拒否すること', () => {
     // 1001個の有効な UUID v7 を生成
-    const manyIds = Array.from({ length: 1001 }, (_, i) => generateMockUuidV7(i))
-    const result = reorderBookmarksSchema.safeParse({ ids: manyIds })
+    const manyIds = Array.from({ length: 1001 }, (_, i) =>
+      generateMockUuidV7(i),
+    )
+    const result = reorderBookmarksInputSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(

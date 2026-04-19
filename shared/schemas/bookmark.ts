@@ -17,7 +17,10 @@ export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 /**
  * ブックマークタイトルの共通バリデーションスキーマ
  */
-const bookmarkTitleSchema = z.string().trim().min(1, VALIDATION_MESSAGES.TITLE_REQUIRED)
+const bookmarkTitleSchema = z
+  .string()
+  .trim()
+  .min(1, VALIDATION_MESSAGES.TITLE_REQUIRED)
 
 /**
  * ブックマークURLの共通バリデーションスキーマ
@@ -52,14 +55,14 @@ export const bookmarkEntitySchema = bookmarkSchema
 
 export type BookmarkEntity = z.infer<typeof bookmarkEntitySchema>
 
-export const createBookmarkSchema = z.object({
+export const createBookmarkInputSchema = z.object({
   title: bookmarkTitleSchema,
   url: bookmarkUrlSchema,
 })
 
-export type CreateBookmarkRequest = z.infer<typeof createBookmarkSchema>
+export type CreateBookmarkInput = z.infer<typeof createBookmarkInputSchema>
 
-export const updateBookmarkSchema = z
+export const updateBookmarkInputSchema = z
   .object({
     title: bookmarkTitleSchema.optional(),
     url: bookmarkUrlSchema.optional(),
@@ -68,9 +71,9 @@ export const updateBookmarkSchema = z
     message: VALIDATION_MESSAGES.UPDATE_MIN_FIELDS,
   })
 
-export type UpdateBookmarkRequest = z.infer<typeof updateBookmarkSchema>
+export type UpdateBookmarkInput = z.infer<typeof updateBookmarkInputSchema>
 
-export const reorderBookmarksSchema = z.object({
+export const reorderBookmarksInputSchema = z.object({
   ids: z
     .array(BookmarkIdSchema)
     .max(1000, VALIDATION_MESSAGES.REORDER_MAX_ITEMS)
@@ -79,10 +82,10 @@ export const reorderBookmarksSchema = z.object({
     }),
 })
 
-export type ReorderBookmarksRequest = z.infer<typeof reorderBookmarksSchema>
+export type ReorderBookmarksInput = z.infer<typeof reorderBookmarksInputSchema>
 
-export const bookmarksResponseSchema = z.object({
+export const bookmarksSchema = z.object({
   bookmarks: z.array(bookmarkSchema),
 })
 
-export type BookmarksResponse = z.infer<typeof bookmarksResponseSchema>
+export type Bookmarks = z.infer<typeof bookmarksSchema>

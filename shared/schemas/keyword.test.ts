@@ -4,9 +4,9 @@ import {
   KeywordIdSchema,
   keywordSchema,
   keywordWithCountSchema,
-  keywordsResponseSchema,
-  updateKeywordSchema,
-  createKeywordSchema,
+  keywordsSchema,
+  updateKeywordInputSchema,
+  createKeywordInputSchema,
 } from './keyword'
 import {
   MOCK_BOOKMARK_TITLE_PREFIX,
@@ -66,7 +66,7 @@ describe('Keyword Schemas', () => {
     })
   })
 
-  describe('keywordsResponseSchema', () => {
+  describe('keywordsSchema', () => {
     it('キーワードリストを含むレスポンスを受け入れること', () => {
       const validResponse = {
         keywords: [
@@ -74,31 +74,31 @@ describe('Keyword Schemas', () => {
           { id: MOCK_IDS.KEYWORD_2, name: 'Tag2', bookmarkCount: 0 },
         ],
       }
-      expect(keywordsResponseSchema.parse(validResponse)).toEqual(validResponse)
+      expect(keywordsSchema.parse(validResponse)).toEqual(validResponse)
     })
   })
 
-  describe('updateKeywordSchema', () => {
+  describe('updateKeywordInputSchema', () => {
     it('有効な名前を受け入れること', () => {
       const validData = { name: TEST_STRINGS.UPDATED_NAME }
-      expect(updateKeywordSchema.parse(validData)).toEqual(validData)
+      expect(updateKeywordInputSchema.parse(validData)).toEqual(validData)
     })
 
     it('名前が空の場合にエラーになること', () => {
-      expect(() => updateKeywordSchema.parse({ name: '' })).toThrow()
+      expect(() => updateKeywordInputSchema.parse({ name: '' })).toThrow()
     })
 
     it('名前が50文字を超える場合にエラーになること', () => {
       expect(() =>
-        updateKeywordSchema.parse({ name: 'a'.repeat(51) }),
+        updateKeywordInputSchema.parse({ name: 'a'.repeat(51) }),
       ).toThrow()
     })
   })
 
-  describe('createKeywordSchema', () => {
+  describe('createKeywordInputSchema', () => {
     it('有効な名前を受け入れること', () => {
       const validData = { name: TEST_STRINGS.NEW_NAME }
-      expect(createKeywordSchema.parse(validData)).toEqual(validData)
+      expect(createKeywordInputSchema.parse(validData)).toEqual(validData)
     })
   })
 })

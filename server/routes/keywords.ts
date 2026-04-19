@@ -5,11 +5,11 @@ import { z } from 'zod'
 
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
 import {
-  createKeywordSchema,
+  createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
-  keywordsResponseSchema,
-  updateKeywordSchema,
+  keywordsSchema,
+  updateKeywordInputSchema,
 } from '@shared/schemas/keyword'
 
 import { db } from '../db'
@@ -41,7 +41,7 @@ const keywordsRoute = new Hono()
         bookmarkCount: row.bookmarkCount,
       }))
 
-      const result = keywordsResponseSchema.parse({ keywords })
+      const result = keywordsSchema.parse({ keywords })
       return c.json({
         success: true,
         data: result,
@@ -51,7 +51,7 @@ const keywordsRoute = new Hono()
       throw error
     }
   })
-  .post('/', zValidator('json', createKeywordSchema), async (c) => {
+  .post('/', zValidator('json', createKeywordInputSchema), async (c) => {
     const { name } = c.req.valid('json')
 
     try {
@@ -106,7 +106,7 @@ const keywordsRoute = new Hono()
   .patch(
     '/:id',
     zValidator('param', z.object({ id: KeywordIdSchema })),
-    zValidator('json', updateKeywordSchema),
+    zValidator('json', updateKeywordInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
       const { name } = c.req.valid('json')
