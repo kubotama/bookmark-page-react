@@ -173,9 +173,7 @@ export type CreateBookmarkResponse = z.infer<
  */
 export const updateBookmarkRequestSchema = baseApiRequestSchema.extend({
   action: z.literal(API_ACTIONS.UPDATE_BOOKMARK),
-  payload: updateBookmarkInputSchema.extend({
-    id: BookmarkIdSchema,
-  }),
+  payload: z.object({ id: BookmarkIdSchema }).and(updateBookmarkInputSchema),
 })
 
 export type UpdateBookmarkRequest = z.infer<typeof updateBookmarkRequestSchema>
