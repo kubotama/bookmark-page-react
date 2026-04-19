@@ -9,6 +9,8 @@ import {
   createBookmarkResponseSchema,
   updateBookmarkRequestSchema,
   updateBookmarkResponseSchema,
+  deleteBookmarkRequestSchema,
+  deleteBookmarkResponseSchema,
 } from './api'
 import {
   MOCK_BOOKMARKS,
@@ -212,6 +214,57 @@ describe('API Schemas - Bookmark Operations', () => {
         },
       }
       expect(updateBookmarkResponseSchema.parse(errorResponse)).toEqual(
+        errorResponse,
+      )
+    })
+  })
+
+  describe('deleteBookmarkRequestSchema', () => {
+    it('正しい DELETE_BOOKMARK リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: {
+          id: MOCK_IDS.BOOKMARK_1,
+        },
+      }
+      expect(deleteBookmarkRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('不正な形式の ID を拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: {
+          id: TEST_STRINGS.INVALID_ID,
+        },
+      }
+      expect(() => deleteBookmarkRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+  })
+
+  describe('deleteBookmarkResponseSchema', () => {
+    it('成功時の空データレスポンスを検証できること', () => {
+      const validResponse = {
+        success: true,
+        data: null,
+      }
+      expect(deleteBookmarkResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+
+    it('エラー時のレスポンスを検証できること', () => {
+      const errorResponse = {
+        success: false,
+        error: {
+          message: ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+          code: ERROR_CODES.NOT_FOUND,
+        },
+      }
+      expect(deleteBookmarkResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })

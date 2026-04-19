@@ -73,6 +73,15 @@ export const updateBookmarkInputSchema = z
 
 export type UpdateBookmarkInput = z.infer<typeof updateBookmarkInputSchema>
 
+/**
+ * ブックマーク削除のバリデーションスキーマ
+ */
+export const deleteBookmarkInputSchema = z.object({
+  id: BookmarkIdSchema,
+})
+
+export type DeleteBookmarkInput = z.infer<typeof deleteBookmarkInputSchema>
+
 export const reorderBookmarksInputSchema = z.object({
   ids: z
     .array(BookmarkIdSchema)
