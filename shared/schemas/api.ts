@@ -48,9 +48,8 @@ export type ApiError = z.infer<typeof ApiErrorSchema>
 /**
  * API レスポンスのユニオン型
  */
-export const createApiResponseSchema = <T extends z.ZodTypeAny>(
-  dataSchema: T,
-) => z.union([createApiSuccessSchema(dataSchema), ApiErrorSchema])
+export const baseApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
+  z.union([createApiSuccessSchema(dataSchema), ApiErrorSchema])
 
 /**
  * メッセージングで使用するアクションのリテラル型
@@ -79,7 +78,7 @@ export const getKeywordsRequestSchema = baseApiRequestSchema.extend({
 
 export type GetKeywordsRequest = z.infer<typeof getKeywordsRequestSchema>
 
-export const getKeywordsResponseSchema = createApiResponseSchema(keywordsSchema)
+export const getKeywordsResponseSchema = baseApiResponseSchema(keywordsSchema)
 
 export type GetKeywordsResponse = z.infer<typeof getKeywordsResponseSchema>
 
@@ -93,7 +92,7 @@ export const addKeywordRequestSchema = baseApiRequestSchema.extend({
 
 export type AddKeywordRequest = z.infer<typeof addKeywordRequestSchema>
 
-export const addKeywordResponseSchema = createApiResponseSchema(
+export const addKeywordResponseSchema = baseApiResponseSchema(
   keywordResponseSchema,
 )
 
@@ -111,7 +110,7 @@ export const updateKeywordRequestSchema = baseApiRequestSchema.extend({
 
 export type UpdateKeywordRequest = z.infer<typeof updateKeywordRequestSchema>
 
-export const updateKeywordResponseSchema = createApiResponseSchema(
+export const updateKeywordResponseSchema = baseApiResponseSchema(
   keywordResponseSchema,
 )
 
@@ -129,7 +128,7 @@ export const deleteKeywordRequestSchema = baseApiRequestSchema.extend({
 
 export type DeleteKeywordRequest = z.infer<typeof deleteKeywordRequestSchema>
 
-export const deleteKeywordResponseSchema = createApiResponseSchema(
+export const deleteKeywordResponseSchema = baseApiResponseSchema(
   z.null(), // 削除時はデータなし
 )
 
@@ -145,8 +144,7 @@ export const getBookmarksRequestSchema = baseApiRequestSchema.extend({
 
 export type GetBookmarksRequest = z.infer<typeof getBookmarksRequestSchema>
 
-export const getBookmarksResponseSchema =
-  createApiResponseSchema(bookmarksSchema)
+export const getBookmarksResponseSchema = baseApiResponseSchema(bookmarksSchema)
 
 export type GetBookmarksResponse = z.infer<typeof getBookmarksResponseSchema>
 
@@ -160,7 +158,7 @@ export const addBookmarkRequestSchema = baseApiRequestSchema.extend({
 
 export type AddBookmarkRequest = z.infer<typeof addBookmarkRequestSchema>
 
-export const addBookmarkResponseSchema = createApiResponseSchema(bookmarkSchema)
+export const addBookmarkResponseSchema = baseApiResponseSchema(bookmarkSchema)
 
 export type AddBookmarkResponse = z.infer<typeof addBookmarkResponseSchema>
 
