@@ -6,6 +6,7 @@ import {
   bookmarkSchema,
   bookmarksSchema,
   createBookmarkInputSchema,
+  deleteBookmarkInputSchema,
   updateBookmarkInputSchema,
 } from './bookmark'
 import {
@@ -186,6 +187,24 @@ export type UpdateBookmarkResponse = z.infer<
 >
 
 /**
+ * ブックマーク削除 (DELETE_BOOKMARK)
+ */
+export const deleteBookmarkRequestSchema = baseApiRequestSchema.extend({
+  action: z.literal(API_ACTIONS.DELETE_BOOKMARK),
+  payload: deleteBookmarkInputSchema,
+})
+
+export type DeleteBookmarkRequest = z.infer<typeof deleteBookmarkRequestSchema>
+
+export const deleteBookmarkResponseSchema = baseApiResponseSchema(
+  z.null(), // 削除時はデータなし
+)
+
+export type DeleteBookmarkResponse = z.infer<
+  typeof deleteBookmarkResponseSchema
+>
+
+/**
  * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
  * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
  */
@@ -197,6 +216,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   readBookmarksRequestSchema,
   createBookmarkRequestSchema,
   updateBookmarkRequestSchema,
+  deleteBookmarkRequestSchema,
 ])
 
 export type ApiRequest = z.infer<typeof ApiRequestSchema>
