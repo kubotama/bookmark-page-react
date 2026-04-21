@@ -61,3 +61,9 @@ export const attachKeywordInputSchema = z.object({
   keywordId: KeywordIdSchema,
 })
 export type AttachKeywordInput = z.infer<typeof attachKeywordInputSchema>
+
+export const detachKeywordInputSchema = z.object({
+  keywordId: KeywordIdSchema,
+})
+
+export type DetachKeywordInput = z.infer<typeof detachKeywordInputSchema>
