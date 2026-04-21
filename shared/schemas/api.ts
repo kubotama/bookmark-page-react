@@ -11,6 +11,7 @@ import {
   updateBookmarkInputSchema,
 } from './bookmark'
 import {
+  attachKeywordInputSchema,
   createKeywordInputSchema,
   KeywordIdSchema,
   keywordResponseSchema,
@@ -154,6 +155,24 @@ export const readBookmarksResponseSchema =
 export type ReadBookmarksResponse = z.infer<typeof readBookmarksResponseSchema>
 
 /**
+ * キーワード紐付け (ATTACH_KEYWORD)
+ */
+export const attachKeywordRequestSchema = baseApiRequestSchema.extend({
+  action: z.literal(API_ACTIONS.ATTACH_KEYWORD),
+  payload: attachKeywordInputSchema.extend({
+    bookmarkId: z.string().uuid(),
+  }),
+})
+
+export type AttachKeywordRequest = z.infer<typeof attachKeywordRequestSchema>
+
+export const attachKeywordResponseSchema = baseApiResponseSchema(
+  z.null(), // 紐付け成功時はデータなし
+)
+
+export type AttachKeywordResponse = z.infer<typeof attachKeywordResponseSchema>
+
+/**
  * ブックマーク追加 (ADD_BOOKMARK)
  */
 export const createBookmarkRequestSchema = baseApiRequestSchema.extend({
@@ -234,6 +253,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   createKeywordRequestSchema,
   updateKeywordRequestSchema,
   deleteKeywordRequestSchema,
+  attachKeywordRequestSchema,
   readBookmarksRequestSchema,
   createBookmarkRequestSchema,
   updateBookmarkRequestSchema,

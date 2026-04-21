@@ -11,6 +11,8 @@ import {
   updateKeywordResponseSchema,
   deleteKeywordRequestSchema,
   deleteKeywordResponseSchema,
+  attachKeywordRequestSchema,
+  attachKeywordResponseSchema,
 } from './api'
 import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
 
@@ -178,6 +180,68 @@ describe('API Schemas - Keyword Operations', () => {
         },
       }
       expect(deleteKeywordResponseSchema.parse(errorResponse)).toEqual(
+        errorResponse,
+      )
+    })
+  })
+
+  describe('attachKeywordRequestSchema', () => {
+    it('正しい ATTACH_KEYWORD リクエストを受け入れること', () => {
+      const validRequest = {
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: {
+          bookmarkId: MOCK_IDS.BOOKMARK_1,
+          keywordId: MOCK_IDS.KEYWORD_1,
+        },
+      }
+      expect(attachKeywordRequestSchema.parse(validRequest)).toEqual(
+        validRequest,
+      )
+    })
+
+    it('bookmarkId が欠落している場合に拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: {
+          keywordId: MOCK_IDS.KEYWORD_1,
+        },
+      }
+      expect(() => attachKeywordRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+
+    it('不正な形式の bookmarkId を拒否すること', () => {
+      const invalidRequest = {
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: {
+          bookmarkId: TEST_STRINGS.INVALID_ID,
+          keywordId: MOCK_IDS.KEYWORD_1,
+        },
+      }
+      expect(() => attachKeywordRequestSchema.parse(invalidRequest)).toThrow(
+        ZodError,
+      )
+    })
+  })
+
+  describe('attachKeywordResponseSchema', () => {
+    it('成功時のレスポンスを検証できること', () => {
+      const validResponse = { success: true, data: null }
+      expect(attachKeywordResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+
+    it('エラー時のレスポンスを検証できること', () => {
+      const errorResponse = {
+        success: false,
+        error: {
+          message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      }
+      expect(attachKeywordResponseSchema.parse(errorResponse)).toEqual(
         errorResponse,
       )
     })
