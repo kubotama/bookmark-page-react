@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { ZodError } from 'zod'
 
-import { API_ACTIONS, ERROR_MESSAGES, ERROR_CODES } from '../constants'
+import {
+  API_ACTIONS,
+  ERROR_MESSAGES,
+  ERROR_CODES,
+  BOOKMARK_STATUS,
+} from '../constants'
 import {
   readBookmarksRequestSchema,
   readBookmarksResponseSchema,
@@ -13,6 +18,8 @@ import {
   deleteBookmarkResponseSchema,
   reorderBookmarksRequestSchema,
   reorderBookmarksResponseSchema,
+  readBookmarkStatusRequestSchema,
+  readBookmarkStatusResponseSchema,
 } from './api'
 import {
   MOCK_BOOKMARKS,
@@ -349,5 +356,93 @@ describe('API Schemas - Bookmark Operations', () => {
         errorResponse,
       )
     })
+  })
+
+  describe('readBookmarkStatusRequestSchema', () => {
+    it.each([
+      {
+        name: 'タイトルあり',
+        validPayload: {
+          url: MOCK_BOOKMARK_1.url,
+          title: MOCK_BOOKMARK_1.title,
+        },
+      },
+      {
+        name: 'タイトルなし',
+        validPayload: {
+          url: MOCK_BOOKMARK_1.url,
+        },
+      },
+    ])(
+      '正しいreadBookmarkStatusRequestSchemaリクエスト $name を受け入れること',
+      ({ validPayload }) => {
+        const validRequest = {
+          action: API_ACTIONS.READ_BOOKMARK_STATUS,
+          payload: validPayload,
+        }
+        expect(readBookmarkStatusRequestSchema.parse(validRequest)).toEqual(
+          validRequest,
+        )
+      },
+    )
+
+    it.each([
+      {
+        name: 'URLがない場合',
+        invalidPayload: {},
+      },
+      {
+        name: '不正な URL 形式',
+        invalidPayload: { url: TEST_STRINGS.INVALID_ID },
+      },
+    ])(
+      '間違ったreadBookmarkStatusRequestSchemaリクエスト $name を拒否すること',
+      ({ invalidPayload }) => {
+        expect(() =>
+          readBookmarkStatusRequestSchema.parse({
+            action: API_ACTIONS.READ_BOOKMARK_STATUS,
+            payload: invalidPayload,
+          }),
+        ).toThrow(ZodError)
+      },
+    )
+  })
+
+  describe('readBookmarkStatusResponseSchema', () => {
+    it.each([
+      { name: '未登録', validData: { status: BOOKMARK_STATUS.NONE } },
+      {
+        name: '登録済み',
+        validData: {
+          status: BOOKMARK_STATUS.REGISTERED,
+          bookmarkId: MOCK_IDS.BOOKMARK_1,
+        },
+      },
+      {
+        name: '変更あり',
+        validData: {
+          status: BOOKMARK_STATUS.MODIFIED,
+          bookmarkId: MOCK_IDS.BOOKMARK_1,
+        },
+      },
+    ])('成功時 $name のレスポンスを検証できること', ({ validData }) => {
+      const validResponse = { success: true, data: validData }
+      expect(readBookmarkStatusResponseSchema.parse(validResponse)).toEqual(
+        validResponse,
+      )
+    })
+  })
+
+  it('エラー時のレスポンスを検証できること', () => {
+    const errorResponse = {
+      success: false,
+      error: {
+        message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      },
+    }
+    expect(readBookmarkStatusResponseSchema.parse(errorResponse)).toEqual(
+      errorResponse,
+    )
   })
 })

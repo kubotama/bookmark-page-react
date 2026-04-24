@@ -1,12 +1,16 @@
 import { describe, it, expect } from 'vitest'
+import { ZodError } from 'zod'
 
 import {
   bookmarkSchema,
+  bookmarkStatusResponseSchema,
+  bookmarkStatusSchema,
   createBookmarkInputSchema,
+  readBookmarkStatusInputSchema,
   reorderBookmarksInputSchema,
   updateBookmarkInputSchema,
 } from './bookmark'
-import { VALIDATION_MESSAGES } from '../constants'
+import { BOOKMARK_STATUS, VALIDATION_MESSAGES } from '../constants'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_TITLE_PREFIX,
@@ -14,6 +18,7 @@ import {
   VALID_URLS,
   MOCK_IDS,
   generateMockUuidV7,
+  TEST_STRINGS,
 } from '../test/fixtures'
 
 describe('bookmarkSchema', () => {
@@ -134,5 +139,101 @@ describe('reorderBookmarksInputSchema', () => {
         VALIDATION_MESSAGES.REORDER_MAX_ITEMS,
       )
     }
+  })
+})
+
+describe('readBookmarkStatusInputSchema', () => {
+  it('正常な入力(titleなし)を受け入れること', () => {
+    const valid = { url: MOCK_BOOKMARK_1.url }
+    expect(readBookmarkStatusInputSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('正常な入力(titleあり)を受け入れること', () => {
+    const valid = { url: MOCK_BOOKMARK_1.url, title: MOCK_BOOKMARK_1.title }
+    expect(readBookmarkStatusInputSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('URLがない場合エラーになること', () => {
+    const invalid = { title: MOCK_BOOKMARK_1.title }
+    expect(() => readBookmarkStatusInputSchema.parse(invalid)).toThrow(ZodError)
+  })
+})
+
+describe('bookmarkStatusSchema', () => {
+  it('定義された全ステータスを許可すること', () => {
+    Object.values(BOOKMARK_STATUS).forEach((status) => {
+      expect(bookmarkStatusSchema.parse(status)).toBe(status)
+    })
+  })
+
+  it('未定義のステータスを拒否すること', () => {
+    expect(() =>
+      bookmarkStatusSchema.parse(TEST_STRINGS.INVALID_ACTION),
+    ).toThrow(ZodError)
+  })
+})
+
+describe('bookmarkStatusResponseSchema', () => {
+  it.each([
+    {
+      name: '登録済み',
+      data: {
+        status: BOOKMARK_STATUS.REGISTERED,
+        bookmarkId: MOCK_IDS.BOOKMARK_1,
+      },
+    },
+    {
+      name: '変更',
+      data: {
+        status: BOOKMARK_STATUS.MODIFIED,
+        bookmarkId: MOCK_IDS.BOOKMARK_1,
+      },
+    },
+    {
+      name: '未登録',
+      data: {
+        status: BOOKMARK_STATUS.NONE,
+      },
+    },
+  ])('成功時 $name のレスポンスを検証できること', ({ data }) => {
+    expect(bookmarkStatusResponseSchema.parse(data)).toEqual(data)
+  })
+
+  it.each([
+    {
+      name: '不正なステータス値',
+      invalidData: {
+        status: 'INVALID_STATUS',
+      },
+    },
+    {
+      name: 'ステータスが欠落している場合',
+      invalidData: {
+        bookmarkId: MOCK_IDS.BOOKMARK_1,
+      },
+    },
+    {
+      name: '不正な形式の bookmarkId',
+      invalidData: {
+        status: BOOKMARK_STATUS.REGISTERED,
+        bookmarkId: 'not-a-uuid',
+      },
+    },
+    {
+      name: '登録済みでIDがない場合',
+      invalidData: {
+        status: BOOKMARK_STATUS.REGISTERED,
+      },
+    },
+    {
+      name: '変更ありでIDがない場合',
+      invalidData: {
+        status: BOOKMARK_STATUS.MODIFIED,
+      },
+    },
+  ])('異常系: $name を拒否すること', ({ invalidData }) => {
+    expect(() => bookmarkStatusResponseSchema.parse(invalidData)).toThrow(
+      ZodError,
+    )
   })
 })
