@@ -7,8 +7,10 @@ import {
   bookmarksSchema,
   createBookmarkInputSchema,
   deleteBookmarkInputSchema,
+  bookmarkStatusResponseSchema,
   reorderBookmarksInputSchema,
   updateBookmarkInputSchema,
+  readBookmarkStatusInputSchema,
 } from './bookmark'
 import {
   attachKeywordInputSchema,
@@ -260,6 +262,27 @@ export type ReorderBookmarksResponse = z.infer<
 >
 
 /**
+ * ブックマーク登録状態確認 (READ_BOOKMARK_STATUS)
+ */
+
+export const readBookmarkStatusRequestSchema = baseApiRequestSchema.extend({
+  action: z.literal(API_ACTIONS.READ_BOOKMARK_STATUS),
+  payload: readBookmarkStatusInputSchema, // ドメイン層の定義を再利用
+})
+
+export type ReadBookmarkStatusRequest = z.infer<
+  typeof readBookmarkStatusRequestSchema
+>
+
+export const readBookmarkStatusResponseSchema = baseApiResponseSchema(
+  bookmarkStatusResponseSchema,
+)
+
+export type ReadBookmarkStatusResponse = z.infer<
+  typeof readBookmarkStatusResponseSchema
+>
+
+/**
  * 全てのメッセージリクエストを統合したディスクリミネイテッドユニオン型
  * action フィールドを識別子として使用し、パースの効率とエラーメッセージを改善
  */
@@ -275,6 +298,7 @@ export const ApiRequestSchema = z.discriminatedUnion('action', [
   updateBookmarkRequestSchema,
   deleteBookmarkRequestSchema,
   reorderBookmarksRequestSchema,
+  readBookmarkStatusRequestSchema,
 ])
 
 export type ApiRequest = z.infer<typeof ApiRequestSchema>

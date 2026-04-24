@@ -355,6 +355,8 @@ export const API_ACTIONS = {
   DELETE_BOOKMARK: 'DELETE_BOOKMARK',
   REORDER_BOOKMARKS: 'REORDER_BOOKMARKS',
 
+  READ_BOOKMARK_STATUS: 'READ_BOOKMARK_STATUS',
+
   // キーワード操作
   GET_KEYWORDS: 'GET_KEYWORDS',
   ADD_KEYWORD: 'ADD_KEYWORD',
@@ -446,6 +448,8 @@ export const VALIDATION_MESSAGES = {
     'タイトルまたは URL の少なくとも一方は指定する必要があります',
   REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
+  BOOKMARK_STATUS_REQUIRED_BOOKMARKID:
+    '登録済み、変更ありの場合にはBOOKMARK IDが必要です',
 } as const
 
 /**

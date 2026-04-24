@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { VALIDATION_MESSAGES } from '../constants'
+import { BOOKMARK_STATUS, VALIDATION_MESSAGES } from '../constants'
 import { keywordSchema, KeywordIdSchema } from './keyword'
 import { isHttpUrl } from '../utils/url'
 
@@ -92,6 +92,44 @@ export const reorderBookmarksInputSchema = z.object({
 })
 
 export type ReorderBookmarksInput = z.infer<typeof reorderBookmarksInputSchema>
+
+/**
+ * ブックマーク登録状態確認のバリデーションスキーマ
+ */
+
+export const readBookmarkStatusInputSchema = z.object({
+  url: bookmarkUrlSchema,
+  title: z.string().optional(),
+})
+
+export type ReadBookmarkStatusInput = z.infer<
+  typeof readBookmarkStatusInputSchema
+>
+
+export const bookmarkStatusSchema = z.enum(
+  Object.values(BOOKMARK_STATUS) as [string, ...string[]],
+)
+
+export const bookmarkStatusResponseSchema = z
+  .object({
+    status: bookmarkStatusSchema,
+    bookmarkId: BookmarkIdSchema.optional(), // 登録済みの場合はIDを返す
+  })
+  .refine(
+    (data) => {
+      if (
+        data.status === BOOKMARK_STATUS.REGISTERED ||
+        data.status === BOOKMARK_STATUS.MODIFIED
+      ) {
+        return !!data.bookmarkId // IDが必須
+      }
+      return true
+    },
+    {
+      message: VALIDATION_MESSAGES.BOOKMARK_STATUS_REQUIRED_BOOKMARKID,
+      path: ['bookmarkId'],
+    },
+  )
 
 export const bookmarksSchema = z.object({
   bookmarks: z.array(bookmarkSchema),
