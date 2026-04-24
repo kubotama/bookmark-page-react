@@ -31,7 +31,7 @@ export const FIELD_LABELS = {
   OTHER_BOOKMARKS_LABEL: 'その他のブックマーク',
   ASSIGNED_KEYWORDS_LABEL: '割り当て済みのキーワード',
   UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
-  ADD_KEYWORD_LABEL: '追加するキーワード',
+  CREATE_KEYWORD_LABEL: '作成するキーワード',
   FRONTEND_URL: 'Web アプリ URL',
 } as const
 
@@ -349,8 +349,8 @@ export const DB_CONSTANTS = {
  */
 export const API_ACTIONS = {
   // ブックマーク操作
-  GET_BOOKMARKS: 'GET_BOOKMARKS',
-  ADD_BOOKMARK: 'ADD_BOOKMARK',
+  READ_BOOKMARKS: 'READ_BOOKMARKS',
+  CREATE_BOOKMARK: 'CREATE_BOOKMARK',
   UPDATE_BOOKMARK: 'UPDATE_BOOKMARK',
   DELETE_BOOKMARK: 'DELETE_BOOKMARK',
   REORDER_BOOKMARKS: 'REORDER_BOOKMARKS',
@@ -358,8 +358,8 @@ export const API_ACTIONS = {
   READ_BOOKMARK_STATUS: 'READ_BOOKMARK_STATUS',
 
   // キーワード操作
-  GET_KEYWORDS: 'GET_KEYWORDS',
-  ADD_KEYWORD: 'ADD_KEYWORD',
+  READ_KEYWORDS: 'READ_KEYWORDS',
+  CREATE_KEYWORD: 'CREATE_KEYWORD',
   UPDATE_KEYWORD: 'UPDATE_KEYWORD',
   DELETE_KEYWORD: 'DELETE_KEYWORD',
 
@@ -418,7 +418,8 @@ export const LOG_MESSAGES = {
   DELETE_KEYWORD_FAILED: 'Failed to delete keyword:',
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
-  UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
+  UNEXPECTED_ERROR_IN_CREATE_KEYWORD:
+    'Unexpected error in handleCreateKeyword:',
   UPDATE_KEYWORD_PLACEHOLDER: (name: string) => `Update keyword: ${name}`,
   DELETE_KEYWORD_PLACEHOLDER: (id: string | number) => `Delete keyword: ${id}`,
   API_RESPONSE_PARSE_FAILED: (status: number) =>

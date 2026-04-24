@@ -115,7 +115,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
     }
   }, [editUrl])
 
-  const handleAddKeyword = useCallback(async () => {
+  const handleCreateKeyword = useCallback(async () => {
     if (!parsedId || !keywordInput.trim()) return
 
     try {
@@ -145,7 +145,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
       setKeywordInput('')
     } catch (e) {
       // 予期せぬエラー用
-      console.error(LOG_MESSAGES.UNEXPECTED_ERROR_IN_ADD_KEYWORD, e)
+      console.error(LOG_MESSAGES.UNEXPECTED_ERROR_IN_CREATE_KEYWORD, e)
     }
   }, [parsedId, keywordInput, createKeywordMutation, attachKeywordMutation])
 
@@ -183,10 +183,10 @@ export const useBookmarkPage = (onBack?: () => void) => {
     (e: React.KeyboardEvent) => {
       if (e.key === KEY_VALUES.ENTER && !e.shiftKey) {
         e.preventDefault()
-        handleAddKeyword()
+        handleCreateKeyword()
       }
     },
-    [handleAddKeyword],
+    [handleCreateKeyword],
   )
 
   const handleDragStart = useCallback(
@@ -283,7 +283,7 @@ export const useBookmarkPage = (onBack?: () => void) => {
     handleDelete,
     handleOpen,
     handleBack,
-    handleAddKeyword,
+    handleCreateKeyword,
     handleAttachKeyword,
     handleDetachKeyword,
     handleKeywordKeyDown,

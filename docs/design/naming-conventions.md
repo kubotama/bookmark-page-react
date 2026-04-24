@@ -62,7 +62,7 @@
 | **キーワード紐付け** | Input    | `attachKeywordInputSchema`    | `{ bookmarkId: BookmarkId, keywordId: KeywordId }` |
 | **キーワード解除**   | Input    | `detachKeywordInputSchema`    | `{ bookmarkId: BookmarkId, keywordId: KeywordId }` |
 | **ブックマーク取得** | Object   | `bookmarksSchema`             | `{ bookmarks: Bookmark[] }`                        |
-| **ブックマーク追加** | Input    | `createBookmarkInputSchema`   | `{ title: string, url: string }`                   |
+| **ブックマーク作成** | Input    | `createBookmarkInputSchema`   | `{ title: string, url: string }`                   |
 | **ブックマーク更新** | Input    | `updateBookmarkInputSchema`   | `{ title?: string, url?: string }`                 |
 | **ブックマーク削除** | Input    | `deleteBookmarkInputSchema`   | `{ id: BookmarkId }`                               |
 | **ブックマーク並替** | Input    | `reorderBookmarksInputSchema` | `{ ids: BookmarkId[] }`                            |
@@ -80,7 +80,7 @@
 | **キーワード紐付け** | `attachKeywordRequestSchema`    | `action: ATTACH_KEYWORD`, `payload: AttachKeywordInput`                        | `null`             |
 | **キーワード解除**   | `detachKeywordRequestSchema`    | `action: DETACH_KEYWORD`, `payload: DetachKeywordInput`                        | `null`             |
 | **ブックマーク取得** | `readBookmarksRequestSchema`    | `action: READ_BOOKMARKS`, `payload: undefined`                                 | `Bookmarks`        |
-| **ブックマーク追加** | `createBookmarkRequestSchema`   | `action: CREATE_BOOKMARK`, `payload: CreateBookmarkInput`                      | `Bookmark`         |
+| **ブックマーク作成** | `createBookmarkRequestSchema`   | `action: CREATE_BOOKMARK`, `payload: CreateBookmarkInput`                      | `Bookmark`         |
 | **ブックマーク更新** | `updateBookmarkRequestSchema`   | `action: UPDATE_BOOKMARK`, `payload: UpdateBookmarkInput & { id: BookmarkId }` | `Bookmark`         |
 | **ブックマーク削除** | `deleteBookmarkRequestSchema`   | `action: DELETE_BOOKMARK`, `payload: DeleteBookmarkInput`                      | `null`             |
 | **ブックマーク並替** | `reorderBookmarksRequestSchema` | `action: REORDER_BOOKMARKS`, `payload: ReorderBookmarksInput`                  | `null`             |

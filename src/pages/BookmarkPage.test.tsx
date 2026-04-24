@@ -257,7 +257,9 @@ describe('BookmarkPage Component', () => {
       APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
     )
 
-    const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
+    const input = await screen.findByLabelText(
+      FIELD_LABELS.CREATE_KEYWORD_LABEL,
+    )
     fireEvent.change(input, { target: { value: 'NewTag' } })
 
     const addButton = screen.getByRole(ARIA_ROLES.BUTTON, {
@@ -289,7 +291,9 @@ describe('BookmarkPage Component', () => {
       APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
     )
 
-    const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
+    const input = await screen.findByLabelText(
+      FIELD_LABELS.CREATE_KEYWORD_LABEL,
+    )
     fireEvent.change(input, { target: { value: 'EnterTag' } })
     fireEvent.keyDown(input, { key: KEY_VALUES.ENTER })
 
@@ -351,7 +355,7 @@ describe('BookmarkPage Component', () => {
     await waitFor(() => expect(deleteCalled).toBe(true))
   })
 
-  it('handleAddKeyword 内で予期せぬエラーが発生した場合にログ出力すること', async () => {
+  it('handleCreateKeyword 内で予期せぬエラーが発生した場合にログ出力すること', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     // mutateAsync が例外を投げるように設定
     server.use(
@@ -365,7 +369,9 @@ describe('BookmarkPage Component', () => {
       APP_PATHS.BOOKMARK_DETAIL(MOCK_BOOKMARK_1.id),
     )
 
-    const input = await screen.findByLabelText(FIELD_LABELS.ADD_KEYWORD_LABEL)
+    const input = await screen.findByLabelText(
+      FIELD_LABELS.CREATE_KEYWORD_LABEL,
+    )
     fireEvent.change(input, { target: { value: 'ErrorTag' } })
     const addButton = screen.getByRole(ARIA_ROLES.BUTTON, {
       name: FIELD_LABELS.BUTTON_ADD,

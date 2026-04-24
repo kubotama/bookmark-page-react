@@ -153,7 +153,7 @@ describe('useBookmarkPage Hook', () => {
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 
-  it('handleKeywordKeyDown が Enter キーで handleAddKeyword を呼び出すこと', async () => {
+  it('handleKeywordKeyDown が Enter キーで handleCreateKeyword を呼び出すこと', async () => {
     let createCalled = false
     server.use(
       http.post('*/api/keywords', () => {
@@ -281,7 +281,7 @@ describe('useBookmarkPage Hook', () => {
     })
   })
 
-  it('handleAddKeyword が成功した際、キーワードを作成して紐付けること', async () => {
+  it('handleCreateKeyword が成功した際、キーワードを作成して紐付けること', async () => {
     let createCalled = false
     let attachCalled = false
     const NEW_TAG = 'NewTag'
@@ -316,7 +316,7 @@ describe('useBookmarkPage Hook', () => {
     })
 
     await act(async () => {
-      await result.current.handleAddKeyword()
+      await result.current.handleCreateKeyword()
     })
 
     expect(createCalled).toBe(true)
@@ -422,7 +422,7 @@ describe('useBookmarkPage Hook', () => {
       )
     })
 
-    it('handleAddKeyword の作成失敗時にログ出力すること', async () => {
+    it('handleCreateKeyword の作成失敗時にログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       server.use(
         http.post('*/api/keywords', () => {
@@ -441,7 +441,7 @@ describe('useBookmarkPage Hook', () => {
       })
 
       await act(async () => {
-        await result.current.handleAddKeyword()
+        await result.current.handleCreateKeyword()
       })
 
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -450,7 +450,7 @@ describe('useBookmarkPage Hook', () => {
       )
     })
 
-    it('handleAddKeyword の紐付け失敗時にログ出力すること', async () => {
+    it('handleCreateKeyword の紐付け失敗時にログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       server.use(
         http.post('*/api/keywords', () => {
@@ -475,7 +475,7 @@ describe('useBookmarkPage Hook', () => {
       })
 
       await act(async () => {
-        await result.current.handleAddKeyword()
+        await result.current.handleCreateKeyword()
       })
 
       expect(consoleSpy).toHaveBeenCalledWith(

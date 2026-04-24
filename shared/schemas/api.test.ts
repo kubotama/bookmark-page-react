@@ -50,7 +50,7 @@ describe('API Schemas - Messaging Foundation', () => {
   describe('baseApiRequestSchema', () => {
     it('正しいメッセージ構造を受け入れること', () => {
       const validRequest = {
-        action: API_ACTIONS.GET_BOOKMARKS,
+        action: API_ACTIONS.READ_BOOKMARKS,
         payload: { some: TEST_STRINGS.NEW_NAME },
       }
       expect(baseApiRequestSchema.parse(validRequest)).toEqual(validRequest)
@@ -58,9 +58,7 @@ describe('API Schemas - Messaging Foundation', () => {
 
     it('不正な形式のリクエストを拒否すること', () => {
       const invalidRequest = { action: TEST_STRINGS.INVALID_ACTION }
-      expect(() => baseApiRequestSchema.parse(invalidRequest)).toThrow(
-        ZodError,
-      )
+      expect(() => baseApiRequestSchema.parse(invalidRequest)).toThrow(ZodError)
     })
   })
 })
