@@ -26,9 +26,9 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       expect(result).toEqual(expect.arrayContaining(MOCK_KEYWORDS))
     })
 
-    it('addKeyword が新しいキーワードを保存し、その ID を返すこと', async () => {
+    it('createKeyword が新しいキーワードを保存し、その ID を返すこと', async () => {
       const newKeyword = { name: TEST_STRINGS.NEW_NAME }
-      const id = await db.addKeyword(newKeyword)
+      const id = await db.createKeyword(newKeyword)
 
       expect(KeywordIdSchema.safeParse(id).success).toBe(true)
 
@@ -41,20 +41,20 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       const existing = MOCK_KEYWORDS[0]
       await db.keywords.add(existing)
 
-      const id = await db.addKeyword({ name: existing.name })
+      const id = await db.createKeyword({ name: existing.name })
 
       expect(id).toBe(existing.id)
       const count = await db.keywords.count()
       expect(count).toBe(1)
     })
 
-    it('不正な名前（空文字等）のキーワード追加を拒否すること', async () => {
-      await expect(db.addKeyword({ name: '' })).rejects.toThrow()
-      await expect(db.addKeyword({ name: '   ' })).rejects.toThrow()
+    it('不正な名前（空文字等）のキーワード作成を拒否すること', async () => {
+      await expect(db.createKeyword({ name: '' })).rejects.toThrow()
+      await expect(db.createKeyword({ name: '   ' })).rejects.toThrow()
     })
 
     it('前後の空白を含むキーワードが自動的にトリムされて保存されること', async () => {
-      const id = await db.addKeyword({ name: TEST_STRINGS.PRE_TRIMMED_NAME })
+      const id = await db.createKeyword({ name: TEST_STRINGS.PRE_TRIMMED_NAME })
       const saved = await db.keywords.get(id)
       expect(saved?.name).toBe(TEST_STRINGS.TRIMMED_NAME)
     })

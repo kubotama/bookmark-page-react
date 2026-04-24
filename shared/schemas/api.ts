@@ -77,10 +77,10 @@ export const baseApiRequestSchema = z.object({
 })
 
 /**
- * キーワード一覧取得 (GET_KEYWORDS)
+ * キーワード一覧取得 (READ_KEYWORDS)
  */
 export const readKeywordsRequestSchema = baseApiRequestSchema.extend({
-  action: z.literal(API_ACTIONS.GET_KEYWORDS),
+  action: z.literal(API_ACTIONS.READ_KEYWORDS),
   payload: z.undefined().optional(),
 })
 
@@ -91,10 +91,10 @@ export const readKeywordsResponseSchema = baseApiResponseSchema(keywordsSchema)
 export type ReadKeywordsResponse = z.infer<typeof readKeywordsResponseSchema>
 
 /**
- * キーワード追加 (ADD_KEYWORD)
+ * キーワード作成 (CREATE_KEYWORD)
  */
 export const createKeywordRequestSchema = baseApiRequestSchema.extend({
-  action: z.literal(API_ACTIONS.ADD_KEYWORD),
+  action: z.literal(API_ACTIONS.CREATE_KEYWORD),
   payload: createKeywordInputSchema,
 })
 
@@ -143,10 +143,10 @@ export const deleteKeywordResponseSchema = baseApiResponseSchema(
 export type DeleteKeywordResponse = z.infer<typeof deleteKeywordResponseSchema>
 
 /**
- * ブックマーク一覧取得 (GET_BOOKMARKS)
+ * ブックマーク一覧取得 (READ_BOOKMARKS)
  */
 export const readBookmarksRequestSchema = baseApiRequestSchema.extend({
-  action: z.literal(API_ACTIONS.GET_BOOKMARKS),
+  action: z.literal(API_ACTIONS.READ_BOOKMARKS),
   payload: z.undefined().optional(),
 })
 
@@ -190,10 +190,10 @@ export const detachKeywordResponseSchema = baseApiResponseSchema(z.null())
 export type DetachKeywordResponse = z.infer<typeof detachKeywordResponseSchema>
 
 /**
- * ブックマーク追加 (ADD_BOOKMARK)
+ * ブックマーク作成 (CREATE_BOOKMARK)
  */
 export const createBookmarkRequestSchema = baseApiRequestSchema.extend({
-  action: z.literal(API_ACTIONS.ADD_BOOKMARK),
+  action: z.literal(API_ACTIONS.CREATE_BOOKMARK),
   payload: createBookmarkInputSchema,
 })
 

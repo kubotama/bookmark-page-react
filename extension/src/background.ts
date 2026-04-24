@@ -34,7 +34,7 @@ const queryClient = new QueryClient({
 /**
  * ブックマーク一覧をキャッシュまたは API から取得する内部関数
  */
-const getBookmarksData = async (apiUrl: string) => {
+const readBookmarksData = async (apiUrl: string) => {
   const urlError = validateApiUrl(apiUrl)
   if (urlError) {
     throw new Error(urlError)
@@ -83,7 +83,7 @@ const updateIconStatus = async (
       return
     }
 
-    const data = await getBookmarksData(apiUrl)
+    const data = await readBookmarksData(apiUrl)
 
     // 状態判定 (共通ユーティリティを使用)
     const bookmark = findBookmarkByUrl(data.bookmarks, url)
@@ -136,7 +136,7 @@ const handleCheckBookmarkStatus = async (
       throw new Error('API URL not configured')
     }
 
-    const data = await getBookmarksData(apiUrl)
+    const data = await readBookmarksData(apiUrl)
     const bookmark = findBookmarkByUrl(data.bookmarks, url)
     const status = determineBookmarkStatus(bookmark, title)
 

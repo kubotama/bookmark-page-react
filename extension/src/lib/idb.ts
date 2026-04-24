@@ -71,9 +71,9 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
-   * ブックマークを追加する
+   * ブックマークを作成する
    */
-  async addBookmark(params: CreateBookmarkInput): Promise<BookmarkId> {
+  async createBookmark(params: CreateBookmarkInput): Promise<BookmarkId> {
     // バリデーションにプロジェクト標準のスキーマを使用
     const validated = createBookmarkInputSchema.parse(params)
 
@@ -276,10 +276,10 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
-   * キーワードを追加する。同名のキーワードが既に存在する場合は、その ID を返す。
+   * キーワードを作成する。同名のキーワードが既に存在する場合は、その ID を返す。
    * @param params 名前を含むキーワード情報（IDは任意）
    */
-  async addKeyword(params: { name: string }): Promise<KeywordId> {
+  async createKeyword(params: { name: string }): Promise<KeywordId> {
     // バリデーション (スキーマで定義された trim 等を適用)
     const name = keywordSchema.shape.name.parse(params.name)
 

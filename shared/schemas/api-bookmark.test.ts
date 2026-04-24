@@ -32,15 +32,15 @@ import {
 
 describe('API Schemas - Bookmark Operations', () => {
   describe('readBookmarksRequestSchema', () => {
-    it('正しい GET_BOOKMARKS リクエストを受け入れること', () => {
-      const validRequest = { action: API_ACTIONS.GET_BOOKMARKS }
+    it('正しい READ_BOOKMARKS リクエストを受け入れること', () => {
+      const validRequest = { action: API_ACTIONS.READ_BOOKMARKS }
       expect(readBookmarksRequestSchema.parse(validRequest)).toEqual(
         validRequest,
       )
     })
 
     it('不正なアクションを持つリクエストを拒否すること', () => {
-      const invalidRequest = { action: API_ACTIONS.GET_KEYWORDS }
+      const invalidRequest = { action: API_ACTIONS.READ_KEYWORDS }
       expect(() => readBookmarksRequestSchema.parse(invalidRequest)).toThrow(
         ZodError,
       )
@@ -73,9 +73,9 @@ describe('API Schemas - Bookmark Operations', () => {
   })
 
   describe('createBookmarkRequestSchema', () => {
-    it('正しい ADD_BOOKMARK リクエストを受け入れること', () => {
+    it('正しい CREATE_BOOKMARK リクエストを受け入れること', () => {
       const validRequest = {
-        action: API_ACTIONS.ADD_BOOKMARK,
+        action: API_ACTIONS.CREATE_BOOKMARK,
         payload: {
           title: TEST_STRINGS.NEW_NAME,
           url: VALID_URLS.GOOGLE,
@@ -88,7 +88,7 @@ describe('API Schemas - Bookmark Operations', () => {
 
     it('不正な形式のペイロード（空タイトル）を拒否すること', () => {
       const invalidRequest = {
-        action: API_ACTIONS.ADD_BOOKMARK,
+        action: API_ACTIONS.CREATE_BOOKMARK,
         payload: {
           title: '',
           url: VALID_URLS.GOOGLE,
@@ -101,7 +101,7 @@ describe('API Schemas - Bookmark Operations', () => {
 
     it('前後の空白を含むタイトルがトリムされること', () => {
       const request = {
-        action: API_ACTIONS.ADD_BOOKMARK,
+        action: API_ACTIONS.CREATE_BOOKMARK,
         payload: {
           title: TEST_STRINGS.PRE_TRIMMED_NAME,
           url: VALID_URLS.GOOGLE,

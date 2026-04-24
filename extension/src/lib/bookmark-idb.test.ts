@@ -2,10 +2,7 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { ERROR_MESSAGES } from '@shared/constants'
-import {
-  type BookmarkId,
-  BookmarkIdSchema,
-} from '@shared/schemas/bookmark'
+import { type BookmarkId, BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_ENTITY_1,
   MOCK_BOOKMARK_ENTITY_2,
@@ -37,19 +34,19 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
       expect(result[1].id).toBe(b1.id) // sortOrder: 10 が次
     })
 
-    it('addBookmark が最初のアイテムを追加する際、sortOrder 0 を割り当てること', async () => {
+    it('createBookmark が最初のアイテムを追加する際、sortOrder 0 を割り当てること', async () => {
       const params = {
         title: `${MOCK_BOOKMARK_TITLE_PREFIX} First`,
         url: VALID_URLS.GOOGLE,
       }
-      const id = await db.addBookmark(params)
+      const id = await db.createBookmark(params)
 
       const saved = await db.bookmarks.get(id)
       expect(saved?.sortOrder).toBe(0)
       expect(saved?.title).toBe(params.title)
     })
 
-    it('addBookmark が既存アイテムがある場合、最小 sortOrder - 1 を割り当てること', async () => {
+    it('createBookmark が既存アイテムがある場合、最小 sortOrder - 1 を割り当てること', async () => {
       // 既存データ (sortOrder: 0)
       await db.bookmarks.add({ ...MOCK_BOOKMARK_ENTITY_1, sortOrder: 0 })
 
@@ -57,13 +54,13 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
         title: `${MOCK_BOOKMARK_TITLE_PREFIX} New Top`,
         url: VALID_URLS.HTTPS,
       }
-      const id = await db.addBookmark(params)
+      const id = await db.createBookmark(params)
 
       const saved = await db.bookmarks.get(id)
       expect(saved?.sortOrder).toBe(-1)
 
       // さらに追加
-      const id2 = await db.addBookmark({
+      const id2 = await db.createBookmark({
         title: `${MOCK_BOOKMARK_TITLE_PREFIX} New Top 2`,
         url: VALID_URLS.HTTP,
       })
@@ -71,9 +68,9 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
       expect(saved2?.sortOrder).toBe(-2)
     })
 
-    it('addBookmark が不正な URL の場合、バリデーションエラーを投げること', async () => {
+    it('createBookmark が不正な URL の場合、バリデーションエラーを投げること', async () => {
       const params = { title: 'Invalid', url: 'not-a-url' }
-      await expect(db.addBookmark(params)).rejects.toThrow()
+      await expect(db.createBookmark(params)).rejects.toThrow()
     })
 
     it('前後の空白を含むタイトルや URL が自動的にトリムされて保存されること', async () => {
@@ -81,7 +78,7 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
         title: TEST_STRINGS.PRE_TRIMMED_NAME,
         url: `  ${VALID_URLS.GOOGLE}  `,
       }
-      const id = await db.addBookmark(params)
+      const id = await db.createBookmark(params)
 
       const saved = await db.bookmarks.get(id)
       expect(saved?.title).toBe(TEST_STRINGS.TRIMMED_NAME)
@@ -120,7 +117,8 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
     })
 
     it('不正な形式の ID での更新を試みた場合にバリデーションエラーを投げること', async () => {
-      const invalidId = TEST_STRINGS.INVALID_ID as unknown as import('@shared/schemas/bookmark').BookmarkId
+      const invalidId =
+        TEST_STRINGS.INVALID_ID as unknown as import('@shared/schemas/bookmark').BookmarkId
       await expect(
         db.updateBookmark(invalidId, { title: TEST_STRINGS.NEW_NAME }),
       ).rejects.toThrow()
