@@ -186,51 +186,6 @@ describe('background service worker', () => {
       )
     })
 
-    it('API URL 設定変更時にキャッシュをクリアし全タブのアイコンを更新すること', async () => {
-      const onChangedMock = vi.mocked(chrome.storage.onChanged.addListener)
-      vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
-        ;(callback as unknown as (tabs: unknown[]) => void)([
-          {
-            id: 1,
-            url: MOCK_BOOKMARK_1.url,
-            title: MOCK_BOOKMARK_1.title,
-          },
-        ])
-      })
-      await import('./background')
-
-      const handler = onChangedMock.mock.calls[0][0]
-      handler(
-        { [STORAGE_KEYS.API_URL]: { newValue: 'http://new-api.com' } },
-        'sync',
-      )
-
-      await vi.waitFor(() => {
-        expect(chrome.tabs.query).toHaveBeenCalled()
-      })
-    })
-
-    it('内部メッセージ INVALIDATE_CACHE でアイコンを再更新すること', async () => {
-      const onMessageMock = vi.mocked(chrome.runtime.onMessage.addListener)
-      vi.mocked(chrome.tabs.query).mockImplementation((_query, callback) => {
-        ;(callback as unknown as (tabs: unknown[]) => void)([
-          {
-            id: 1,
-            url: MOCK_BOOKMARK_1.url,
-            title: MOCK_BOOKMARK_1.title,
-          },
-        ])
-      })
-      await import('./background')
-
-      const handler = onMessageMock.mock.calls[0][0]
-      handler({ type: EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE }, {}, vi.fn())
-
-      await vi.waitFor(() => {
-        expect(chrome.tabs.query).toHaveBeenCalled()
-      })
-    })
-
     it('タブのアクティブ化 (onActivated) 時にアイコンを更新すること', async () => {
       const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
       const tabData = {

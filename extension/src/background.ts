@@ -1,36 +1,20 @@
-import { QueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 
 import {
   BOOKMARK_STATUS,
   EXTENSION_ICONS,
   EXTENSION_MESSAGE_TYPES,
-  STORAGE_KEYS,
   LOG_MESSAGES,
   VALIDATION_MESSAGES,
 } from '@shared/constants'
 
 import { determineBookmarkStatus } from './lib/bookmark-utils'
 import { db } from './lib/idb' // 共有インスタンスをインポートする
-import { QUERY_KEYS } from '../../src/lib/queryKeys'
 
 /**
  * 拡張機能のバックグラウンドプロセス
  */
 
-// TanStack Query のセットアップ (staleTime: 0 で常に最新を確認)
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 0,
-      retry: false,
-    },
-  },
-})
-
-/**
- * ブックマーク一覧をキャッシュまたは API から取得する内部関数
- */
 /**
  * 指定された URL のブックマーク状態を判定し、アイコンを更新する
  */
@@ -143,32 +127,9 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 })
 
 /**
- * 設定（API URL）の変更を監視
- */
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes[STORAGE_KEYS.API_URL]) {
-    queryClient.clear()
-    chrome.tabs.query({}, (tabs) => {
-      for (const tab of tabs) {
-        if (tab.id) updateIconStatus(tab.id, tab.url, tab.title)
-      }
-    })
-  }
-})
-
-/**
  * 内部メッセージを処理
  */
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === EXTENSION_MESSAGE_TYPES.INVALIDATE_CACHE) {
-    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.ALL })
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0]
-      if (tab?.id) updateIconStatus(tab.id, tab.url, tab.title)
-    })
-    return false
-  }
-
   if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
     handleCheckBookmarkStatus(message, sendResponse)
     return true // 非同期レスポンスのために true を返す
