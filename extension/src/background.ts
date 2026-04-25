@@ -7,14 +7,11 @@ import {
   EXTENSION_MESSAGE_TYPES,
   STORAGE_KEYS,
   LOG_MESSAGES,
+  VALIDATION_MESSAGES,
 } from '@shared/constants'
-import type { Bookmarks } from '@shared/schemas/bookmark'
-import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
-import {
-  findBookmarkByUrl,
-  determineBookmarkStatus,
-} from './lib/bookmark-utils'
+import { determineBookmarkStatus } from './lib/bookmark-utils'
+import { db } from './lib/idb' // 共有インスタンスをインポートする
 import { QUERY_KEYS } from '../../src/lib/queryKeys'
 
 /**
@@ -34,26 +31,6 @@ const queryClient = new QueryClient({
 /**
  * ブックマーク一覧をキャッシュまたは API から取得する内部関数
  */
-const readBookmarksData = async (apiUrl: string) => {
-  const urlError = validateApiUrl(apiUrl)
-  if (urlError) {
-    throw new Error(urlError)
-  }
-
-  const sanitizedBaseUrl = getOrigin(apiUrl)
-
-  return await queryClient.fetchQuery<Bookmarks>({
-    queryKey: [...QUERY_KEYS.BOOKMARKS.ALL, sanitizedBaseUrl],
-    queryFn: async () => {
-      const res = await fetch(`${sanitizedBaseUrl}/api/bookmarks`)
-      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
-      const result = await res.json()
-      if (!result.success) throw new Error(result.error?.message || 'Failed')
-      return result.data
-    },
-  })
-}
-
 /**
  * 指定された URL のブックマーク状態を判定し、アイコンを更新する
  */
@@ -71,23 +48,12 @@ const updateIconStatus = async (
   }
 
   try {
-    // 1. API URL を取得
-    const storage = await chrome.storage.sync.get(STORAGE_KEYS.API_URL)
-    const apiUrl = storage[STORAGE_KEYS.API_URL]
+    // IndexedDB から該当 URL のブックマークを直接検索
+    // Dexie のクエリ構文: テーブル名.where(インデックス名).equals(値).first()
+    const bookmark = await db.bookmarks.where('url').equals(url).first()
 
-    if (!apiUrl || typeof apiUrl !== 'string') {
-      chrome.action.setIcon({
-        tabId,
-        path: EXTENSION_ICONS[BOOKMARK_STATUS.NONE],
-      })
-      return
-    }
-
-    const data = await readBookmarksData(apiUrl)
-
-    // 状態判定 (共通ユーティリティを使用)
-    const bookmark = findBookmarkByUrl(data.bookmarks, url)
-    const statusKey = determineBookmarkStatus(bookmark, title)
+    // 判定ロジックは既存のものをそのまま使える
+    const statusKey = determineBookmarkStatus(bookmark?.title, title)
 
     chrome.action.setIcon({
       tabId,
@@ -106,9 +72,11 @@ const updateIconStatus = async (
  * ブックマークの登録状態をチェックし、結果を返送するメッセージハンドラ
  */
 const handleCheckBookmarkStatus = async (
-  message: unknown,
+  message: { url: string; title?: string }, // 型定義も整理されています
   sendResponse: (response: unknown) => void,
 ) => {
+  const { url, title } = message
+
   // 1. メッセージの型と内容を Zod で厳格に検証
   const checkStatusSchema = z.object({
     type: z.literal(EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS),
@@ -120,27 +88,16 @@ const handleCheckBookmarkStatus = async (
   if (!validation.success) {
     sendResponse({
       success: false,
-      error: `Invalid message payload: ${validation.error.message}`,
+      error: `${VALIDATION_MESSAGES.URL_INVALID_FORMAT}: ${validation.error.message}`,
     })
     return
   }
 
-  const { url, title } = validation.data
-
   try {
-    // 2. 設定とデータの取得
-    const storage = await chrome.storage.sync.get(STORAGE_KEYS.API_URL)
-    const apiUrl = storage[STORAGE_KEYS.API_URL]
+    const bookmark = await db.bookmarks.where('url').equals(url).first()
 
-    if (!apiUrl || typeof apiUrl !== 'string') {
-      throw new Error('API URL not configured')
-    }
+    const status = determineBookmarkStatus(bookmark?.title, title)
 
-    const data = await readBookmarksData(apiUrl)
-    const bookmark = findBookmarkByUrl(data.bookmarks, url)
-    const status = determineBookmarkStatus(bookmark, title)
-
-    // 3. 結果の返送
     sendResponse({
       success: true,
       status,
