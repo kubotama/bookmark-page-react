@@ -19,14 +19,11 @@ export const findBookmarkByUrl = (
  * - MODIFIED: 登録済みだがタイトルが異なる
  */
 export const determineBookmarkStatus = (
-  bookmark: Bookmark | undefined,
+  storedTitle: string | undefined,
   currentTitle: string | undefined,
 ): keyof typeof BOOKMARK_STATUS => {
-  if (!bookmark) {
+  if (storedTitle === undefined) {
     return 'NONE'
   }
-  if (bookmark.title === currentTitle) {
-    return 'REGISTERED'
-  }
-  return 'MODIFIED'
+  return storedTitle === currentTitle ? 'REGISTERED' : 'MODIFIED'
 }
