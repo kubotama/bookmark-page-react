@@ -427,6 +427,7 @@ export const LOG_MESSAGES = {
   ACTION_NOT_IMPLEMENTED: (action: string) =>
     `Action ${action} is not yet implemented.`,
   UNKNOWN_ACTION: 'Unknown action received.',
+  INVALID_PAYLOAD: (message: string) => `Invalid payload: ${message}`,
 } as const
 
 /**

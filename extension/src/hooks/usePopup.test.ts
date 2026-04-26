@@ -7,9 +7,10 @@ import {
   APP_PATHS,
   VALIDATION_MESSAGES,
   UI_STATUS,
-  EXTENSION_MESSAGE_TYPES,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
+  API_ACTIONS,
+  BOOKMARK_STATUS,
 } from '@shared/constants'
 import {
   INVALID_URLS,
@@ -54,11 +55,13 @@ describe('usePopup Hook', () => {
     ])
 
     mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
-      if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
+      if (message.action === API_ACTIONS.READ_BOOKMARK_STATUS) {
         callback({
           success: true,
-          status: 'REGISTERED',
-          bookmarkId: MOCK_BOOKMARK_1.id,
+          data: {
+            status: BOOKMARK_STATUS.REGISTERED,
+            bookmarkId: MOCK_BOOKMARK_1.id,
+          },
         })
       }
     })

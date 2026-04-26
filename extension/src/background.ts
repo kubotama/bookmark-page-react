@@ -1,18 +1,15 @@
-import { z } from 'zod'
-
 import {
   API_ACTIONS,
   BOOKMARK_STATUS,
   ERROR_CODES,
   EXTENSION_ICONS,
-  EXTENSION_MESSAGE_TYPES,
   LOG_MESSAGES,
-  VALIDATION_MESSAGES,
 } from '@shared/constants'
 import {
   ApiRequestSchema,
   type ApiRequest,
   type ApiError,
+  readBookmarkStatusRequestSchema,
 } from '@shared/schemas/api'
 
 import { determineBookmarkStatus } from './lib/bookmark-utils'
@@ -44,60 +41,17 @@ const updateIconStatus = async (
     const bookmark = await db.bookmarks.where('url').equals(url).first()
 
     // 判定ロジックは既存のものをそのまま使える
-    const statusKey = determineBookmarkStatus(bookmark?.title, title)
+    const status = determineBookmarkStatus(bookmark?.title, title)
 
     chrome.action.setIcon({
       tabId,
-      path: EXTENSION_ICONS[BOOKMARK_STATUS[statusKey]],
+      path: EXTENSION_ICONS[status],
     })
   } catch (err) {
     console.error(LOG_MESSAGES.ICON_STATUS_UPDATE_FAILED, err)
     chrome.action.setIcon({
       tabId,
       path: EXTENSION_ICONS[BOOKMARK_STATUS.ERROR],
-    })
-  }
-}
-
-/**
- * ブックマークの登録状態をチェックし、結果を返送するメッセージハンドラ
- */
-const handleCheckBookmarkStatus = async (
-  message: { url: string; title?: string }, // 型定義も整理されています
-  sendResponse: (response: unknown) => void,
-) => {
-  const { url, title } = message
-
-  // 1. メッセージの型と内容を Zod で厳格に検証
-  const checkStatusSchema = z.object({
-    type: z.literal(EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS),
-    url: z.string().url(),
-    title: z.string().optional(),
-  })
-
-  const validation = checkStatusSchema.safeParse(message)
-  if (!validation.success) {
-    sendResponse({
-      success: false,
-      error: `${VALIDATION_MESSAGES.URL_INVALID_FORMAT}: ${validation.error.message}`,
-    })
-    return
-  }
-
-  try {
-    const bookmark = await db.bookmarks.where('url').equals(url).first()
-
-    const status = determineBookmarkStatus(bookmark?.title, title)
-
-    sendResponse({
-      success: true,
-      status,
-      bookmarkId: bookmark?.id,
-    })
-  } catch (err) {
-    sendResponse({
-      success: false,
-      error: err instanceof Error ? err.message : String(err),
     })
   }
 }
@@ -148,9 +102,33 @@ const handleApiMessage = async (
       case API_ACTIONS.UPDATE_BOOKMARK:
       case API_ACTIONS.DELETE_BOOKMARK:
       case API_ACTIONS.REORDER_BOOKMARKS:
-      case API_ACTIONS.READ_BOOKMARK_STATUS:
+      case API_ACTIONS.READ_BOOKMARK_STATUS: {
+        // 1. 個別のスキーマでパース（safeParse を推奨）
+        const validation = readBookmarkStatusRequestSchema.safeParse(request)
+
+        // 2. バリデーション失敗時のエラーレスポンス
+        if (!validation.success) {
+          return {
+            success: false,
+            error: {
+              message: LOG_MESSAGES.INVALID_PAYLOAD(validation.error.message),
+              code: ERROR_CODES.BAD_REQUEST, // ここが重要
+            },
+          }
+        }
+
+        // 3. 成功時の処理（validation.data.payload を安全に使用できる）
+        const { url, title } = validation.data.payload
+        const bookmark = await db.bookmarks.where('url').equals(url).first()
+        const status = determineBookmarkStatus(bookmark?.title, title)
+
+        return {
+          success: true,
+          data: { status, bookmarkId: bookmark?.id },
+        }
+      }
+
       // キーワード操作
-      // eslint-disable-next-line no-fallthrough
       case API_ACTIONS.READ_KEYWORDS:
       case API_ACTIONS.CREATE_KEYWORD:
       case API_ACTIONS.UPDATE_KEYWORD:
@@ -193,16 +171,21 @@ const handleApiMessage = async (
  * 内部メッセージを処理
  */
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  // 1. ApiRequestSchema による検証（新しい統一形式）
-  const apiValidation = ApiRequestSchema.safeParse(message)
-  if (apiValidation.success) {
-    handleApiMessage(apiValidation.data).then(sendResponse)
-    return true // 非同期レスポンスのために true を返す
-  }
-
-  // 2. 旧来のメッセージ形式の処理（後方互換性のため当面維持）
-  if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
-    handleCheckBookmarkStatus(message, sendResponse)
+  // メッセージが { action: ... } という形式を持っているかチェック
+  if (message && typeof message === 'object' && 'action' in message) {
+    const apiValidation = ApiRequestSchema.safeParse(message)
+    if (apiValidation.success) {
+      handleApiMessage(apiValidation.data).then(sendResponse)
+    } else {
+      // アクションはあるが形式が不正な場合は、BAD_REQUEST を返す
+      sendResponse({
+        success: false,
+        error: {
+          message: LOG_MESSAGES.INVALID_PAYLOAD(apiValidation.error.message),
+          code: ERROR_CODES.BAD_REQUEST,
+        },
+      })
+    }
     return true
   }
 
