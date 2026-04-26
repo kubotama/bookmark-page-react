@@ -424,6 +424,9 @@ export const LOG_MESSAGES = {
   DELETE_KEYWORD_PLACEHOLDER: (id: string | number) => `Delete keyword: ${id}`,
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
+  ACTION_NOT_IMPLEMENTED: (action: string) =>
+    `Action ${action} is not yet implemented.`,
+  UNKNOWN_ACTION: 'Unknown action received.',
 } as const
 
 /**
