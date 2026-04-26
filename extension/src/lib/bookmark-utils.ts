@@ -21,9 +21,11 @@ export const findBookmarkByUrl = (
 export const determineBookmarkStatus = (
   storedTitle: string | undefined,
   currentTitle: string | undefined,
-): keyof typeof BOOKMARK_STATUS => {
+) => {
   if (storedTitle === undefined) {
-    return 'NONE'
+    return BOOKMARK_STATUS.NONE
   }
-  return storedTitle === currentTitle ? 'REGISTERED' : 'MODIFIED'
+  return storedTitle === currentTitle
+    ? BOOKMARK_STATUS.REGISTERED
+    : BOOKMARK_STATUS.MODIFIED
 }

@@ -7,12 +7,12 @@ import {
   BOOKMARK_STATUS,
   ERROR_CODES,
   EXTENSION_ICONS,
-  EXTENSION_MESSAGE_TYPES,
   LOG_MESSAGES,
-  VALIDATION_MESSAGES,
 } from '@shared/constants'
 import {
+  INVALID_URLS,
   MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
   TEST_STRINGS,
   VALID_URLS,
 } from '@shared/test/fixtures'
@@ -192,115 +192,137 @@ describe('background service worker', () => {
       await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
     })
 
-    describe('CHECK_BOOKMARK_STATUS', () => {
-      it('メッセージを受信した際に判定結果を返すこと (正常系)', async () => {
-        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+    describe('統合メッセージディスパッチャ (READ_BOOKMARK_STATUS)', () => {
+      describe('正常なメッセージを受信した場合', () => {
+        beforeEach(async () => {
+          await db.bookmarks.clear()
 
-        await import('./background')
+          // 3. テストに必要なデータをあらかじめ DB に入れておく（これが「スタブ」の代わり）
+          // 例：URL が登録済みの状態をテストしたい場合
+          await db.bookmarks.add({
+            id: MOCK_BOOKMARK_1.id,
+            title: MOCK_BOOKMARK_1.title,
+            url: MOCK_BOOKMARK_1.url,
+            sortOrder: 1,
+            keywordIds: [],
+          })
+        })
 
-        const messageHandler = addListenerMock.mock.calls[0][0]
-        const sendResponse = vi.fn()
-
-        const result = messageHandler(
+        it.each([
           {
-            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+            name: '未登録',
+            url: MOCK_BOOKMARK_2.url,
+            title: MOCK_BOOKMARK_2.title,
+            status: BOOKMARK_STATUS.NONE,
+            bookmarkId: undefined,
+          },
+          {
+            name: '登録済み',
             url: MOCK_BOOKMARK_1.url,
             title: MOCK_BOOKMARK_1.title,
+            status: BOOKMARK_STATUS.REGISTERED,
+            bookmarkId: MOCK_BOOKMARK_1.id,
           },
-          {},
-          sendResponse,
+          {
+            name: '変更あり',
+            url: MOCK_BOOKMARK_1.url,
+            title: TEST_STRINGS.NEW_NAME,
+            status: BOOKMARK_STATUS.MODIFIED,
+            bookmarkId: MOCK_BOOKMARK_1.id,
+          },
+        ])(
+          'ブックマークのスタータス( $name )',
+          async ({ url, title, status, bookmarkId }) => {
+            const addListenerMock = vi.mocked(
+              chrome.runtime.onMessage.addListener,
+            )
+            await import('./background')
+
+            const messageHandler = addListenerMock.mock.calls[0][0]
+            const sendResponse = vi.fn()
+
+            // READ_BOOKMARK_STATUS アクションを送信
+            const result = messageHandler(
+              {
+                action: API_ACTIONS.READ_BOOKMARK_STATUS,
+                payload: {
+                  url: url,
+                  title: title,
+                },
+              },
+              {},
+              sendResponse,
+            )
+
+            // 非同期レスポンス（true）を返すことを確認
+            expect(result).toBe(true)
+
+            // レスポンスの内容を確認
+            await vi.waitFor(() => {
+              expect(sendResponse).toHaveBeenCalledWith(
+                expect.objectContaining({
+                  success: true,
+                  data: { status, bookmarkId },
+                }),
+              )
+            })
+          },
         )
-
-        expect(result).toBe(true)
-
-        await vi.waitFor(() => {
-          expect(sendResponse).toHaveBeenCalledWith(
-            expect.objectContaining({
-              success: true,
-              status: 'REGISTERED',
-              bookmarkId: MOCK_BOOKMARK_1.id,
-            }),
-          )
-        })
       })
 
-      it('不正なペイロード (URL形式エラー) の場合にエラーを返すこと', async () => {
+      it('不正なペイロードを受信した際に、エラーを返すこと', async () => {
         const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
         await import('./background')
 
         const messageHandler = addListenerMock.mock.calls[0][0]
         const sendResponse = vi.fn()
 
+        // READ_BOOKMARK_STATUS アクションを送信
         const result = messageHandler(
           {
-            type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
-            url: 'invalid-url', // 不正なURL
+            action: API_ACTIONS.READ_BOOKMARK_STATUS,
+            payload: {
+              url: INVALID_URLS.MALFORMED,
+              title: TEST_STRINGS.NEW_NAME,
+            },
           },
           {},
           sendResponse,
         )
 
+        // 非同期レスポンス（true）を返すことを確認
         expect(result).toBe(true)
+
+        // レスポンスの内容を確認
         await vi.waitFor(() => {
           expect(sendResponse).toHaveBeenCalledWith(
             expect.objectContaining({
               success: false,
-              error: expect.stringContaining(
-                VALIDATION_MESSAGES.URL_INVALID_FORMAT,
-              ),
+              error: expect.objectContaining({
+                code: ERROR_CODES.BAD_REQUEST,
+                message: expect.stringContaining('Invalid payload: '),
+              }),
             }),
           )
         })
       })
-    })
-  })
-  describe('統合メッセージディスパッチャ (ApiRequestSchema)', () => {
-    it('有効なアクションを受信した際に、適切なハンドラ（現在は未実装エラー）へルーティングすること', async () => {
-      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
-      await import('./background')
 
-      const messageHandler = addListenerMock.mock.calls[0][0]
-      const sendResponse = vi.fn()
+      it('不正な形式のメッセージを受信した際、handleApiMessage へ渡さず無視すること', async () => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        await import('./background')
 
-      // READ_BOOKMARKS アクションを送信
-      const result = messageHandler(
-        { action: API_ACTIONS.READ_BOOKMARKS },
-        {},
-        sendResponse,
-      )
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
 
-      // 非同期レスポンス（true）を返すことを確認
-      expect(result).toBe(true)
+        // action プロパティがない不正なメッセージを送信
+        const result = messageHandler({ invalid: 'payload' }, {}, sendResponse)
 
-      // レスポンスの内容を確認
-      await vi.waitFor(() => {
-        expect(sendResponse).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            error: expect.objectContaining({
-              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-              message: expect.stringContaining('is not yet implemented'),
-            }),
-          }),
-        )
-      })
-    })
+        // ディスパッチャが無視した場合は false を返す（または後続の古いハンドラへ行く）
+        expect(result).toBe(false)
 
-    it('不正な形式のメッセージを受信した際、handleApiMessage へ渡さず無視すること', async () => {
-      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
-      await import('./background')
-
-      const messageHandler = addListenerMock.mock.calls[0][0]
-      const sendResponse = vi.fn()
-
-      // action プロパティがない不正なメッセージを送信
-      const result = messageHandler({ invalid: 'payload' }, {}, sendResponse)
-
-      // ディスパッチャが無視した場合は false を返す（または後続の古いハンドラへ行く）
-      expect(result).toBe(false)
-
-      await vi.waitFor(() => {
-        expect(sendResponse).toHaveBeenCalledTimes(0)
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledTimes(0)
+        })
       })
     })
   })

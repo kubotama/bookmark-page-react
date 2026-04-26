@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
 
+import { BOOKMARK_STATUS } from '@shared/constants'
 import { bookmarkSchema } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1, MOCK_BOOKMARK_2 } from '@shared/test/fixtures'
 
@@ -32,7 +33,7 @@ describe('bookmark-utils', () => {
   describe('determineBookmarkStatus', () => {
     it('ブックマークが存在しない場合は NONE を返すこと', () => {
       const result = determineBookmarkStatus(undefined, 'Title')
-      expect(result).toBe('NONE')
+      expect(result).toBe(BOOKMARK_STATUS.NONE)
     })
 
     it('タイトルが一致する場合は REGISTERED を返すこと', () => {
@@ -41,19 +42,19 @@ describe('bookmark-utils', () => {
         bookmark.title,
         MOCK_BOOKMARK_1.title,
       )
-      expect(result).toBe('REGISTERED')
+      expect(result).toBe(BOOKMARK_STATUS.REGISTERED)
     })
 
     it('タイトルが異なる場合は MODIFIED を返すこと', () => {
       const bookmark = mockBookmarks[0]
       const result = determineBookmarkStatus(bookmark.title, 'Different Title')
-      expect(result).toBe('MODIFIED')
+      expect(result).toBe(BOOKMARK_STATUS.MODIFIED)
     })
 
     it('タイトルが undefined の場合（かつブックマークあり）は MODIFIED を返すこと', () => {
       const bookmark = mockBookmarks[0]
       const result = determineBookmarkStatus(bookmark.title, undefined)
-      expect(result).toBe('MODIFIED')
+      expect(result).toBe(BOOKMARK_STATUS.MODIFIED)
     })
   })
 })
