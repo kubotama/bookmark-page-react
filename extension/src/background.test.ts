@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 
 import {
+  API_ACTIONS,
   BOOKMARK_STATUS,
+  ERROR_CODES,
   EXTENSION_ICONS,
   EXTENSION_MESSAGE_TYPES,
   LOG_MESSAGES,
-  STORAGE_KEYS,
   VALIDATION_MESSAGES,
 } from '@shared/constants'
 import {
@@ -19,8 +20,6 @@ import {
 import { db } from './lib/idb'
 
 describe('background service worker', () => {
-  const mockApiUrl = VALID_URLS.HTTP
-
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.clearAllMocks()
@@ -51,20 +50,6 @@ describe('background service worker', () => {
         setIcon: vi.fn(),
       },
     })
-
-    // chrome.storage.sync.get の共通モック実装 (型定義を Chrome API に合わせる)
-    vi.mocked(chrome.storage.sync.get).mockImplementation(
-      (
-        _keys?: string | string[] | Record<string, unknown> | null,
-        callback?: (items: Record<string, unknown>) => void,
-      ) => {
-        const data = { [STORAGE_KEYS.API_URL]: mockApiUrl }
-        if (callback) {
-          callback(data)
-        }
-        return Promise.resolve(data)
-      },
-    )
 
     // background.ts を再読み込み
     vi.resetModules()
@@ -169,22 +154,6 @@ describe('background service worker', () => {
         })
       })
     })
-  })
-
-  describe('イベントリスナーとメッセージ', () => {
-    const mockBookmarks = {
-      bookmarks: [MOCK_BOOKMARK_1],
-    }
-
-    beforeEach(() => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({ success: true, data: mockBookmarks }),
-        }),
-      )
-    })
 
     it('タブのアクティブ化 (onActivated) 時にアイコンを更新すること', async () => {
       const onActivatedMock = vi.mocked(chrome.tabs.onActivated.addListener)
@@ -226,18 +195,6 @@ describe('background service worker', () => {
     describe('CHECK_BOOKMARK_STATUS', () => {
       it('メッセージを受信した際に判定結果を返すこと (正常系)', async () => {
         const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
-        const mockBookmarksResult = {
-          bookmarks: [MOCK_BOOKMARK_1],
-        }
-
-        vi.stubGlobal(
-          'fetch',
-          vi.fn().mockResolvedValue({
-            ok: true,
-            json: () =>
-              Promise.resolve({ success: true, data: mockBookmarksResult }),
-          }),
-        )
 
         await import('./background')
 
@@ -294,6 +251,56 @@ describe('background service worker', () => {
             }),
           )
         })
+      })
+    })
+  })
+  describe('統合メッセージディスパッチャ (ApiRequestSchema)', () => {
+    it('有効なアクションを受信した際に、適切なハンドラ（現在は未実装エラー）へルーティングすること', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      // READ_BOOKMARKS アクションを送信
+      const result = messageHandler(
+        { action: API_ACTIONS.READ_BOOKMARKS },
+        {},
+        sendResponse,
+      )
+
+      // 非同期レスポンス（true）を返すことを確認
+      expect(result).toBe(true)
+
+      // レスポンスの内容を確認
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error: expect.objectContaining({
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+              message: expect.stringContaining('is not yet implemented'),
+            }),
+          }),
+        )
+      })
+    })
+
+    it('不正な形式のメッセージを受信した際、handleApiMessage へ渡さず無視すること', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      // action プロパティがない不正なメッセージを送信
+      const result = messageHandler({ invalid: 'payload' }, {}, sendResponse)
+
+      // ディスパッチャが無視した場合は false を返す（または後続の古いハンドラへ行く）
+      expect(result).toBe(false)
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledTimes(0)
       })
     })
   })
