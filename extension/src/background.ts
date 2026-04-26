@@ -97,7 +97,20 @@ const handleApiMessage = async (
   try {
     switch (request.action) {
       // ブックマーク操作
-      case API_ACTIONS.READ_BOOKMARKS:
+      case API_ACTIONS.READ_BOOKMARKS: {
+        // 1. IndexedDB から全件取得（ソート済み、キーワード結合済み）
+        const bookmarks = await db.getAllWithKeywords()
+
+        // 2. 成功レスポンスを返送
+        // shared/schemas/api.ts の readBookmarksResponseSchema が期待する形式に合わせます
+        return {
+          success: true,
+          data: {
+            bookmarks,
+          },
+        }
+      }
+
       case API_ACTIONS.CREATE_BOOKMARK:
       case API_ACTIONS.UPDATE_BOOKMARK:
       case API_ACTIONS.DELETE_BOOKMARK:
