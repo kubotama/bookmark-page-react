@@ -9,6 +9,7 @@ import {
   EXTENSION_ICONS,
   LOG_MESSAGES,
 } from '@shared/constants'
+import type { Bookmark } from '@shared/schemas/bookmark'
 import {
   INVALID_URLS,
   MOCK_BOOKMARK_1,
@@ -55,6 +56,19 @@ describe('background service worker', () => {
     vi.resetModules()
   })
 
+  const loadBookmarks = async (bookmarks: Bookmark[]) => {
+    await db.bookmarks.clear()
+    for (const [index, b] of bookmarks.entries()) {
+      await db.bookmarks.add({
+        id: b.id,
+        title: b.title,
+        url: b.url,
+        sortOrder: index,
+        keywordIds: b.keywords.map((k) => k.id), // キーワードIDも反映
+      })
+    }
+  }
+
   it('拡張機能インストール時にログを出力すること', async () => {
     const consoleSpy = vi.mocked(console.log)
     const addListenerMock = vi.mocked(chrome.runtime.onInstalled.addListener)
@@ -70,17 +84,9 @@ describe('background service worker', () => {
 
   describe('アイコン状態更新 (updateIconStatus)', () => {
     beforeEach(async () => {
-      await db.bookmarks.clear()
-
       // 3. テストに必要なデータをあらかじめ DB に入れておく（これが「スタブ」の代わり）
       // 例：URL が登録済みの状態をテストしたい場合
-      await db.bookmarks.add({
-        id: MOCK_BOOKMARK_1.id,
-        title: MOCK_BOOKMARK_1.title,
-        url: MOCK_BOOKMARK_1.url,
-        sortOrder: 1,
-        keywordIds: [],
-      })
+      await loadBookmarks([MOCK_BOOKMARK_1])
     })
 
     it('未登録の URL の場合にデフォルトアイコンをセットすること', async () => {
@@ -191,138 +197,163 @@ describe('background service worker', () => {
       const handler = onActivatedMock.mock.calls[0][0]
       await expect(handler({ tabId: 1, windowId: 1 })).resolves.not.toThrow()
     })
+  })
 
-    describe('統合メッセージディスパッチャ (READ_BOOKMARK_STATUS)', () => {
-      describe('正常なメッセージを受信した場合', () => {
-        beforeEach(async () => {
-          await db.bookmarks.clear()
-
-          // 3. テストに必要なデータをあらかじめ DB に入れておく（これが「スタブ」の代わり）
-          // 例：URL が登録済みの状態をテストしたい場合
-          await db.bookmarks.add({
-            id: MOCK_BOOKMARK_1.id,
-            title: MOCK_BOOKMARK_1.title,
-            url: MOCK_BOOKMARK_1.url,
-            sortOrder: 1,
-            keywordIds: [],
-          })
-        })
-
-        it.each([
-          {
-            name: '未登録',
-            url: MOCK_BOOKMARK_2.url,
-            title: MOCK_BOOKMARK_2.title,
-            status: BOOKMARK_STATUS.NONE,
-            bookmarkId: undefined,
-          },
-          {
-            name: '登録済み',
-            url: MOCK_BOOKMARK_1.url,
-            title: MOCK_BOOKMARK_1.title,
-            status: BOOKMARK_STATUS.REGISTERED,
-            bookmarkId: MOCK_BOOKMARK_1.id,
-          },
-          {
-            name: '変更あり',
-            url: MOCK_BOOKMARK_1.url,
-            title: TEST_STRINGS.NEW_NAME,
-            status: BOOKMARK_STATUS.MODIFIED,
-            bookmarkId: MOCK_BOOKMARK_1.id,
-          },
-        ])(
-          'ブックマークのスタータス( $name )',
-          async ({ url, title, status, bookmarkId }) => {
-            const addListenerMock = vi.mocked(
-              chrome.runtime.onMessage.addListener,
-            )
-            await import('./background')
-
-            const messageHandler = addListenerMock.mock.calls[0][0]
-            const sendResponse = vi.fn()
-
-            // READ_BOOKMARK_STATUS アクションを送信
-            const result = messageHandler(
-              {
-                action: API_ACTIONS.READ_BOOKMARK_STATUS,
-                payload: {
-                  url: url,
-                  title: title,
-                },
-              },
-              {},
-              sendResponse,
-            )
-
-            // 非同期レスポンス（true）を返すことを確認
-            expect(result).toBe(true)
-
-            // レスポンスの内容を確認
-            await vi.waitFor(() => {
-              expect(sendResponse).toHaveBeenCalledWith(
-                expect.objectContaining({
-                  success: true,
-                  data: { status, bookmarkId },
-                }),
-              )
-            })
-          },
-        )
+  describe('統合メッセージディスパッチャ (READ_BOOKMARK_STATUS)', () => {
+    describe('正常なメッセージを受信した場合', () => {
+      beforeEach(async () => {
+        // 3. テストに必要なデータをあらかじめ DB に入れておく（これが「スタブ」の代わり）
+        // 例：URL が登録済みの状態をテストしたい場合
+        await loadBookmarks([MOCK_BOOKMARK_1])
       })
 
-      it('不正なペイロードを受信した際に、エラーを返すこと', async () => {
-        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
-        await import('./background')
-
-        const messageHandler = addListenerMock.mock.calls[0][0]
-        const sendResponse = vi.fn()
-
-        // READ_BOOKMARK_STATUS アクションを送信
-        const result = messageHandler(
-          {
-            action: API_ACTIONS.READ_BOOKMARK_STATUS,
-            payload: {
-              url: INVALID_URLS.MALFORMED,
-              title: TEST_STRINGS.NEW_NAME,
-            },
-          },
-          {},
-          sendResponse,
-        )
-
-        // 非同期レスポンス（true）を返すことを確認
-        expect(result).toBe(true)
-
-        // レスポンスの内容を確認
-        await vi.waitFor(() => {
-          expect(sendResponse).toHaveBeenCalledWith(
-            expect.objectContaining({
-              success: false,
-              error: expect.objectContaining({
-                code: ERROR_CODES.BAD_REQUEST,
-                message: expect.stringContaining('Invalid payload: '),
-              }),
-            }),
+      it.each([
+        {
+          name: '未登録',
+          url: MOCK_BOOKMARK_2.url,
+          title: MOCK_BOOKMARK_2.title,
+          status: BOOKMARK_STATUS.NONE,
+          bookmarkId: undefined,
+        },
+        {
+          name: '登録済み',
+          url: MOCK_BOOKMARK_1.url,
+          title: MOCK_BOOKMARK_1.title,
+          status: BOOKMARK_STATUS.REGISTERED,
+          bookmarkId: MOCK_BOOKMARK_1.id,
+        },
+        {
+          name: '変更あり',
+          url: MOCK_BOOKMARK_1.url,
+          title: TEST_STRINGS.NEW_NAME,
+          status: BOOKMARK_STATUS.MODIFIED,
+          bookmarkId: MOCK_BOOKMARK_1.id,
+        },
+      ])(
+        'ブックマークのスタータス( $name )',
+        async ({ url, title, status, bookmarkId }) => {
+          const addListenerMock = vi.mocked(
+            chrome.runtime.onMessage.addListener,
           )
-        })
+          await import('./background')
+
+          const messageHandler = addListenerMock.mock.calls[0][0]
+          const sendResponse = vi.fn()
+
+          // READ_BOOKMARK_STATUS アクションを送信
+          const result = messageHandler(
+            {
+              action: API_ACTIONS.READ_BOOKMARK_STATUS,
+              payload: {
+                url: url,
+                title: title,
+              },
+            },
+            {},
+            sendResponse,
+          )
+
+          // 非同期レスポンス（true）を返すことを確認
+          expect(result).toBe(true)
+
+          // レスポンスの内容を確認
+          await vi.waitFor(() => {
+            expect(sendResponse).toHaveBeenCalledWith(
+              expect.objectContaining({
+                success: true,
+                data: { status, bookmarkId },
+              }),
+            )
+          })
+        },
+      )
+    })
+
+    it('不正なペイロードを受信した際に、エラーを返すこと', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      // READ_BOOKMARK_STATUS アクションを送信
+      const result = messageHandler(
+        {
+          action: API_ACTIONS.READ_BOOKMARK_STATUS,
+          payload: {
+            url: INVALID_URLS.MALFORMED,
+            title: TEST_STRINGS.NEW_NAME,
+          },
+        },
+        {},
+        sendResponse,
+      )
+
+      // 非同期レスポンス（true）を返すことを確認
+      expect(result).toBe(true)
+
+      // レスポンスの内容を確認
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error: expect.objectContaining({
+              code: ERROR_CODES.BAD_REQUEST,
+              message: expect.stringContaining('Invalid payload: '),
+            }),
+          }),
+        )
       })
+    })
 
-      it('不正な形式のメッセージを受信した際、handleApiMessage へ渡さず無視すること', async () => {
-        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
-        await import('./background')
+    it('不正な形式のメッセージを受信した際、handleApiMessage へ渡さず無視すること', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
 
-        const messageHandler = addListenerMock.mock.calls[0][0]
-        const sendResponse = vi.fn()
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
 
-        // action プロパティがない不正なメッセージを送信
-        const result = messageHandler({ invalid: 'payload' }, {}, sendResponse)
+      // action プロパティがない不正なメッセージを送信
+      const result = messageHandler({ invalid: 'payload' }, {}, sendResponse)
 
-        // ディスパッチャが無視した場合は false を返す（または後続の古いハンドラへ行く）
-        expect(result).toBe(false)
+      // ディスパッチャが無視した場合は false を返す（または後続の古いハンドラへ行く）
+      expect(result).toBe(false)
 
-        await vi.waitFor(() => {
-          expect(sendResponse).toHaveBeenCalledTimes(0)
-        })
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledTimes(0)
+      })
+    })
+  })
+
+  describe('統合メッセージディスパッチャ (READ_BOOKMARKS)', () => {
+    it('READ_BOOKMARKS アクションを受信した際に、全ブックマークを返すこと', async () => {
+      await loadBookmarks([MOCK_BOOKMARK_1, MOCK_BOOKMARK_2])
+
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const message = {
+        action: API_ACTIONS.READ_BOOKMARKS,
+      }
+
+      const result = messageHandler(message, {}, sendResponse)
+      expect(result).toBe(true)
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: {
+              bookmarks: expect.arrayContaining([
+                MOCK_BOOKMARK_1,
+                MOCK_BOOKMARK_2,
+              ]),
+            },
+          }),
+        )
       })
     })
   })
