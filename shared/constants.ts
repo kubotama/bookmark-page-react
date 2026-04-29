@@ -334,7 +334,7 @@ export const DB_CONSTANTS = {
   DB_NAME: 'BookmarkDatabase',
   IDB_VERSION: 1,
   IDB_SCHEMA: {
-    bookmarks: 'id, url, sortOrder, *keywordIds',
+    bookmarks: 'id, &url, sortOrder, *keywordIds',
     keywords: 'id, name',
   },
   FILENAME: 'bookmarks.sqlite',

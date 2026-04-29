@@ -2,11 +2,13 @@ import {
   API_ACTIONS,
   BOOKMARK_STATUS,
   ERROR_CODES,
+  ERROR_MESSAGES,
   EXTENSION_ICONS,
   LOG_MESSAGES,
 } from '@shared/constants'
 import {
   ApiRequestSchema,
+  createBookmarkRequestSchema,
   type ApiRequest,
   type ApiError,
   readBookmarkStatusRequestSchema,
@@ -111,10 +113,59 @@ const handleApiMessage = async (
         }
       }
 
-      case API_ACTIONS.CREATE_BOOKMARK:
-      case API_ACTIONS.UPDATE_BOOKMARK:
-      case API_ACTIONS.DELETE_BOOKMARK:
-      case API_ACTIONS.REORDER_BOOKMARKS:
+      case API_ACTIONS.CREATE_BOOKMARK: {
+        // 1. バリデーション
+        const validation = createBookmarkRequestSchema.safeParse(request)
+        if (!validation.success) {
+          return {
+            success: false,
+            error: {
+              message: LOG_MESSAGES.INVALID_PAYLOAD(validation.error.message),
+              code: ERROR_CODES.BAD_REQUEST,
+            },
+          }
+        }
+
+        // 2. 保存処理（db.createBookmark は BookmarkId を返します）
+        const { title, url } = validation.data.payload
+        try {
+          const bookmarkId = await db.createBookmark({ title, url })
+          // 3. 作成された完全なデータを取得して返送（キーワード情報などを含めるため）
+          const newBookmark = await db.bookmarks.get(bookmarkId)
+          if (!newBookmark) {
+            throw new Error(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+          }
+
+          return {
+            success: true,
+            data: {
+              ...newBookmark,
+              keywords: [], // 初期作成時はキーワードは空
+            },
+          }
+        } catch (err: unknown) {
+          // 1. Dexie の制約エラー (ConstraintError) かどうかを判定
+          // err がオブジェクトであり、name プロパティが 'ConstraintError' であるかを確認
+          if (err instanceof Error && err.name === 'ConstraintError') {
+            return {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.DUPLICATE_URL,
+                code: ERROR_CODES.CONFLICT,
+              },
+            }
+          }
+
+          // 2. その他のエラー
+          return {
+            success: false,
+            error: {
+              message: err instanceof Error ? err.message : String(err),
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            },
+          }
+        }
+      }
       case API_ACTIONS.READ_BOOKMARK_STATUS: {
         // 1. 個別のスキーマでパース（safeParse を推奨）
         const validation = readBookmarkStatusRequestSchema.safeParse(request)
@@ -141,7 +192,12 @@ const handleApiMessage = async (
         }
       }
 
+      case API_ACTIONS.UPDATE_BOOKMARK:
+      case API_ACTIONS.DELETE_BOOKMARK:
+      case API_ACTIONS.REORDER_BOOKMARKS:
+
       // キーワード操作
+      // eslint-disable-next-line no-fallthrough
       case API_ACTIONS.READ_KEYWORDS:
       case API_ACTIONS.CREATE_KEYWORD:
       case API_ACTIONS.UPDATE_KEYWORD:

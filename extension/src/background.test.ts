@@ -6,6 +6,7 @@ import {
   API_ACTIONS,
   BOOKMARK_STATUS,
   ERROR_CODES,
+  ERROR_MESSAGES,
   EXTENSION_ICONS,
   LOG_MESSAGES,
 } from '@shared/constants'
@@ -14,6 +15,7 @@ import {
   INVALID_URLS,
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
+  MOCK_IDS,
   TEST_STRINGS,
   VALID_URLS,
 } from '@shared/test/fixtures'
@@ -351,6 +353,196 @@ describe('background service worker', () => {
                 MOCK_BOOKMARK_1,
                 MOCK_BOOKMARK_2,
               ]),
+            },
+          }),
+        )
+      })
+    })
+  })
+
+  describe('統合メッセージディスパッチャ (CREATE_BOOKMARK)', () => {
+    beforeEach(async () => {
+      // 3. テストに必要なデータをあらかじめ DB に入れておく（これが「スタブ」の代わり）
+      // 例：URL が登録済みの状態をテストしたい場合
+      await loadBookmarks([MOCK_BOOKMARK_1])
+    })
+
+    it('正しいペイロードでブックマークを作成し、データを返すこと', async () => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const message = {
+        action: API_ACTIONS.CREATE_BOOKMARK,
+        payload: {
+          title: MOCK_BOOKMARK_2.title,
+          url: MOCK_BOOKMARK_2.url,
+        },
+      }
+
+      messageHandler(message, {}, sendResponse)
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: expect.objectContaining({
+              title: MOCK_BOOKMARK_2.title,
+              url: MOCK_BOOKMARK_2.url,
+            }),
+          }),
+        )
+      })
+
+      // DB に実際に増えているかも確認
+      const count = await db.bookmarks.count()
+      expect(count).toBe(2)
+    })
+
+    describe('ブックマークの追加に失敗', () => {
+      it.each([
+        {
+          name: '既に登録済みのURL',
+          payload: { title: MOCK_BOOKMARK_2.title, url: MOCK_BOOKMARK_1.url },
+          error: {
+            code: ERROR_CODES.CONFLICT,
+            message: ERROR_MESSAGES.DUPLICATE_URL,
+          },
+        },
+        {
+          name: 'タイトルが空',
+          payload: { title: '', url: MOCK_BOOKMARK_2.url },
+          error: {
+            code: ERROR_CODES.BAD_REQUEST,
+            message: expect.stringContaining('Invalid payload'),
+          },
+        },
+        {
+          name: 'タイトルが欠落',
+          payload: { url: MOCK_BOOKMARK_2.url },
+          error: {
+            code: ERROR_CODES.BAD_REQUEST,
+            message: expect.stringContaining('Invalid payload'),
+          },
+        },
+        {
+          name: 'URLが不正',
+          payload: {
+            title: MOCK_BOOKMARK_2.title,
+            url: INVALID_URLS.MALFORMED,
+          },
+          error: {
+            code: ERROR_CODES.BAD_REQUEST,
+            message: expect.stringContaining('Invalid payload'),
+          },
+        },
+      ])('$name', async ({ payload, error }) => {
+        const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+        await import('./background')
+
+        const messageHandler = addListenerMock.mock.calls[0][0]
+        const sendResponse = vi.fn()
+
+        const message = {
+          action: API_ACTIONS.CREATE_BOOKMARK,
+          payload,
+        }
+
+        messageHandler(message, {}, sendResponse)
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error,
+            }),
+          )
+        })
+
+        // DB に実際に増えているかも確認
+        const count = await db.bookmarks.count()
+        expect(count).toBe(1)
+      })
+    })
+  })
+
+  describe('未実装のメッセージ', () => {
+    it.each([
+      {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_BOOKMARK_1.id,
+          url: MOCK_BOOKMARK_1.url,
+          title: MOCK_BOOKMARK_1.title,
+        },
+      },
+      {
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: {
+          id: MOCK_BOOKMARK_1.id,
+        },
+      },
+      {
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: {
+          ids: [MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id],
+        },
+      },
+      {
+        action: API_ACTIONS.READ_KEYWORDS,
+        payload: undefined,
+      },
+      {
+        action: API_ACTIONS.CREATE_KEYWORD,
+        payload: { name: TEST_STRINGS.NEW_NAME },
+      },
+      {
+        action: API_ACTIONS.UPDATE_KEYWORD,
+        payload: { name: TEST_STRINGS.NEW_NAME, id: MOCK_IDS.KEYWORD_1 },
+      },
+      {
+        action: API_ACTIONS.DELETE_KEYWORD,
+        payload: { id: MOCK_IDS.KEYWORD_1 },
+      },
+      {
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: {
+          keywordId: MOCK_IDS.KEYWORD_1,
+          bookmarkId: MOCK_IDS.BOOKMARK_1,
+        },
+      },
+      {
+        action: API_ACTIONS.DETACH_KEYWORD,
+        payload: {
+          keywordId: MOCK_IDS.KEYWORD_1,
+          bookmarkId: MOCK_IDS.BOOKMARK_1,
+        },
+      },
+    ])('$action', async ({ action, payload }) => {
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      messageHandler(
+        {
+          action,
+          payload,
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error: {
+              message: LOG_MESSAGES.ACTION_NOT_IMPLEMENTED(action),
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
             },
           }),
         )
