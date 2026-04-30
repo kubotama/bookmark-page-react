@@ -15,6 +15,7 @@ import {
   INVALID_URLS,
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
+  MOCK_BOOKMARK_ENTITY_1,
   MOCK_IDS,
   TEST_STRINGS,
   VALID_URLS,
@@ -468,6 +469,97 @@ describe('background service worker', () => {
     })
   })
 
+  describe('統合メッセージディスパッチャ (DELETE_BOOKMARK)', () => {
+    beforeEach(async () => {
+      await loadBookmarks([MOCK_BOOKMARK_1])
+    })
+
+    describe('正常終了', () => {
+      it.each([
+        {
+          name: '登録済みのIDを指定',
+          id: MOCK_BOOKMARK_1.id,
+          count: 0,
+          getResult: undefined,
+        },
+        {
+          name: '未登録のIDを指定',
+          id: MOCK_BOOKMARK_2.id,
+          count: 1,
+          getResult: MOCK_BOOKMARK_ENTITY_1,
+        },
+      ])('$name', async ({ id, count, getResult }) => {
+        await import('./background')
+
+        const sendResponse = vi.fn()
+
+        vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+          {
+            action: API_ACTIONS.DELETE_BOOKMARK,
+            payload: {
+              id,
+            },
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: true,
+              data: null,
+            }),
+          )
+        })
+
+        expect(await db.bookmarks.count()).toBe(count)
+        expect(await db.bookmarks.get(id)).toEqual(undefined)
+        expect(await db.bookmarks.get(MOCK_BOOKMARK_1.id)).toEqual(getResult)
+      })
+    })
+
+    describe('異常終了', () => {
+      it.each([
+        { name: 'ID を指定しない場合', payload: {} },
+        {
+          name: '不正な ID 形式の場合',
+          payload: { id: TEST_STRINGS.INVALID_ID },
+        },
+      ])('$name', async ({ payload }) => {
+        await import('./background')
+
+        const sendResponse = vi.fn()
+
+        vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+          {
+            action: API_ACTIONS.DELETE_BOOKMARK,
+            payload,
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error: {
+                code: ERROR_CODES.BAD_REQUEST,
+                message: expect.stringContaining('Invalid payload'),
+              },
+            }),
+          )
+        })
+
+        expect(await db.bookmarks.count()).toBe(1)
+        expect(await db.bookmarks.get(MOCK_BOOKMARK_1.id)).toEqual(
+          MOCK_BOOKMARK_ENTITY_1,
+        )
+      })
+    })
+  })
+
   describe('未実装のメッセージ', () => {
     it.each([
       {
@@ -476,12 +568,6 @@ describe('background service worker', () => {
           id: MOCK_BOOKMARK_1.id,
           url: MOCK_BOOKMARK_1.url,
           title: MOCK_BOOKMARK_1.title,
-        },
-      },
-      {
-        action: API_ACTIONS.DELETE_BOOKMARK,
-        payload: {
-          id: MOCK_BOOKMARK_1.id,
         },
       },
       {
