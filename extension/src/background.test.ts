@@ -302,7 +302,9 @@ describe('background service worker', () => {
             success: false,
             error: expect.objectContaining({
               code: ERROR_CODES.BAD_REQUEST,
-              message: expect.stringContaining('Invalid payload: '),
+              message: expect.stringContaining(
+                LOG_MESSAGES.INVALID_PAYLOAD(''),
+              ),
             }),
           }),
         )
@@ -417,7 +419,7 @@ describe('background service worker', () => {
           payload: { title: '', url: MOCK_BOOKMARK_2.url },
           error: {
             code: ERROR_CODES.BAD_REQUEST,
-            message: expect.stringContaining('Invalid payload'),
+            message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
           },
         },
         {
@@ -425,7 +427,7 @@ describe('background service worker', () => {
           payload: { url: MOCK_BOOKMARK_2.url },
           error: {
             code: ERROR_CODES.BAD_REQUEST,
-            message: expect.stringContaining('Invalid payload'),
+            message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
           },
         },
         {
@@ -436,7 +438,7 @@ describe('background service worker', () => {
           },
           error: {
             code: ERROR_CODES.BAD_REQUEST,
-            message: expect.stringContaining('Invalid payload'),
+            message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
           },
         },
       ])('$name', async ({ payload, error }) => {
@@ -546,7 +548,9 @@ describe('background service worker', () => {
               success: false,
               error: {
                 code: ERROR_CODES.BAD_REQUEST,
-                message: expect.stringContaining('Invalid payload'),
+                message: expect.stringContaining(
+                  LOG_MESSAGES.INVALID_PAYLOAD(''),
+                ),
               },
             }),
           )
