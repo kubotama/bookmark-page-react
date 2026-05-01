@@ -171,7 +171,45 @@ const handleApiMessage = async (
         }
       }
 
-      case API_ACTIONS.UPDATE_BOOKMARK:
+      case API_ACTIONS.UPDATE_BOOKMARK: {
+        // 1. request.payload から ID と更新データを抽出
+        const { id, ...params } = request.payload
+
+        try {
+          // 2. 更新処理の実行
+          await db.updateBookmark(id, params)
+
+          // 3. 更新後の最新データを取得
+          const updatedBookmark = await db.bookmarks.get(id)
+          if (!updatedBookmark) {
+            throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+          }
+
+          // 4. キーワード情報を付加して返送 (現在は空配列でOK)
+          return {
+            success: true,
+            data: {
+              ...updatedBookmark,
+              keywords: [],
+            },
+          }
+        } catch (err: unknown) {
+          // 重複エラー（URL更新時）やその他のエラーハンドリング
+          if (
+            err instanceof Error &&
+            err.message.includes('Errors: ConstraintError:')
+          ) {
+            return {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.DUPLICATE_URL,
+                code: ERROR_CODES.CONFLICT,
+              },
+            }
+          }
+          throw err // 予期せぬエラーは上位で 500 として処理
+        }
+      }
       case API_ACTIONS.REORDER_BOOKMARKS:
 
       // キーワード操作
