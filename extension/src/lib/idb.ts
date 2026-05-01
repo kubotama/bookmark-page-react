@@ -127,7 +127,7 @@ export class BookmarkDatabase extends Dexie {
         // 存在確認
         const bookmark = await this.bookmarks.get(validatedId)
         if (!bookmark) {
-          throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
+          return
         }
 
         // ブックマークを削除

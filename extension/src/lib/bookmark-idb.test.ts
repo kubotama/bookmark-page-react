@@ -141,21 +141,33 @@ describe('BookmarkDatabase - Bookmark Operations', () => {
   })
 
   describe('Delete', () => {
-    it('deleteBookmark が正常にブックマークを削除すること', async () => {
+    describe('正常終了', () => {
       const bookmark = MOCK_BOOKMARK_ENTITY_1
-      await db.bookmarks.add(bookmark)
-
-      await db.deleteBookmark(bookmark.id)
-
-      const deleted = await db.bookmarks.get(bookmark.id)
-      expect(deleted).toBeUndefined()
-    })
-
-    it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {
       const unknownId = BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
-      await expect(db.deleteBookmark(unknownId)).rejects.toThrow(
-        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
-      )
+
+      beforeEach(async () => {
+        await db.bookmarks.clear()
+        await db.bookmarks.add(bookmark)
+      })
+      it.each([
+        {
+          name: '登録済みのブックマークID',
+          id: bookmark.id,
+          count: 0,
+          getResult: undefined,
+        },
+        {
+          name: '未登録のブックマークID',
+          id: unknownId,
+          count: 1,
+          getResult: bookmark,
+        },
+      ])('$name', async ({ id, count, getResult }) => {
+        expect(await db.deleteBookmark(id)).toBeUndefined()
+        expect(await db.bookmarks.count()).toBe(count)
+        expect(await db.bookmarks.get(id)).toEqual(undefined)
+        expect(await db.bookmarks.get(bookmark.id)).toEqual(getResult)
+      })
     })
 
     it('不正な形式の ID での削除を試みた場合にバリデーションエラーを投げること', async () => {

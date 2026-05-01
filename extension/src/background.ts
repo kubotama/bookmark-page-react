@@ -192,8 +192,16 @@ const handleApiMessage = async (
         }
       }
 
+      case API_ACTIONS.DELETE_BOOKMARK: {
+        await db.deleteBookmark(request.payload.id)
+
+        return {
+          success: true,
+          data: null,
+        }
+      }
+
       case API_ACTIONS.UPDATE_BOOKMARK:
-      case API_ACTIONS.DELETE_BOOKMARK:
       case API_ACTIONS.REORDER_BOOKMARKS:
 
       // キーワード操作
