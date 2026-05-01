@@ -8,10 +8,8 @@ import {
 } from '@shared/constants'
 import {
   ApiRequestSchema,
-  createBookmarkRequestSchema,
   type ApiRequest,
   type ApiError,
-  readBookmarkStatusRequestSchema,
 } from '@shared/schemas/api'
 
 import { determineBookmarkStatus } from './lib/bookmark-utils'
@@ -114,24 +112,11 @@ const handleApiMessage = async (
       }
 
       case API_ACTIONS.CREATE_BOOKMARK: {
-        // 1. バリデーション
-        const validation = createBookmarkRequestSchema.safeParse(request)
-        if (!validation.success) {
-          return {
-            success: false,
-            error: {
-              message: LOG_MESSAGES.INVALID_PAYLOAD(validation.error.message),
-              code: ERROR_CODES.BAD_REQUEST,
-            },
-          }
-        }
-
-        // 2. 保存処理（db.createBookmark は BookmarkId を返します）
-        const { title, url } = validation.data.payload
         try {
-          const bookmarkId = await db.createBookmark({ title, url })
-          // 3. 作成された完全なデータを取得して返送（キーワード情報などを含めるため）
-          const newBookmark = await db.bookmarks.get(bookmarkId)
+          // 作成された完全なデータを取得して返送（キーワード情報などを含めるため）
+          const newBookmark = await db.bookmarks.get(
+            await db.createBookmark(request.payload),
+          )
           if (!newBookmark) {
             throw new Error(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
           }
@@ -167,22 +152,7 @@ const handleApiMessage = async (
         }
       }
       case API_ACTIONS.READ_BOOKMARK_STATUS: {
-        // 1. 個別のスキーマでパース（safeParse を推奨）
-        const validation = readBookmarkStatusRequestSchema.safeParse(request)
-
-        // 2. バリデーション失敗時のエラーレスポンス
-        if (!validation.success) {
-          return {
-            success: false,
-            error: {
-              message: LOG_MESSAGES.INVALID_PAYLOAD(validation.error.message),
-              code: ERROR_CODES.BAD_REQUEST, // ここが重要
-            },
-          }
-        }
-
-        // 3. 成功時の処理（validation.data.payload を安全に使用できる）
-        const { url, title } = validation.data.payload
+        const { url, title } = request.payload
         const bookmark = await db.bookmarks.where('url').equals(url).first()
         const status = determineBookmarkStatus(bookmark?.title, title)
 
