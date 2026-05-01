@@ -15,6 +15,7 @@ import {
   INVALID_URLS,
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
+  MOCK_BOOKMARK_3,
   MOCK_BOOKMARK_ENTITY_1,
   MOCK_IDS,
   TEST_STRINGS,
@@ -564,16 +565,144 @@ describe('background service worker', () => {
     })
   })
 
+  describe('統合メッセージディスパッチャ (UPDATE_BOOKMARK)', () => {
+    describe('正常終了', () => {
+      beforeEach(async () => {
+        await loadBookmarks([MOCK_BOOKMARK_1])
+      })
+      it.each([
+        { name: 'タイトルのみ', payload: { title: TEST_STRINGS.NEW_NAME } },
+        { name: 'URLのみ', payload: { url: MOCK_BOOKMARK_3.url } },
+        {
+          name: 'タイトルとURL',
+          payload: { url: MOCK_BOOKMARK_3.url, title: TEST_STRINGS.NEW_NAME },
+        },
+      ])('$name', async ({ payload }) => {
+        await import('./background')
+
+        const expected = {
+          ...MOCK_BOOKMARK_ENTITY_1,
+          ...payload,
+        }
+
+        const sendResponse = vi.fn()
+
+        vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+          {
+            action: API_ACTIONS.UPDATE_BOOKMARK,
+            payload: { id: MOCK_BOOKMARK_1.id, ...payload },
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: true,
+              data: expect.objectContaining(expected),
+            }),
+          )
+        })
+
+        expect(await db.bookmarks.count()).toBe(1)
+        expect(await db.bookmarks.get(MOCK_BOOKMARK_1.id)).toEqual(expected)
+      })
+    })
+
+    describe('異常終了', () => {
+      beforeEach(async () => {
+        await loadBookmarks([MOCK_BOOKMARK_1, MOCK_BOOKMARK_2])
+      })
+
+      it.each([
+        {
+          name: 'ID を指定しない場合',
+          payload: { url: MOCK_BOOKMARK_3.url, title: TEST_STRINGS.NEW_NAME },
+          error: {
+            code: ERROR_CODES.BAD_REQUEST,
+            message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+          },
+        },
+        {
+          name: '不正な ID 形式の場合',
+          payload: {
+            id: TEST_STRINGS.INVALID_ID,
+            url: MOCK_BOOKMARK_3.url,
+            title: TEST_STRINGS.NEW_NAME,
+          },
+          error: {
+            code: ERROR_CODES.BAD_REQUEST,
+            message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+          },
+        },
+        {
+          name: 'URL, タイトルともなし',
+          payload: {
+            id: MOCK_BOOKMARK_1.id,
+          },
+          error: {
+            code: ERROR_CODES.BAD_REQUEST,
+            message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+          },
+        },
+        {
+          name: '未登録のIDを指定',
+          payload: {
+            id: MOCK_BOOKMARK_3.id,
+            url: MOCK_BOOKMARK_3.url,
+            title: TEST_STRINGS.NEW_NAME,
+          },
+          error: {
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            message: expect.stringContaining(ERROR_MESSAGES.BOOKMARK_NOT_FOUND),
+          },
+        },
+        {
+          name: 'URLの重複',
+          payload: {
+            id: MOCK_BOOKMARK_1.id,
+            url: MOCK_BOOKMARK_2.url,
+            title: TEST_STRINGS.NEW_NAME,
+          },
+          error: {
+            code: ERROR_CODES.CONFLICT,
+            message: ERROR_MESSAGES.DUPLICATE_URL,
+          },
+        },
+      ])('$name', async ({ payload, error }) => {
+        await import('./background')
+
+        const sendResponse = vi.fn()
+
+        vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+          {
+            action: API_ACTIONS.UPDATE_BOOKMARK,
+            payload,
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: false,
+              error,
+            }),
+          )
+        })
+
+        expect(await db.bookmarks.count()).toBe(2)
+        expect(await db.bookmarks.get(MOCK_BOOKMARK_1.id)).toEqual(
+          MOCK_BOOKMARK_ENTITY_1,
+        )
+      })
+    })
+  })
+
   describe('未実装のメッセージ', () => {
     it.each([
-      {
-        action: API_ACTIONS.UPDATE_BOOKMARK,
-        payload: {
-          id: MOCK_BOOKMARK_1.id,
-          url: MOCK_BOOKMARK_1.url,
-          title: MOCK_BOOKMARK_1.title,
-        },
-      },
       {
         action: API_ACTIONS.REORDER_BOOKMARKS,
         payload: {
