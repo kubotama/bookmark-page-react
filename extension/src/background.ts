@@ -210,11 +210,20 @@ const handleApiMessage = async (
           throw err // 予期せぬエラーは上位で 500 として処理
         }
       }
+      case API_ACTIONS.READ_KEYWORDS: {
+        const keywords = await db.getAllKeywords()
+        return {
+          success: true,
+          data: {
+            keywords,
+          },
+        }
+      }
+
       case API_ACTIONS.REORDER_BOOKMARKS:
 
       // キーワード操作
       // eslint-disable-next-line no-fallthrough
-      case API_ACTIONS.READ_KEYWORDS:
       case API_ACTIONS.CREATE_KEYWORD:
       case API_ACTIONS.UPDATE_KEYWORD:
       case API_ACTIONS.DELETE_KEYWORD:
