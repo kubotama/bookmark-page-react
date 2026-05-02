@@ -1,4 +1,4 @@
-import type { Bookmark } from '@shared/schemas/bookmark'
+import type { Bookmark, Keyword } from '@shared/schemas/bookmark'
 
 import { db } from './lib/idb'
 
@@ -16,4 +16,9 @@ export const loadBookmarks = async (bookmarks: Bookmark[]) => {
       keywordIds: b.keywords.map((k) => k.id),
     })
   }
+}
+
+export const loadKeywords = async (keywords: Keyword[]) => {
+  await db.keywords.clear()
+  await db.keywords.bulkAdd(keywords.map((k) => ({ ...k, bookmarkCount: 0 })))
 }

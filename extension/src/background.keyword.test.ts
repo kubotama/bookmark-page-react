@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 
 import { API_ACTIONS, ERROR_CODES, LOG_MESSAGES } from '@shared/constants'
-import { MOCK_IDS, TEST_STRINGS } from '@shared/test/fixtures'
+import { MOCK_IDS, MOCK_KEYWORDS, TEST_STRINGS } from '@shared/test/fixtures'
+
+import { loadKeywords } from './background.test.utils'
 
 describe('background service worker', () => {
   beforeEach(() => {
@@ -41,12 +43,38 @@ describe('background service worker', () => {
     vi.resetModules()
   })
 
+  describe('統合メッセージディスパッチャ (READ_KEYWORDS)', () => {
+    it('READ_KEYWORDS アクションを受信した際に、全キーワードを返すこと', async () => {
+      await loadKeywords(MOCK_KEYWORDS)
+
+      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
+      await import('./background')
+
+      const messageHandler = addListenerMock.mock.calls[0][0]
+      const sendResponse = vi.fn()
+
+      const message = {
+        action: API_ACTIONS.READ_KEYWORDS,
+      }
+
+      const result = messageHandler(message, {}, sendResponse)
+      expect(result).toBe(true)
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: {
+              keywords: expect.arrayContaining(MOCK_KEYWORDS),
+            },
+          }),
+        )
+      })
+    })
+  })
+
   describe('未実装のメッセージ', () => {
     it.each([
-      {
-        action: API_ACTIONS.READ_KEYWORDS,
-        payload: undefined,
-      },
       {
         action: API_ACTIONS.CREATE_KEYWORD,
         payload: { name: TEST_STRINGS.NEW_NAME },
