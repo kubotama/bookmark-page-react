@@ -176,22 +176,17 @@ const handleApiMessage = async (
         const { id, ...params } = request.payload
 
         try {
-          // 2. 更新処理の実行
           await db.updateBookmark(id, params)
 
-          // 3. 更新後の最新データを取得
-          const updatedBookmark = await db.bookmarks.get(id)
+          const updatedBookmark = await db.getBookmarkWithKeywords(id)
+
           if (!updatedBookmark) {
             throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
           }
 
-          // 4. キーワード情報を付加して返送 (現在は空配列でOK)
           return {
             success: true,
-            data: {
-              ...updatedBookmark,
-              keywords: [],
-            },
+            data: updatedBookmark,
           }
         } catch (err: unknown) {
           // 重複エラー（URL更新時）やその他のエラーハンドリング

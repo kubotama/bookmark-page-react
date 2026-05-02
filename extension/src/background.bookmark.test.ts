@@ -15,10 +15,11 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARK_3,
   MOCK_BOOKMARK_ENTITY_1,
+  MOCK_KEYWORDS,
   TEST_STRINGS,
 } from '@shared/test/fixtures'
 
-import { loadBookmarks } from './background.test.utils'
+import { loadBookmarks, loadKeywords } from './background.test.utils'
 import { db } from './lib/idb'
 
 describe('background service worker', () => {
@@ -461,6 +462,39 @@ describe('background service worker', () => {
 
         expect(await db.bookmarks.count()).toBe(1)
         expect(await db.bookmarks.get(MOCK_BOOKMARK_1.id)).toEqual(expected)
+      })
+
+      it('キーワードが紐付いたブックマークを更新した際、キーワード情報が維持されること', async () => {
+        await loadKeywords([MOCK_KEYWORDS[0]])
+        await loadBookmarks([
+          { ...MOCK_BOOKMARK_ENTITY_1, keywords: [MOCK_KEYWORDS[0]] },
+        ])
+
+        await import('./background')
+        const sendResponse = vi.fn()
+
+        vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+          {
+            action: API_ACTIONS.UPDATE_BOOKMARK,
+            payload: { id: MOCK_BOOKMARK_1.id, title: TEST_STRINGS.NEW_NAME },
+          },
+          {},
+          sendResponse,
+        )
+
+        await vi.waitFor(() => {
+          expect(sendResponse).toHaveBeenCalledWith(
+            expect.objectContaining({
+              success: true,
+              data: expect.objectContaining({
+                title: TEST_STRINGS.NEW_NAME,
+                keywords: expect.arrayContaining([
+                  expect.objectContaining({ name: MOCK_KEYWORDS[0].name }),
+                ]),
+              }),
+            }),
+          )
+        })
       })
     })
 

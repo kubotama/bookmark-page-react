@@ -71,6 +71,24 @@ export class BookmarkDatabase extends Dexie {
   }
 
   /**
+   * 指定された ID のブックマークを、キーワード詳細を含めて取得する
+   */
+  async getBookmarkWithKeywords(id: BookmarkId): Promise<Bookmark | undefined> {
+    const entity = await this.bookmarks.get(id)
+    if (!entity) return undefined
+
+    const keywords = await this.keywords.bulkGet(entity.keywordIds)
+    const joinedKeywords = keywords.filter(
+      (k): k is KeywordWithCount => k !== undefined,
+    )
+
+    return {
+      ...entity,
+      keywords: joinedKeywords,
+    }
+  }
+
+  /**
    * ブックマークを作成する
    */
   async createBookmark(params: CreateBookmarkInput): Promise<BookmarkId> {
