@@ -44,7 +44,7 @@ describe('background service worker', () => {
   })
 
   describe('統合メッセージディスパッチャ (READ_KEYWORDS)', () => {
-    it('READ_KEYWORDS アクションを受信した際に、全ブックマークを返すこと', async () => {
+    it('READ_KEYWORDS アクションを受信した際に、全キーワードを返すこと', async () => {
       await loadKeywords(MOCK_KEYWORDS)
 
       const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
