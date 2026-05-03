@@ -6,6 +6,7 @@ import { API_ACTIONS, ERROR_CODES, LOG_MESSAGES } from '@shared/constants'
 import { MOCK_IDS, MOCK_KEYWORDS, TEST_STRINGS } from '@shared/test/fixtures'
 
 import { loadKeywords } from './background.test.utils'
+import { db } from './lib/idb'
 
 describe('background service worker', () => {
   beforeEach(() => {
@@ -73,12 +74,98 @@ describe('background service worker', () => {
     })
   })
 
-  describe('未実装のメッセージ', () => {
+  describe('統合メッセージディスパッチャ (CREATE_KEYWORD)', () => {
+    beforeEach(async () => {
+      await loadKeywords([MOCK_KEYWORDS[0]])
+      await import('./background')
+    })
     it.each([
       {
-        action: API_ACTIONS.CREATE_KEYWORD,
-        payload: { name: TEST_STRINGS.NEW_NAME },
+        testName: '新しいキーワード',
+        keywordName: TEST_STRINGS.NEW_NAME,
+        count: 2,
       },
+      {
+        testName: '登録済みのキーワード',
+        keywordName: MOCK_KEYWORDS[0].name,
+        count: 1,
+      },
+    ])('正常終了: $testName', async ({ keywordName, count }) => {
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.CREATE_KEYWORD,
+          payload: {
+            name: keywordName,
+          },
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: {
+              keyword: expect.objectContaining({
+                name: keywordName,
+                id: expect.any(String),
+              }),
+            },
+          }),
+        )
+      })
+
+      // DB に実際に増えているかも確認
+      expect(await db.keywords.count()).toBe(count)
+
+      expect(
+        (await db.keywords.get(sendResponse.mock.calls[0][0].data.keyword.id))
+          ?.name,
+      ).toBe(keywordName)
+    })
+
+    it.each([
+      { testName: 'name欠落', payload: {} },
+      { testName: 'nameが空文字', payload: { name: '' } },
+      { testName: 'nameが長すぎ', payload: { name: '0'.repeat(100) } },
+    ])('異常終了: $testName', async (payload) => {
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.CREATE_KEYWORD,
+          payload,
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error: {
+              code: ERROR_CODES.BAD_REQUEST,
+              message: expect.stringContaining(
+                LOG_MESSAGES.INVALID_PAYLOAD(''),
+              ),
+            },
+          }),
+        )
+      })
+
+      expect(await db.keywords.count()).toBe(1)
+      expect(await db.keywords.get(MOCK_KEYWORDS[0].id)).toEqual(
+        MOCK_KEYWORDS[0],
+      )
+    })
+  })
+
+  describe('未実装のメッセージ', () => {
+    it.each([
       {
         action: API_ACTIONS.UPDATE_KEYWORD,
         payload: { name: TEST_STRINGS.NEW_NAME, id: MOCK_IDS.KEYWORD_1 },
