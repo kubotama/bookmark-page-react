@@ -215,11 +215,29 @@ const handleApiMessage = async (
         }
       }
 
+      case API_ACTIONS.CREATE_KEYWORD: {
+        const keyword = await db.keywords.get(
+          await db.createKeyword(request.payload),
+        )
+        if (!keyword) {
+          throw new Error(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+        }
+
+        return {
+          success: true,
+          data: {
+            keyword: {
+              id: keyword.id,
+              name: keyword.name,
+            },
+          },
+        }
+      }
+
       case API_ACTIONS.REORDER_BOOKMARKS:
 
       // キーワード操作
       // eslint-disable-next-line no-fallthrough
-      case API_ACTIONS.CREATE_KEYWORD:
       case API_ACTIONS.UPDATE_KEYWORD:
       case API_ACTIONS.DELETE_KEYWORD:
       // リレーション操作
