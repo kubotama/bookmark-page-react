@@ -164,15 +164,93 @@ describe('background service worker', () => {
     })
   })
 
+  describe('統合メッセージディスパッチャ (DELETE_KEYWORD)', () => {
+    beforeEach(async () => {
+      await loadKeywords([MOCK_KEYWORDS[0]])
+    })
+    it.each([
+      {
+        testName: '登録されているidを指定',
+        id: MOCK_KEYWORDS[0].id,
+        count: 0,
+        getResult: undefined,
+      },
+      {
+        testName: '未登録のidを指定',
+        id: MOCK_IDS.UNKNOWN_ID,
+        count: 1,
+        getResult: MOCK_KEYWORDS[0],
+      },
+    ])('正常終了: $testName', async ({ id, count, getResult }) => {
+      await import('./background')
+
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.DELETE_KEYWORD,
+          payload: { id },
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: null,
+          }),
+        )
+      })
+
+      expect(await db.keywords.count()).toBe(count)
+      expect(await db.keywords.get(MOCK_KEYWORDS[0].id)).toEqual(getResult)
+    })
+
+    it.each([
+      { testName: 'IDなし', payload: {} },
+      { testName: 'IDが不正', payload: { id: TEST_STRINGS.INVALID_ID } },
+    ])('異常終了: $testName', async ({ payload }) => {
+      await import('./background')
+
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.DELETE_KEYWORD,
+          payload,
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error: {
+              code: ERROR_CODES.BAD_REQUEST,
+              message: expect.stringContaining(
+                LOG_MESSAGES.INVALID_PAYLOAD(''),
+              ),
+            },
+          }),
+        )
+      })
+
+      expect(await db.keywords.count()).toBe(1)
+      expect(await db.keywords.get(MOCK_KEYWORDS[0].id)).toEqual(
+        MOCK_KEYWORDS[0],
+      )
+    })
+  })
+
   describe('未実装のメッセージ', () => {
     it.each([
       {
         action: API_ACTIONS.UPDATE_KEYWORD,
         payload: { name: TEST_STRINGS.NEW_NAME, id: MOCK_IDS.KEYWORD_1 },
-      },
-      {
-        action: API_ACTIONS.DELETE_KEYWORD,
-        payload: { id: MOCK_IDS.KEYWORD_1 },
       },
       {
         action: API_ACTIONS.ATTACH_KEYWORD,
