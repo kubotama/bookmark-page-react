@@ -368,7 +368,7 @@ export class BookmarkDatabase extends Dexie {
         // 存在確認
         const existing = await this.keywords.get(validatedId)
         if (!existing) {
-          throw new Error(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+          return
         }
 
         // キーワード自体を削除

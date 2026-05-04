@@ -234,12 +234,21 @@ const handleApiMessage = async (
         }
       }
 
+      case API_ACTIONS.DELETE_KEYWORD: {
+        // 冗長なバリデーションは不要なので、直接 payload を使います
+        await db.deleteKeyword(request.payload.id)
+
+        return {
+          success: true,
+          data: null, // 削除成功時はデータなし
+        }
+      }
+
       case API_ACTIONS.REORDER_BOOKMARKS:
 
       // キーワード操作
       // eslint-disable-next-line no-fallthrough
       case API_ACTIONS.UPDATE_KEYWORD:
-      case API_ACTIONS.DELETE_KEYWORD:
       // リレーション操作
       // eslint-disable-next-line no-fallthrough
       case API_ACTIONS.ATTACH_KEYWORD:

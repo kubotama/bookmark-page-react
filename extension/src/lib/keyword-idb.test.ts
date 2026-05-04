@@ -147,11 +147,12 @@ describe('BookmarkDatabase - Keyword Operations', () => {
       expect(updatedBookmark?.keywordIds).toHaveLength(0)
     })
 
-    it('存在しない ID の削除を試みた場合にエラーを投げること', async () => {
-      const unknownId = KeywordIdSchema.parse(MOCK_IDS.UNKNOWN_ID)
-      await expect(db.deleteKeyword(unknownId)).rejects.toThrow(
-        ERROR_MESSAGES.KEYWORD_NOT_FOUND,
-      )
+    it('存在しない ID の削除を試みた場合になにも起きないこと', async () => {
+      await db.keywords.add(MOCK_KEYWORDS[0])
+
+      await db.deleteKeyword(MOCK_KEYWORDS[1].id)
+      const keyword = await db.keywords.get(MOCK_KEYWORDS[0].id)
+      expect(keyword).toEqual(MOCK_KEYWORDS[0])
     })
 
     it('不正な形式の ID での削除を試みた場合にバリデーションエラーを投げること', async () => {
