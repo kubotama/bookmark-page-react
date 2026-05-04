@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import 'fake-indexeddb/auto'
 
-import { API_ACTIONS, ERROR_CODES, LOG_MESSAGES } from '@shared/constants'
+import {
+  API_ACTIONS,
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  LOG_MESSAGES,
+} from '@shared/constants'
 import { MOCK_IDS, MOCK_KEYWORDS, TEST_STRINGS } from '@shared/test/fixtures'
 
 import { loadKeywords } from './background.test.utils'
@@ -246,12 +251,151 @@ describe('background service worker', () => {
     })
   })
 
-  describe('未実装のメッセージ', () => {
+  describe('統合メッセージディスパッチャ (UPDATE_KEYWORD)', () => {
+    beforeEach(async () => {
+      await loadKeywords([MOCK_KEYWORDS[0]])
+    })
+
+    it.each([
+      { testName: 'キーワード名を正しく更新', name: TEST_STRINGS.NEW_NAME },
+      { testName: '同じキーワードを指定', name: MOCK_KEYWORDS[0].name },
+    ])('正常終了: $testName', async ({ name }) => {
+      await import('./background')
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.UPDATE_KEYWORD,
+          payload: { id: MOCK_KEYWORDS[0].id, name },
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: {
+              keyword: { id: MOCK_KEYWORDS[0].id, name },
+            },
+          }),
+        )
+      })
+
+      // DB の実体も確認
+      expect((await db.keywords.get(MOCK_KEYWORDS[0].id))?.name).toBe(name)
+      expect(await db.keywords.count()).toBe(1)
+    })
+
     it.each([
       {
-        action: API_ACTIONS.UPDATE_KEYWORD,
-        payload: { name: TEST_STRINGS.NEW_NAME, id: MOCK_IDS.KEYWORD_1 },
+        testName: '既に存在する名前への更新（CONFLICT）',
+        payload: {
+          id: MOCK_KEYWORDS[0].id,
+          name: MOCK_KEYWORDS[1].name,
+        },
+        error: {
+          code: ERROR_CODES.CONFLICT,
+          message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+        },
       },
+      {
+        testName: '既に存在する名前(小文字)への更新（CONFLICT）',
+        payload: {
+          id: MOCK_KEYWORDS[0].id,
+          name: MOCK_KEYWORDS[1].name.toLowerCase(),
+        },
+        error: {
+          code: ERROR_CODES.CONFLICT,
+          message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+        },
+      },
+      {
+        testName: 'ID 欠落',
+        payload: {
+          name: TEST_STRINGS.NEW_NAME,
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: 'IDが不正な形式',
+        payload: {
+          id: TEST_STRINGS.INVALID_ID,
+          name: TEST_STRINGS.NEW_NAME,
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: '名前が欠落',
+        payload: {
+          id: MOCK_KEYWORDS[0].id,
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: '名前が空文字',
+        payload: {
+          id: MOCK_KEYWORDS[0].id,
+          name: '',
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: '名前が長すぎ',
+        payload: {
+          id: MOCK_KEYWORDS[0].id,
+          name: '0'.repeat(100),
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+    ])('異常終了: $testName', async ({ payload, error }) => {
+      await import('./background')
+      const sendResponse = vi.fn()
+      await db.keywords.add(MOCK_KEYWORDS[1])
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.UPDATE_KEYWORD,
+          payload,
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error,
+          }),
+        )
+      })
+
+      expect((await db.keywords.get(MOCK_KEYWORDS[0].id))?.name).toBe(
+        MOCK_KEYWORDS[0].name,
+      )
+      expect(await db.keywords.count()).toBe(2)
+    })
+  })
+
+  describe('未実装のメッセージ', () => {
+    it.each([
       {
         action: API_ACTIONS.ATTACH_KEYWORD,
         payload: {

@@ -244,11 +244,44 @@ const handleApiMessage = async (
         }
       }
 
+      case API_ACTIONS.UPDATE_KEYWORD: {
+        const { id, name } = request.payload
+        try {
+          // 1. 更新処理の実行
+          await db.updateKeyword(id, name)
+          const keyword = await db.keywords.get(id)
+
+          if (!keyword) {
+            throw new Error(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+          }
+
+          // 2. 更新後の最新データを返送
+          return {
+            success: true,
+            data: {
+              keyword: { id: keyword.id, name: keyword.name },
+            },
+          }
+        } catch (err: unknown) {
+          // 同名キーワードへの更新による衝突 (ConstraintError) のハンドリング
+          if (
+            err instanceof Error &&
+            err.message === ERROR_MESSAGES.DUPLICATE_KEYWORD
+          ) {
+            return {
+              success: false,
+              error: {
+                message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+                code: ERROR_CODES.CONFLICT,
+              },
+            }
+          }
+          throw err
+        }
+      }
+
       case API_ACTIONS.REORDER_BOOKMARKS:
 
-      // キーワード操作
-      // eslint-disable-next-line no-fallthrough
-      case API_ACTIONS.UPDATE_KEYWORD:
       // リレーション操作
       // eslint-disable-next-line no-fallthrough
       case API_ACTIONS.ATTACH_KEYWORD:
