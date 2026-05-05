@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
+import { VALIDATION_LIMITS } from '@shared/constants'
+
 import {
   KeywordIdSchema,
   keywordSchema,
@@ -88,9 +90,11 @@ describe('Keyword Schemas', () => {
       expect(() => updateKeywordInputSchema.parse({ name: '' })).toThrow()
     })
 
-    it('名前が50文字を超える場合にエラーになること', () => {
+    it(`名前が${VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH}文字を超える場合にエラーになること`, () => {
       expect(() =>
-        updateKeywordInputSchema.parse({ name: 'a'.repeat(51) }),
+        updateKeywordInputSchema.parse({
+          name: 'a'.repeat(VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH + 1),
+        }),
       ).toThrow()
     })
   })

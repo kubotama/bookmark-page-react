@@ -6,6 +6,7 @@ import {
   ERROR_MESSAGES,
   ERROR_CODES,
   BOOKMARK_STATUS,
+  VALIDATION_LIMITS,
 } from '../constants'
 import {
   readBookmarksRequestSchema,
@@ -317,9 +318,10 @@ describe('API Schemas - Bookmark Operations', () => {
       )
     })
 
-    it('1000件を超える ID リストを拒否すること', () => {
-      const manyIds = Array.from({ length: 1001 }, (_, i) =>
-        generateMockUuidV7(i),
+    it(`${VALIDATION_LIMITS.REORDER_MAX_ITEMS}件を超える ID リストを拒否すること`, () => {
+      const manyIds = Array.from(
+        { length: VALIDATION_LIMITS.REORDER_MAX_ITEMS + 1 },
+        (_, i) => generateMockUuidV7(i),
       )
       const invalidRequest = {
         action: API_ACTIONS.REORDER_BOOKMARKS,

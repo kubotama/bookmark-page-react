@@ -7,6 +7,7 @@ import {
   ERROR_CODES,
   ERROR_MESSAGES,
   LOG_MESSAGES,
+  VALIDATION_LIMITS,
 } from '@shared/constants'
 import { MOCK_IDS, MOCK_KEYWORDS, TEST_STRINGS } from '@shared/test/fixtures'
 
@@ -135,7 +136,12 @@ describe('background service worker', () => {
     it.each([
       { testName: 'name欠落', payload: {} },
       { testName: 'nameが空文字', payload: { name: '' } },
-      { testName: 'nameが長すぎ', payload: { name: '0'.repeat(100) } },
+      {
+        testName: 'nameが長すぎ',
+        payload: {
+          name: '0'.repeat(VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH + 1),
+        },
+      },
     ])('異常終了: $testName', async (payload) => {
       const sendResponse = vi.fn()
 
@@ -357,7 +363,7 @@ describe('background service worker', () => {
         testName: '名前が長すぎ',
         payload: {
           id: MOCK_KEYWORDS[0].id,
-          name: '0'.repeat(100),
+          name: '0'.repeat(VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH + 1),
         },
         error: {
           code: ERROR_CODES.BAD_REQUEST,

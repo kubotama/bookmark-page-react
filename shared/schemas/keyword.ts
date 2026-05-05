@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { VALIDATION_MESSAGES } from '@shared/constants'
+import { VALIDATION_LIMITS, VALIDATION_MESSAGES } from '@shared/constants'
 
 export const KeywordIdSchema = z.string().uuid().brand<'KeywordId'>()
 export type KeywordId = z.infer<typeof KeywordIdSchema>
@@ -11,8 +11,14 @@ export type KeywordId = z.infer<typeof KeywordIdSchema>
 const keywordNameSchema = z
   .string()
   .trim()
-  .min(1, VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH)
-  .max(50, VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH)
+  .min(
+    VALIDATION_LIMITS.KEYWORD_NAME_MIN_LENGTH,
+    VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH,
+  )
+  .max(
+    VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH,
+    VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH,
+  )
 
 export const keywordSchema = z.object({
   id: KeywordIdSchema,
