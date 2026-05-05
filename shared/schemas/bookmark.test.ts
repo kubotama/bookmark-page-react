@@ -10,7 +10,11 @@ import {
   reorderBookmarksInputSchema,
   updateBookmarkInputSchema,
 } from './bookmark'
-import { BOOKMARK_STATUS, VALIDATION_MESSAGES } from '../constants'
+import {
+  BOOKMARK_STATUS,
+  VALIDATION_LIMITS,
+  VALIDATION_MESSAGES,
+} from '../constants'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_TITLE_PREFIX,
@@ -129,8 +133,9 @@ describe('reorderBookmarksInputSchema', () => {
 
   it('上限を超える ID リストを拒否すること', () => {
     // 1001個の有効な UUID v7 を生成
-    const manyIds = Array.from({ length: 1001 }, (_, i) =>
-      generateMockUuidV7(i),
+    const manyIds = Array.from(
+      { length: VALIDATION_LIMITS.REORDER_MAX_ITEMS + 1 },
+      (_, i) => generateMockUuidV7(i),
     )
     const result = reorderBookmarksInputSchema.safeParse({ ids: manyIds })
     expect(result.success).toBe(false)

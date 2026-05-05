@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-import { BOOKMARK_STATUS, VALIDATION_MESSAGES } from '../constants'
+import {
+  BOOKMARK_STATUS,
+  VALIDATION_LIMITS,
+  VALIDATION_MESSAGES,
+} from '../constants'
 import { keywordSchema, KeywordIdSchema } from './keyword'
 import { isHttpUrl } from '../utils/url'
 
@@ -20,7 +24,10 @@ export type BookmarkId = z.infer<typeof BookmarkIdSchema>
 const bookmarkTitleSchema = z
   .string()
   .trim()
-  .min(1, VALIDATION_MESSAGES.TITLE_REQUIRED)
+  .min(
+    VALIDATION_LIMITS.BOOKMARK_TITLE_MIN_LENGTH,
+    VALIDATION_MESSAGES.TITLE_REQUIRED,
+  )
 
 /**
  * ブックマークURLの共通バリデーションスキーマ
@@ -85,7 +92,10 @@ export type DeleteBookmarkInput = z.infer<typeof deleteBookmarkInputSchema>
 export const reorderBookmarksInputSchema = z.object({
   ids: z
     .array(BookmarkIdSchema)
-    .max(1000, VALIDATION_MESSAGES.REORDER_MAX_ITEMS)
+    .max(
+      VALIDATION_LIMITS.REORDER_MAX_ITEMS,
+      VALIDATION_MESSAGES.REORDER_MAX_ITEMS,
+    )
     .refine((ids) => new Set(ids).size === ids.length, {
       message: VALIDATION_MESSAGES.REORDER_DUPLICATE_IDS,
     }),

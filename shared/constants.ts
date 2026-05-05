@@ -56,6 +56,13 @@ export const DEFAULT_API_URL = `http://localhost:${DEFAULT_PORTS.BACKEND}`
 export const DEFAULT_FRONTEND_URL = `http://localhost:${DEFAULT_PORTS.FRONTEND}`
 export const DEFAULT_SERVER_PORT = DEFAULT_PORTS.BACKEND
 
+export const VALIDATION_LIMITS = {
+  BOOKMARK_TITLE_MIN_LENGTH: 1,
+  REORDER_MAX_ITEMS: 1000,
+  KEYWORD_NAME_MIN_LENGTH: 1,
+  KEYWORD_NAME_MAX_LENGTH: 50,
+} as const
+
 /**
  * UI の処理状態定義
  */
@@ -446,12 +453,12 @@ export const VALIDATION_MESSAGES = {
   TITLE_REQUIRED: 'タイトルは必須です',
   TITLE_MIN_LENGTH: 'タイトルは1文字以上である必要があります',
   KEYWORD_MIN_LENGTH: 'キーワード名は1文字以上である必要があります',
-  KEYWORD_MAX_LENGTH: 'キーワード名は50文字以内で入力してください',
+  KEYWORD_MAX_LENGTH: `キーワード名は${VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH}文字以内で入力してください`,
   URL_INVALID_PROTOCOL: 'URL は http:// または https:// で始まる必要があります',
   URL_INVALID_FORMAT: '有効な URL形式である必要があります',
   UPDATE_MIN_FIELDS:
     'タイトルまたは URL の少なくとも一方は指定する必要があります',
-  REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
+  REORDER_MAX_ITEMS: `一度に並び替えられるのは${VALIDATION_LIMITS.REORDER_MAX_ITEMS}件までです`,
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
   BOOKMARK_STATUS_REQUIRED_BOOKMARKID:
     '登録済み、変更ありの場合にはBOOKMARK IDが必要です',
