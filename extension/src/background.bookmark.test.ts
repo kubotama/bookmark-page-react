@@ -8,13 +8,18 @@ import {
   ERROR_CODES,
   ERROR_MESSAGES,
   LOG_MESSAGES,
+  VALIDATION_LIMITS,
 } from '@shared/constants'
+import type { BookmarkId } from '@shared/schemas/bookmark'
 import {
+  generateMockUuidV7,
   INVALID_URLS,
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARK_3,
   MOCK_BOOKMARK_ENTITY_1,
+  MOCK_BOOKMARKS,
+  MOCK_IDS,
   MOCK_KEYWORDS,
   TEST_STRINGS,
 } from '@shared/test/fixtures'
@@ -590,20 +595,120 @@ describe('background service worker', () => {
   })
 
   describe('統合メッセージディスパッチャ (REORDER_BOOKMARKS)', () => {
-    it('未実装の確認', async () => {
-      const addListenerMock = vi.mocked(chrome.runtime.onMessage.addListener)
-      await import('./background')
+    const verifyOrder = async ([id1, id2, id3]: BookmarkId[]) => {
+      const b1 = await db.bookmarks.get(id1)
+      const b2 = await db.bookmarks.get(id2)
+      const b3 = await db.bookmarks.get(id3)
+      expect(b1).toBeDefined()
+      expect(b2).toBeDefined()
+      expect(b3).toBeDefined()
+      expect(b1!.sortOrder).toBeLessThan(b2!.sortOrder)
+      expect(b2!.sortOrder).toBeLessThan(b3!.sortOrder)
+    }
 
-      const messageHandler = addListenerMock.mock.calls[0][0]
+    beforeEach(async () => {
+      await loadBookmarks(MOCK_BOOKMARKS)
+    })
+
+    it.each([
+      { testName: '123 -> 213', order: [1, 0, 2] },
+      { testName: '123 -> 132', order: [0, 2, 1] },
+      { testName: '123 -> 312', order: [2, 0, 1] },
+    ])('並べ替え: $testName', async ({ order }) => {
+      await import('./background')
       const sendResponse = vi.fn()
 
-      messageHandler(
-        {
-          action: API_ACTIONS.REORDER_BOOKMARKS,
-          payload: {
-            ids: [MOCK_BOOKMARK_1.id, MOCK_BOOKMARK_2.id],
-          },
+      // 順序を逆にしてリクエストを送信
+      const newOrder = order.map((i) => MOCK_BOOKMARKS[i].id)
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        { action: API_ACTIONS.REORDER_BOOKMARKS, payload: { ids: newOrder } },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({ success: true, data: null }),
+        )
+      })
+
+      // DB の実体を確認 (sortOrder が更新されていること)
+      await verifyOrder(newOrder)
+
+      expect(await db.bookmarks.count()).toBe(3)
+    })
+
+    it.each([
+      {
+        testName: 'IDの重複',
+        payload: {
+          ids: [
+            MOCK_BOOKMARKS[0].id,
+            MOCK_BOOKMARKS[1].id,
+            MOCK_BOOKMARKS[1].id,
+          ],
         },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: '不正なID',
+        payload: {
+          ids: [
+            MOCK_BOOKMARKS[0].id,
+            MOCK_BOOKMARKS[1].id,
+            TEST_STRINGS.INVALID_ID,
+          ],
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: `${VALIDATION_LIMITS.REORDER_MAX_ITEMS}件を超えるリスト`,
+        payload: {
+          ids: Array.from(
+            { length: VALIDATION_LIMITS.REORDER_MAX_ITEMS + 1 },
+            (_, i) => generateMockUuidV7(i),
+          ),
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: 'IDなし',
+        payload: {},
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: '未登録のID',
+        payload: {
+          ids: [
+            MOCK_BOOKMARKS[0].id,
+            MOCK_BOOKMARKS[1].id,
+            MOCK_IDS.UNKNOWN_ID,
+          ],
+        },
+        error: {
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          message: expect.stringContaining(ERROR_MESSAGES.BOOKMARK_NOT_FOUND),
+        },
+      },
+    ])('異常終了: $testName', async ({ payload, error }) => {
+      await import('./background')
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        { action: API_ACTIONS.REORDER_BOOKMARKS, payload },
         {},
         sendResponse,
       )
@@ -612,15 +717,13 @@ describe('background service worker', () => {
         expect(sendResponse).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
-            error: {
-              message: LOG_MESSAGES.ACTION_NOT_IMPLEMENTED(
-                API_ACTIONS.REORDER_BOOKMARKS,
-              ),
-              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-            },
+            error,
           }),
         )
       })
+      await verifyOrder(MOCK_BOOKMARKS.map((b) => b.id))
+
+      expect(await db.bookmarks.count()).toBe(3)
     })
   })
 })
