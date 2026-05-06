@@ -9,9 +9,14 @@ import {
   LOG_MESSAGES,
   VALIDATION_LIMITS,
 } from '@shared/constants'
-import { MOCK_IDS, MOCK_KEYWORDS, TEST_STRINGS } from '@shared/test/fixtures'
+import {
+  MOCK_BOOKMARKS,
+  MOCK_IDS,
+  MOCK_KEYWORDS,
+  TEST_STRINGS,
+} from '@shared/test/fixtures'
 
-import { loadKeywords } from './background.test.utils'
+import { loadBookmarks, loadKeywords } from './background.test.utils'
 import { db } from './lib/idb'
 
 describe('background service worker', () => {
@@ -400,15 +405,149 @@ describe('background service worker', () => {
     })
   })
 
-  describe('未実装のメッセージ', () => {
+  describe('統合メッセージディスパッチャ (ATTACH_KEYWORD)', () => {
+    const bookmark = MOCK_BOOKMARKS[0]
+    const keyword = MOCK_KEYWORDS[0]
+    beforeEach(async () => {
+      await loadKeywords([keyword])
+      await loadBookmarks([bookmark])
+    })
+
     it.each([
+      { testName: '紐付け', setup: async () => {} },
       {
-        action: API_ACTIONS.ATTACH_KEYWORD,
-        payload: {
-          keywordId: MOCK_IDS.KEYWORD_1,
-          bookmarkId: MOCK_IDS.BOOKMARK_1,
+        testName: '既に紐付け済み',
+        setup: async () => {
+          await db.attachKeyword(bookmark.id, keyword.id)
         },
       },
+    ])('$testName', async ({ setup }) => {
+      await import('./background')
+      const sendResponse = vi.fn()
+      await setup()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.ATTACH_KEYWORD,
+          payload: {
+            bookmarkId: bookmark.id,
+            keywordId: keyword.id,
+          },
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            data: expect.objectContaining({
+              // ✅ null から変更
+              id: bookmark.id,
+              keywords: expect.arrayContaining([
+                expect.objectContaining({ id: keyword.id }),
+              ]),
+            }),
+          }),
+        )
+      })
+
+      // DB の実体を確認 (ブックマークにキーワード ID が含まれていること)
+      const updatedBookmark = await db.bookmarks.get(bookmark.id)
+      expect(updatedBookmark?.keywordIds).toContain(keyword.id)
+    })
+
+    it.each([
+      {
+        testName: 'IDともになし',
+        payload: {},
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: 'bookmark idなし',
+        payload: { keywordId: keyword.id },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: 'bookmark idが不正な形式',
+        payload: { bookmarkId: TEST_STRINGS.INVALID_ID, keywordId: keyword.id },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: 'keyword idなし',
+        payload: { bookmarkId: bookmark.id },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: 'keyword idが不正な形式',
+        payload: {
+          bookmarkId: bookmark.id,
+          keywordId: TEST_STRINGS.INVALID_ID,
+        },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: expect.stringContaining(LOG_MESSAGES.INVALID_PAYLOAD('')),
+        },
+      },
+      {
+        testName: '未登録のbookmark idを指定',
+        payload: { bookmarkId: MOCK_IDS.UNKNOWN_ID, keywordId: keyword.id },
+        error: {
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          message: expect.stringContaining(ERROR_MESSAGES.BOOKMARK_NOT_FOUND),
+        },
+      },
+      {
+        testName: '未登録のkeyword idを指定',
+        payload: { bookmarkId: bookmark.id, keywordId: MOCK_IDS.UNKNOWN_ID },
+        error: {
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          message: expect.stringContaining(ERROR_MESSAGES.KEYWORD_NOT_FOUND),
+        },
+      },
+    ])('異常終了: $testName', async ({ payload, error }) => {
+      await import('./background')
+
+      const sendResponse = vi.fn()
+
+      vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0][0](
+        {
+          action: API_ACTIONS.ATTACH_KEYWORD,
+          payload,
+        },
+        {},
+        sendResponse,
+      )
+
+      await vi.waitFor(() => {
+        expect(sendResponse).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            error,
+          }),
+        )
+      })
+
+      const updatedBookmark = await db.bookmarks.get(bookmark.id)
+      expect(updatedBookmark?.keywordIds).not.toContain(keyword.id)
+    })
+  })
+
+  describe('未実装のメッセージ', () => {
+    it.each([
       {
         action: API_ACTIONS.DETACH_KEYWORD,
         payload: {

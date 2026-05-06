@@ -169,9 +169,7 @@ export const attachKeywordRequestSchema = baseApiRequestSchema.extend({
 
 export type AttachKeywordRequest = z.infer<typeof attachKeywordRequestSchema>
 
-export const attachKeywordResponseSchema = baseApiResponseSchema(
-  z.null(), // 紐付け成功時はデータなし
-)
+export const attachKeywordResponseSchema = baseApiResponseSchema(bookmarkSchema)
 
 export type AttachKeywordResponse = z.infer<typeof attachKeywordResponseSchema>
 
