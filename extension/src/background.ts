@@ -280,10 +280,22 @@ const handleApiMessage = async (
         }
       }
 
-      case API_ACTIONS.REORDER_BOOKMARKS:
+      case API_ACTIONS.REORDER_BOOKMARKS: {
+        // 1. request.payload.ids (BookmarkId[]) を取り出す
+        const { ids } = request.payload
+
+        // 2. 並べ替え処理の実行
+        // db 側でトランザクションが張られ、一括更新されます
+        await db.reorderBookmarks(ids)
+
+        // 3. 成功レスポンス（データなし）
+        return {
+          success: true,
+          data: null,
+        }
+      }
 
       // リレーション操作
-      // eslint-disable-next-line no-fallthrough
       case API_ACTIONS.ATTACH_KEYWORD:
       case API_ACTIONS.DETACH_KEYWORD:
         // 今回の Issue では「未実装エラー」を返すプレースホルダのみ
