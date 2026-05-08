@@ -16,7 +16,12 @@ import {
   detachKeywordRequestSchema,
   detachKeywordResponseSchema,
 } from './api'
-import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '../test/fixtures'
+import {
+  MOCK_KEYWORDS,
+  MOCK_IDS,
+  TEST_STRINGS,
+  MOCK_BOOKMARK_1,
+} from '../test/fixtures'
 
 describe('API Schemas - Keyword Operations', () => {
   describe('readKeywordsRequestSchema', () => {
@@ -229,7 +234,7 @@ describe('API Schemas - Keyword Operations', () => {
 
   describe('attachKeywordResponseSchema', () => {
     it('成功時のレスポンスを検証できること', () => {
-      const validResponse = { success: true, data: null }
+      const validResponse = { success: true, data: MOCK_BOOKMARK_1 }
       expect(attachKeywordResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
