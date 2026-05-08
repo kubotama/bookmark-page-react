@@ -317,16 +317,26 @@ const handleApiMessage = async (
         }
       }
 
-      case API_ACTIONS.DETACH_KEYWORD:
-        // 今回の Issue では「未実装エラー」を返すプレースホルダのみ
-        // 実際の接続は今後の個別 Issue で実施
-        return {
-          success: false,
-          error: {
-            message: LOG_MESSAGES.ACTION_NOT_IMPLEMENTED(request.action),
-            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-          },
+      case API_ACTIONS.DETACH_KEYWORD: {
+        // 1. request.payload から各 ID を取り出す
+        const { bookmarkId, keywordId } = request.payload
+
+        // 2. 紐付け処理の実行
+        await db.detachKeyword(bookmarkId, keywordId)
+
+        // 3. 更新後の最新データを取得（共通メソッドを利用）
+        const updatedBookmark = await db.getBookmarkWithKeywords(bookmarkId)
+
+        if (!updatedBookmark) {
+          throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
         }
+
+        // 3. 成功レスポンス（更新後のブックマークを返す）
+        return {
+          success: true,
+          data: updatedBookmark,
+        }
+      }
 
       default:
         return {

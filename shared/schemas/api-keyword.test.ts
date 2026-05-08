@@ -296,7 +296,7 @@ describe('API Schemas - Keyword Operations', () => {
 
   describe('detachKeywordResponseSchema', () => {
     it('成功時のレスポンスを検証できること', () => {
-      const validResponse = { success: true, data: null }
+      const validResponse = { success: true, data: MOCK_BOOKMARK_1 }
       expect(detachKeywordResponseSchema.parse(validResponse)).toEqual(
         validResponse,
       )
