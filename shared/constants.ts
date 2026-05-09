@@ -185,6 +185,9 @@ export const UI_MESSAGES = {
   KEYWORD_NOT_FOUND: (id: string | number) =>
     `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
+  CHROME_EXTENSION_NOT_AVAILABLE: 'chromeの拡張機能が利用できません',
+  INVALID_RESPONSE_FROM_EXTENTION: '拡張機能からの返り値の形式が不正です',
+  UNKNOWN_EXTENSION_ERROR: '拡張機能での不明なエラーです',
 } as const
 
 /**

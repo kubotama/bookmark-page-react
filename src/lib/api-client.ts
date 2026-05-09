@@ -1,4 +1,4 @@
-import { API_ACTIONS } from '@shared/constants'
+import { API_ACTIONS, UI_MESSAGES } from '@shared/constants'
 import type {
   Bookmarks,
   Bookmark,
@@ -40,7 +40,7 @@ export class ExtensionApiClient implements ApiClient {
   private async sendMessage<T>(action: string, payload?: unknown): Promise<T> {
     // 1. 拡張機能の存在チェック
     if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
-      throw new Error('Chrome extension is not available')
+      throw new Error(UI_MESSAGES.CHROME_EXTENSION_NOT_AVAILABLE)
     }
 
     return new Promise((resolve, reject) => {
@@ -51,13 +51,20 @@ export class ExtensionApiClient implements ApiClient {
           reject(new Error(chrome.runtime.lastError.message))
           return
         }
+        if (!response || typeof response !== 'object') {
+          reject(new Error(UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION))
+          return
+        }
 
         // 4. アプリケーションレベルのレスポンス検証
         if (response.success) {
           resolve(response.data)
         } else {
-          // エラーオブジェクトをそのまま投げるか、Errorインスタンスにする
-          reject(response.error)
+          reject(
+            new Error(
+              response.error?.message || UI_MESSAGES.UNKNOWN_EXTENSION_ERROR,
+            ),
+          )
         }
       })
     })
@@ -130,7 +137,6 @@ export class ExtensionApiClient implements ApiClient {
     bookmarkId: BookmarkId,
     keywordId: KeywordId,
   ): Promise<Bookmark> {
-    // throw new Error('Method not implemented.')
     return this.sendMessage<Bookmark>(API_ACTIONS.DETACH_KEYWORD, {
       bookmarkId,
       keywordId,

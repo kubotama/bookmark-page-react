@@ -306,3 +306,6 @@ export type ApiRequest = z.infer<typeof ApiRequestSchema>
  * メッセージハンドラの汎用的な引数型などに使用する
  */
 export type BaseApiRequest = z.infer<typeof baseApiRequestSchema>
+
+export type { Bookmark, BookmarkId, Bookmarks } from './bookmark'
+export type { Keyword, KeywordId, Keywords, KeywordResponse } from './keyword'

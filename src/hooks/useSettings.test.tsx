@@ -7,14 +7,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   COMMON_MESSAGES,
   UI_STATUS,
-  VALIDATION_MESSAGES,
   ERROR_MESSAGES,
   DEFAULT_API_URL,
 } from '@shared/constants'
 import { MOCK_BOOKMARKS, VALID_URLS } from '@shared/test/fixtures'
 
 import { useSettings } from './useSettings'
-import { useApi } from '../contexts/ApiContext'
 
 // ApiContext のモック
 vi.mock('../contexts/ApiContext', () => ({
@@ -22,7 +20,6 @@ vi.mock('../contexts/ApiContext', () => ({
 }))
 
 describe('useSettings Hook', () => {
-  const mockUpdateApiUrl = vi.fn()
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -34,68 +31,7 @@ describe('useSettings Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     queryClient.clear()
-    vi.mocked(useApi).mockReturnValue({
-      apiUrl: DEFAULT_API_URL,
-      updateApiUrl: mockUpdateApiUrl,
-      client: {} as never, // 内部ロジックで client は使用しないため一旦維持
-    })
     vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  describe('handleSaveSettings', () => {
-    it('正常な URL を保存できること', () => {
-      mockUpdateApiUrl.mockReturnValue(null)
-      const { result } = renderHook(() => useSettings(), { wrapper })
-
-      // 設定画面を開く
-      act(() => {
-        result.current.toggleSettings()
-      })
-      expect(result.current.showSettings).toBe(true)
-
-      let error: string | null = 'init'
-      act(() => {
-        error = result.current.handleSaveSettings(VALID_URLS.TEST_API)
-      })
-
-      expect(error).toBeNull()
-      expect(mockUpdateApiUrl).toHaveBeenCalledWith(VALID_URLS.TEST_API)
-      expect(result.current.showSettings).toBe(false)
-    })
-
-    it('バリデーションエラー時にエラーメッセージを返すこと', () => {
-      const errorMsg = VALIDATION_MESSAGES.URL_INVALID_PROTOCOL
-      mockUpdateApiUrl.mockReturnValue(errorMsg)
-      const { result } = renderHook(() => useSettings(), { wrapper })
-
-      // 設定画面を開く
-      act(() => {
-        result.current.toggleSettings()
-      })
-      expect(result.current.showSettings).toBe(true)
-
-      let error: string | null = null
-      act(() => {
-        error = result.current.handleSaveSettings('invalid-url')
-      })
-
-      expect(error).toBe(errorMsg)
-      expect(result.current.showSettings).toBe(true) // 閉じられない
-    })
-
-    it('closeSettings で設定画面が閉じられ、接続状態がリセットされること', () => {
-      const { result } = renderHook(() => useSettings(), { wrapper })
-
-      act(() => {
-        result.current.toggleSettings()
-      })
-      expect(result.current.showSettings).toBe(true)
-
-      act(() => {
-        result.current.closeSettings()
-      })
-      expect(result.current.showSettings).toBe(false)
-    })
   })
 
   describe('testConnection', () => {

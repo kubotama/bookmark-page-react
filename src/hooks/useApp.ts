@@ -24,11 +24,9 @@ export const useApp = () => {
   // 1. 設定管理
   const {
     showSettings,
-    currentApiUrl,
     connectionStatus,
     toggleSettings,
     closeSettings,
-    handleSaveSettings,
     testConnection,
   } = useSettings()
 
@@ -212,14 +210,12 @@ export const useApp = () => {
     selectedKeywordIds,
     activeBookmark,
     showSettings,
-    currentApiUrl,
     connectionStatus,
     handleRowClick,
     handleOpen,
     handleClose,
     toggleSettings,
     closeSettings,
-    handleSaveSettings,
     testConnection,
     handleReorder,
     toggleKeywordSelection,

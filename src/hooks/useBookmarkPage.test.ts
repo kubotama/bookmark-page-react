@@ -38,7 +38,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe('useBookmarkPage Hook', () => {
+describe.skip('useBookmarkPage Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     server.use(

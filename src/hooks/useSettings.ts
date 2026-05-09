@@ -1,10 +1,7 @@
 import { useCallback, useState } from 'react'
 
-import { useQueryClient } from '@tanstack/react-query'
-
 import {
   COMMON_MESSAGES,
-  LOG_MESSAGES,
   UI_STATUS,
   API_PATHS,
   EXTENSION_CONSTANTS,
@@ -12,8 +9,6 @@ import {
 } from '@shared/constants'
 import { bookmarksSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, getOrigin } from '@shared/utils/url'
-
-import { useApi } from '../contexts/ApiContext'
 
 /**
  * 設定画面の表示管理および API 設定の保存ロジックを担当するフック
@@ -24,8 +19,6 @@ export const useSettings = () => {
     type: UI_STATUS.IDLE,
     message: '',
   })
-  const queryClient = useQueryClient()
-  const { apiUrl: currentApiUrl, updateApiUrl } = useApi()
 
   const toggleSettings = useCallback(() => {
     setShowSettings((prev) => !prev)
@@ -36,26 +29,6 @@ export const useSettings = () => {
     setShowSettings(false)
     setConnectionStatus({ type: UI_STATUS.IDLE, message: '' })
   }, [])
-
-  const handleSaveSettings = useCallback(
-    (newUrl: string): string | null => {
-      try {
-        const error = updateApiUrl(newUrl)
-        if (error) return error
-
-        // 設定変更時はキャッシュをクリアして再取得を促す
-        queryClient.clear()
-        setShowSettings(false)
-        return null
-      } catch (err) {
-        console.error(LOG_MESSAGES.EXTENSION_SETTING_SAVE_FAILED, err)
-        return err instanceof Error
-          ? err.message
-          : COMMON_MESSAGES.UNKNOWN_ERROR
-      }
-    },
-    [updateApiUrl, queryClient],
-  )
 
   /**
    * 入力された URL に対して実際にリクエストを送り、疎通を確認する
@@ -143,11 +116,9 @@ export const useSettings = () => {
 
   return {
     showSettings,
-    currentApiUrl,
     connectionStatus,
     toggleSettings,
     closeSettings,
-    handleSaveSettings,
     testConnection,
   }
 }
