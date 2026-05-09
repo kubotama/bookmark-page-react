@@ -321,7 +321,7 @@ const handleApiMessage = async (
         // 1. request.payload から各 ID を取り出す
         const { bookmarkId, keywordId } = request.payload
 
-        // 2. 紐付け処理の実行
+        // 2. 紐付け解除処理の実行
         await db.detachKeyword(bookmarkId, keywordId)
 
         // 3. 更新後の最新データを取得（共通メソッドを利用）
