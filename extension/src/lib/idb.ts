@@ -1,6 +1,10 @@
 import Dexie, { type Table } from 'dexie'
 
-import { DB_CONSTANTS, ERROR_MESSAGES } from '@shared/constants'
+import {
+  DB_CONSTANTS,
+  ERROR_MESSAGES,
+  VALIDATION_MESSAGES,
+} from '@shared/constants'
 import {
   type Bookmark,
   type BookmarkEntity,
@@ -172,6 +176,14 @@ export class BookmarkDatabase extends Dexie {
     const validatedIds = reorderBookmarksInputSchema.parse({ ids }).ids
 
     return await this.transaction('rw', this.bookmarks, async () => {
+      // 1. DB にある総件数を取得
+      const totalCount = await this.bookmarks.count()
+
+      // 2. 送られてきた件数と比較（全件送信を強制する）
+      if (validatedIds.length !== totalCount) {
+        throw new Error(VALIDATION_MESSAGES.REORDER_COUNT_MISMATCH)
+      }
+
       // 全ての ID が存在するか、件数をチェック
       const existingCount = await this.bookmarks
         .where('id')

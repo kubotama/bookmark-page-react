@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { ZodError } from 'zod'
 
-import { ERROR_MESSAGES } from '@shared/constants'
+import { ERROR_MESSAGES, VALIDATION_MESSAGES } from '@shared/constants'
 import { type BookmarkId, BookmarkIdSchema } from '@shared/schemas/bookmark'
 import {
   MOCK_BOOKMARK_ENTITY_1,
@@ -29,7 +29,7 @@ describe('BookmarkDatabase - Bookmark Reorder Operations', () => {
 
       // 順序を入れ替える (b3, b1, b2)
       const newOrder = [b3.id, b1.id, b2.id]
-      
+
       await db.reorderBookmarks(newOrder)
 
       const result = await db.getAllBookmarks()
@@ -37,7 +37,7 @@ describe('BookmarkDatabase - Bookmark Reorder Operations', () => {
       expect(result[0].id).toBe(b3.id)
       expect(result[1].id).toBe(b1.id)
       expect(result[2].id).toBe(b2.id)
-      
+
       // sortOrder が連続した値 (0, 1, 2) に更新されていることを確認
       expect(result[0].sortOrder).toBe(0)
       expect(result[1].sortOrder).toBe(1)
@@ -45,17 +45,50 @@ describe('BookmarkDatabase - Bookmark Reorder Operations', () => {
     })
 
     it('重複した ID を含むリストを拒否すること (ZodError)', async () => {
-      const ids = [MOCK_IDS.BOOKMARK_1, MOCK_IDS.BOOKMARK_1] as unknown as BookmarkId[]
+      const ids = [
+        MOCK_IDS.BOOKMARK_1,
+        MOCK_IDS.BOOKMARK_1,
+      ] as unknown as BookmarkId[]
       await expect(db.reorderBookmarks(ids)).rejects.toThrow(ZodError)
     })
 
     it('存在しない ID を含むリストを渡した場合にエラーを投げること', async () => {
-      await db.bookmarks.add(MOCK_BOOKMARK_ENTITY_1)
-      const ids = [MOCK_BOOKMARK_ENTITY_1.id, BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID)]
-      
+      await db.bookmarks.bulkAdd([
+        MOCK_BOOKMARK_ENTITY_1,
+        MOCK_BOOKMARK_ENTITY_2,
+      ])
+      const ids = [
+        MOCK_BOOKMARK_ENTITY_1.id,
+        BookmarkIdSchema.parse(MOCK_IDS.UNKNOWN_ID),
+      ]
+
       await expect(db.reorderBookmarks(ids)).rejects.toThrow(
         ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
       )
     })
+
+    it.each([
+      { testName: '少ない', ids: [MOCK_BOOKMARK_ENTITY_1.id] },
+      {
+        testName: '多い',
+        ids: [
+          MOCK_BOOKMARK_ENTITY_1.id,
+          MOCK_BOOKMARK_ENTITY_2.id,
+          MOCK_BOOKMARK_ENTITY_3.id,
+        ],
+      },
+    ])(
+      `DB内の総数より $testName 件数の ID リストが渡された場合にエラーを投げること`,
+      async ({ ids }) => {
+        await db.bookmarks.bulkAdd([
+          MOCK_BOOKMARK_ENTITY_1,
+          MOCK_BOOKMARK_ENTITY_2,
+        ])
+
+        await expect(db.reorderBookmarks(ids)).rejects.toThrow(
+          VALIDATION_MESSAGES.REORDER_COUNT_MISMATCH,
+        )
+      },
+    )
   })
 })

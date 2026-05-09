@@ -462,6 +462,8 @@ export const VALIDATION_MESSAGES = {
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
   BOOKMARK_STATUS_REQUIRED_BOOKMARKID:
     '登録済み、変更ありの場合にはBOOKMARK IDが必要です',
+  REORDER_COUNT_MISMATCH:
+    '並べ替え対象の件数が一致しません。全件を指定してください',
 } as const
 
 /**
