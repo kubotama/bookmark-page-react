@@ -183,7 +183,7 @@ export const detachKeywordRequestSchema = baseApiRequestSchema.extend({
 
 export type DetachKeywordRequest = z.infer<typeof detachKeywordRequestSchema>
 
-export const detachKeywordResponseSchema = baseApiResponseSchema(z.null())
+export const detachKeywordResponseSchema = baseApiResponseSchema(bookmarkSchema)
 
 export type DetachKeywordResponse = z.infer<typeof detachKeywordResponseSchema>
 
