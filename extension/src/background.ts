@@ -331,7 +331,7 @@ const handleApiMessage = async (
           throw new Error(ERROR_MESSAGES.BOOKMARK_NOT_FOUND)
         }
 
-        // 3. 成功レスポンス（更新後のブックマークを返す）
+        // 4. 成功レスポンス（更新後のブックマークを返す）
         return {
           success: true,
           data: updatedBookmark,
