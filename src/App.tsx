@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom'
 import './App.css'
 import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 
-import { SettingsPanel } from './components/SettingsPanel'
 import { useApp } from './hooks/useApp'
 import { BookmarkPage } from './pages/BookmarkPage'
 import { HomePage } from './pages/HomePage'
@@ -11,15 +10,7 @@ import { KeywordPage } from './pages/KeywordPage'
 
 function App() {
   const appState = useApp()
-  const {
-    showSettings,
-    currentApiUrl,
-    connectionStatus,
-    handleSaveSettings,
-    testConnection,
-    toggleSettings,
-    closeSettings,
-  } = appState
+  const { toggleSettings } = appState
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden">
@@ -53,16 +44,6 @@ function App() {
           </svg>
         </button>
       </header>
-
-      {showSettings && (
-        <SettingsPanel
-          onClose={closeSettings}
-          onSave={handleSaveSettings}
-          onTest={testConnection}
-          currentApiUrl={currentApiUrl}
-          connectionStatus={connectionStatus}
-        />
-      )}
 
       <Routes>
         <Route

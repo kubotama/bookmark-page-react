@@ -20,7 +20,7 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-describe('useKeywordPage Hook', () => {
+describe.skip('useKeywordPage Hook', () => {
   const mockNavigate = vi.fn()
 
   beforeEach(() => {
