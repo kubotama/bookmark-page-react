@@ -1,3 +1,5 @@
+import { vi } from 'vitest'
+
 import { BookmarkIdSchema } from '../schemas/bookmark'
 import { KeywordIdSchema } from '../schemas/keyword'
 
@@ -140,4 +142,37 @@ export const TEST_MESSAGES = {
  */
 export const generateMockUuidV7 = (index: number): string => {
   return `018ed000-0000-7000-8000-${String(index).padStart(12, '0')}`
+}
+
+/**
+ * テスト環境で共通利用する Chrome API の最小限のモック定義
+ */
+//
+export const createChromeMock = () => {
+  const mock = {
+    storage: {
+      sync: {
+        get: vi.fn(() => Promise.resolve({})),
+        set: vi.fn(() => Promise.resolve()),
+      },
+      local: {
+        get: vi.fn(() => Promise.resolve({})),
+        set: vi.fn(() => Promise.resolve()),
+      },
+    },
+    runtime: {
+      sendMessage: vi.fn(),
+      lastError: null,
+      onInstalled: {
+        addListener: vi.fn(),
+      },
+    },
+    tabs: {
+      query: vi.fn(() => Promise.resolve([])),
+    },
+    action: {
+      setIcon: vi.fn(() => Promise.resolve()),
+    },
+  }
+  return mock as unknown as typeof chrome
 }
