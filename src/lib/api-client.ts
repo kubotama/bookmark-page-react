@@ -1,4 +1,4 @@
-import { API_ACTIONS, UI_MESSAGES } from '@shared/constants'
+import { API_ACTIONS, ERROR_CODES, UI_MESSAGES } from '@shared/constants'
 import type {
   Bookmarks,
   Bookmark,
@@ -7,6 +7,20 @@ import type {
   KeywordResponse,
   KeywordId,
 } from '@shared/schemas/api'
+
+// import { BookmarkApiError } from '../hooks/useBookmarks'
+/**
+ * API エラー情報を保持するカスタムエラークラス
+ */
+export class BookmarkApiError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.code = code
+    this.name = 'BookmarkApiError'
+  }
+}
 
 export interface ApiClient {
   // ブックマークの操作
@@ -48,11 +62,22 @@ export class ExtensionApiClient implements ApiClient {
       chrome.runtime.sendMessage({ action, payload }, (response) => {
         // 3. ブラウザレベルの通信エラーチェック
         if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message))
+          reject(
+            new BookmarkApiError(
+              chrome.runtime.lastError.message ||
+                UI_MESSAGES.UNKNOWN_EXTENSION_ERROR,
+              ERROR_CODES.INTERNAL_SERVER_ERROR,
+            ),
+          )
           return
         }
         if (!response || typeof response !== 'object') {
-          reject(new Error(UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION))
+          reject(
+            new BookmarkApiError(
+              UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+              ERROR_CODES.INTERNAL_SERVER_ERROR,
+            ),
+          )
           return
         }
 
@@ -61,8 +86,9 @@ export class ExtensionApiClient implements ApiClient {
           resolve(response.data)
         } else {
           reject(
-            new Error(
+            new BookmarkApiError(
               response.error?.message || UI_MESSAGES.UNKNOWN_EXTENSION_ERROR,
+              response.error?.code || ERROR_CODES.INTERNAL_SERVER_ERROR,
             ),
           )
         }
