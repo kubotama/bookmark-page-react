@@ -29,39 +29,72 @@ import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
 
 describe('useBookmarks Hook', () => {
+  const mockMessage = (action: string, params: unknown) => {
+    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
+      (message, callback) => {
+        const parsed = ApiRequestSchema.safeParse(message)
+
+        if (
+          parsed.success &&
+          parsed.data.action === action &&
+          typeof callback === 'function'
+        ) {
+          callback(params)
+        }
+      },
+    )
+  }
+
+  const verifySuccess = async (
+    result: { current: { isSuccess: boolean; data?: unknown } },
+    action: string,
+    payload: unknown,
+    data: unknown,
+  ) => {
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action,
+        payload,
+      }),
+      expect.any(Function),
+    )
+    expect(result.current.data).toEqual(data)
+  }
+
+  const verifyError = async (
+    result: {
+      current: { isSuccess?: boolean; isError?: boolean; error: unknown }
+    },
+    expected: { message: string; code: string },
+  ) => {
+    await waitFor(() => expect(result.current.isError).toBe(true))
+
+    const error = result.current.error
+    if (error instanceof BookmarkApiError) {
+      expect(error.message).toBe(expected.message)
+      expect(error.code).toBe(expected.code)
+    } else {
+      expect(error).toBeInstanceOf(BookmarkApiError)
+    }
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   describe('READ_BOOKMARKS', () => {
     it('ブックマーク一覧を取得できること', async () => {
-      // 1. 拡張機能からのレスポンスをモック
-      vi.mocked(chrome.runtime.sendMessage).mockImplementation(
-        (message, callback) => {
-          const parsed = ApiRequestSchema.safeParse(message)
-
-          if (parsed.success) {
-            // このブロック内では、parsed.data は正しいリクエスト型として扱えます
-            if (parsed.data.action === API_ACTIONS.READ_BOOKMARKS) {
-              // ✅ 2. コールバックも関数であることを型ガードで確認
-              if (typeof callback === 'function') {
-                callback({
-                  success: true,
-                  data: { bookmarks: MOCK_BOOKMARKS },
-                })
-              }
-            }
-          }
-        },
-      )
+      mockMessage(API_ACTIONS.READ_BOOKMARKS, {
+        success: true,
+        data: { bookmarks: MOCK_BOOKMARKS },
+      })
 
       const { result } = renderHook(() => useBookmarks())
 
-      // 2. データが読み込まれるのを待つ
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-      // 3. 結果の検証
-      expect(result.current.data?.bookmarks).toEqual(MOCK_BOOKMARKS)
+      await verifySuccess(result, API_ACTIONS.READ_BOOKMARKS, undefined, {
+        bookmarks: MOCK_BOOKMARKS,
+      })
     })
 
     it.each([
@@ -88,63 +121,24 @@ describe('useBookmarks Hook', () => {
         },
       },
     ])('エラー処理: $testName', async ({ params, expected }) => {
-      vi.mocked(chrome.runtime.sendMessage).mockImplementation(
-        (_message, callback) => {
-          if (typeof callback === 'function') {
-            callback(params)
-          }
-        },
-      )
+      mockMessage(API_ACTIONS.READ_BOOKMARKS, params)
 
       const { result } = renderHook(() => useBookmarks())
 
-      // 2. エラー状態になるのを待つ
-      await waitFor(() => expect(result.current.isError).toBe(true))
-
-      const error = result.current.error
-      if (error instanceof BookmarkApiError) {
-        expect(error.message).toBe(expected.message)
-        expect(error.code).toBe(expected.code)
-      } else {
-        expect(error).toBeInstanceOf(BookmarkApiError)
-      }
+      await verifyError(result, expected)
     })
   })
 
   describe('DELETE_BOOKMARK', () => {
     it('useDeleteBookmark が正常に動作すること', async () => {
-      // 1. メッセージ送信をモック
-      vi.mocked(chrome.runtime.sendMessage).mockImplementation(
-        (message, callback) => {
-          const parsed = ApiRequestSchema.safeParse(message)
-          if (
-            parsed.success &&
-            parsed.data.action === API_ACTIONS.DELETE_BOOKMARK
-          ) {
-            if (typeof callback === 'function') {
-              // 削除成功時は data: null を返却
-              callback({ success: true, data: null })
-            }
-          }
-        },
-      )
+      const id = MOCK_BOOKMARK_1.id
+
+      mockMessage(API_ACTIONS.DELETE_BOOKMARK, { success: true, data: null })
 
       const { result } = renderHook(() => useDeleteBookmark())
+      result.current.mutate(id)
 
-      // 2. 削除の実行
-      result.current.mutate(MOCK_BOOKMARK_1.id)
-
-      // 3. 成功状態になるのを待つ
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-      // 4. メッセージが正しい ID で呼ばれたか検証
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: API_ACTIONS.DELETE_BOOKMARK,
-          payload: { id: MOCK_BOOKMARK_1.id },
-        }),
-        expect.any(Function),
-      )
+      await verifySuccess(result, API_ACTIONS.DELETE_BOOKMARK, { id }, null)
     })
 
     it.each([
@@ -171,27 +165,12 @@ describe('useBookmarks Hook', () => {
         },
       },
     ])('エラー処理: $testName', async ({ params, expected }) => {
-      vi.mocked(chrome.runtime.sendMessage).mockImplementation(
-        (_message, callback) => {
-          if (typeof callback === 'function') {
-            callback(params)
-          }
-        },
-      )
+      mockMessage(API_ACTIONS.DELETE_BOOKMARK, params)
 
       const { result } = renderHook(() => useDeleteBookmark())
       result.current.mutate(MOCK_BOOKMARK_1.id)
 
-      // 2. エラー状態になるのを待つ
-      await waitFor(() => expect(result.current.isError).toBe(true))
-
-      const error = result.current.error
-      if (error instanceof BookmarkApiError) {
-        expect(error.message).toBe(expected.message)
-        expect(error.code).toBe(expected.code)
-      } else {
-        expect(error).toBeInstanceOf(BookmarkApiError)
-      }
+      await verifyError(result, expected)
     })
   })
 })
