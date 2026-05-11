@@ -15,20 +15,8 @@ import type {
 } from '@shared/schemas/keyword'
 
 import { useApi } from '../contexts/ApiContext'
+import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
-
-/**
- * API エラー情報を保持するカスタムエラークラス
- */
-export class BookmarkApiError extends Error {
-  code: string
-
-  constructor(message: string, code: string) {
-    super(message)
-    this.code = code
-    this.name = 'BookmarkApiError'
-  }
-}
 
 export const useBookmarks = () => {
   const { client } = useApi()

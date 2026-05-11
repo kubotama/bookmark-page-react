@@ -1,15 +1,22 @@
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { API_PATHS, LOG_MESSAGES } from '@shared/constants'
+import {
+  API_ACTIONS,
+  API_PATHS,
+  ERROR_CODES,
+  LOG_MESSAGES,
+  UI_MESSAGES,
+} from '@shared/constants'
+import { ApiRequestSchema } from '@shared/schemas/api'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
+  MOCK_BOOKMARKS,
   MOCK_KEYWORDS,
 } from '@shared/test/fixtures'
 
 import {
-  BookmarkApiError,
   useBookmarks,
   useDeleteBookmark,
   useReorderBookmarks,
@@ -17,62 +24,93 @@ import {
   useUpdateKeyword,
   useDeleteKeyword,
 } from './useBookmarks'
+import { BookmarkApiError } from '../lib/api-client'
 import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
 
-describe.skip('useBookmarks Hook', () => {
-  it('useBookmarks が正常にデータを取得すること', async () => {
-    server.use(
-      http.get(`*${API_PATHS.BOOKMARKS}`, () => {
-        return HttpResponse.json({
-          success: true,
-          data: { bookmarks: [MOCK_BOOKMARK_1] },
-        })
-      }),
+describe('useBookmarks Hook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('ブックマーク一覧を取得できること', async () => {
+    // 1. 拡張機能からのレスポンスをモック
+    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
+      (message, callback) => {
+        const parsed = ApiRequestSchema.safeParse(message)
+
+        if (parsed.success) {
+          // このブロック内では、parsed.data は正しいリクエスト型として扱えます
+          if (parsed.data.action === API_ACTIONS.READ_BOOKMARKS) {
+            // ✅ 2. コールバックも関数であることを型ガードで確認
+            if (typeof callback === 'function') {
+              callback({
+                success: true,
+                data: { bookmarks: MOCK_BOOKMARKS },
+              })
+            }
+          }
+        }
+      },
     )
 
     const { result } = renderHook(() => useBookmarks())
 
+    // 2. データが読み込まれるのを待つ
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data?.bookmarks).toHaveLength(1)
-    expect(result.current.data?.bookmarks[0].title).toBe(MOCK_BOOKMARK_1.title)
+
+    // 3. 結果の検証
+    expect(result.current.data?.bookmarks).toEqual(MOCK_BOOKMARKS)
   })
 
-  it('APIエラー時に BookmarkApiError を投げること', async () => {
-    server.use(
-      http.get(`*${API_PATHS.BOOKMARKS}`, () => {
-        return HttpResponse.json(
-          {
-            success: false,
-            error: { message: 'Api Error', code: 'TEST_ERROR' },
-          },
-          { status: 400 },
-        )
-      }),
+  it.each([
+    {
+      testName: 'APIエラー',
+      params: {
+        success: false,
+        error: {
+          message: UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      expected: {
+        message: UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      },
+    },
+    {
+      testName: '不正なレスポンス形式',
+      params: null,
+      expected: {
+        message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      },
+    },
+  ])('エラー処理: $testName', async ({ params, expected }) => {
+    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
+      (_message, callback) => {
+        if (typeof callback === 'function') {
+          callback(params)
+        }
+      },
     )
 
     const { result } = renderHook(() => useBookmarks())
 
+    // 2. エラー状態になるのを待つ
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error).toBeInstanceOf(BookmarkApiError)
-    const error = result.current.error as BookmarkApiError
-    expect(error.message).toBe('Api Error')
-    expect(error.code).toBe('TEST_ERROR')
+
+    const error = result.current.error
+    if (error instanceof BookmarkApiError) {
+      expect(error.message).toBe(expected.message)
+      expect(error.code).toBe(expected.code)
+    } else {
+      expect(error).toBeInstanceOf(BookmarkApiError)
+    }
   })
+})
 
-  it('不正なレスポンス形式の場合に一般エラーを投げること', async () => {
-    server.use(
-      http.get(`*${API_PATHS.BOOKMARKS}`, () => {
-        return HttpResponse.json({ invalid: 'format' })
-      }),
-    )
-
-    const { result } = renderHook(() => useBookmarks())
-
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error?.message).toContain('失敗')
-  })
-
+describe.skip('useBookmarks Hook (skip)', () => {
   it('useUpdateBookmark が正常に動作すること', async () => {
     let patchCalled = false
     server.use(
