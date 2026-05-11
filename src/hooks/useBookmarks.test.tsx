@@ -29,75 +29,45 @@ import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
 
 describe('useBookmarks Hook', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('ブックマーク一覧を取得できること', async () => {
-    // 1. 拡張機能からのレスポンスをモック
+  const mockMessage = (action: string, params: unknown) => {
     vi.mocked(chrome.runtime.sendMessage).mockImplementation(
       (message, callback) => {
         const parsed = ApiRequestSchema.safeParse(message)
 
-        if (parsed.success) {
-          // このブロック内では、parsed.data は正しいリクエスト型として扱えます
-          if (parsed.data.action === API_ACTIONS.READ_BOOKMARKS) {
-            // ✅ 2. コールバックも関数であることを型ガードで確認
-            if (typeof callback === 'function') {
-              callback({
-                success: true,
-                data: { bookmarks: MOCK_BOOKMARKS },
-              })
-            }
-          }
-        }
-      },
-    )
-
-    const { result } = renderHook(() => useBookmarks())
-
-    // 2. データが読み込まれるのを待つ
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-    // 3. 結果の検証
-    expect(result.current.data?.bookmarks).toEqual(MOCK_BOOKMARKS)
-  })
-
-  it.each([
-    {
-      testName: 'APIエラー',
-      params: {
-        success: false,
-        error: {
-          message: UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
-      },
-      expected: {
-        message: UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
-        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-      },
-    },
-    {
-      testName: '不正なレスポンス形式',
-      params: null,
-      expected: {
-        message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
-        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-      },
-    },
-  ])('エラー処理: $testName', async ({ params, expected }) => {
-    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
-      (_message, callback) => {
-        if (typeof callback === 'function') {
+        if (
+          parsed.success &&
+          parsed.data.action === action &&
+          typeof callback === 'function'
+        ) {
           callback(params)
         }
       },
     )
+  }
 
-    const { result } = renderHook(() => useBookmarks())
+  const verifySuccess = async (
+    result: { current: { isSuccess: boolean; data?: unknown } },
+    action: string,
+    payload: unknown,
+    data: unknown,
+  ) => {
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action,
+        payload,
+      }),
+      expect.any(Function),
+    )
+    expect(result.current.data).toEqual(data)
+  }
 
-    // 2. エラー状態になるのを待つ
+  const verifyError = async (
+    result: {
+      current: { isSuccess?: boolean; isError?: boolean; error: unknown }
+    },
+    expected: { message: string; code: string },
+  ) => {
     await waitFor(() => expect(result.current.isError).toBe(true))
 
     const error = result.current.error
@@ -107,6 +77,101 @@ describe('useBookmarks Hook', () => {
     } else {
       expect(error).toBeInstanceOf(BookmarkApiError)
     }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('READ_BOOKMARKS', () => {
+    it('ブックマーク一覧を取得できること', async () => {
+      mockMessage(API_ACTIONS.READ_BOOKMARKS, {
+        success: true,
+        data: { bookmarks: MOCK_BOOKMARKS },
+      })
+
+      const { result } = renderHook(() => useBookmarks())
+
+      await verifySuccess(result, API_ACTIONS.READ_BOOKMARKS, undefined, {
+        bookmarks: MOCK_BOOKMARKS,
+      })
+    })
+
+    it.each([
+      {
+        testName: 'APIエラー',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.READ_BOOKMARKS, params)
+
+      const { result } = renderHook(() => useBookmarks())
+
+      await verifyError(result, expected)
+    })
+  })
+
+  describe('DELETE_BOOKMARK', () => {
+    it('useDeleteBookmark が正常に動作すること', async () => {
+      const id = MOCK_BOOKMARK_1.id
+
+      mockMessage(API_ACTIONS.DELETE_BOOKMARK, { success: true, data: null })
+
+      const { result } = renderHook(() => useDeleteBookmark())
+      result.current.mutate(id)
+
+      await verifySuccess(result, API_ACTIONS.DELETE_BOOKMARK, { id }, null)
+    })
+
+    it.each([
+      {
+        testName: '削除に失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.DELETE_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.DELETE_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.DELETE_BOOKMARK, params)
+
+      const { result } = renderHook(() => useDeleteBookmark())
+      result.current.mutate(MOCK_BOOKMARK_1.id)
+
+      await verifyError(result, expected)
+    })
   })
 })
 
@@ -125,22 +190,6 @@ describe.skip('useBookmarks Hook (skip)', () => {
     result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates: { title: 'New' } })
 
     await waitFor(() => expect(patchCalled).toBe(true))
-  })
-
-  it('useDeleteBookmark が正常に動作すること', async () => {
-    let deleteCalled = false
-    server.use(
-      http.delete(`*${API_PATHS.BOOKMARKS}/:id`, () => {
-        deleteCalled = true
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
-
-    const { result } = renderHook(() => useDeleteBookmark())
-
-    result.current.mutate(MOCK_BOOKMARK_1.id)
-
-    await waitFor(() => expect(deleteCalled).toBe(true))
   })
 
   it('useDeleteBookmark がエラー時にエラーを投げること', async () => {
