@@ -14,6 +14,7 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARKS,
   MOCK_KEYWORDS,
+  TEST_STRINGS,
 } from '@shared/test/fixtures'
 
 import {
@@ -173,25 +174,67 @@ describe('useBookmarks Hook', () => {
       await verifyError(result, expected)
     })
   })
+
+  describe('UPDATE_BOOKMARK', () => {
+    const updates = { title: TEST_STRINGS.NEW_NAME }
+    it('useUpdateBookmark が正常に動作すること', async () => {
+      const expectedData = { ...MOCK_BOOKMARK_1, ...updates }
+
+      // 1. セットアップ（共通ヘルパーを利用）
+      mockMessage(API_ACTIONS.UPDATE_BOOKMARK, {
+        success: true,
+        data: expectedData,
+      })
+
+      const { result } = renderHook(() => useUpdateBookmark())
+
+      // 2. 実行
+      result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates })
+
+      // 3. 検証（共通ヘルパーを利用）
+      await verifySuccess(
+        result,
+        API_ACTIONS.UPDATE_BOOKMARK,
+        { id: MOCK_BOOKMARK_1.id, ...updates },
+        expectedData,
+      )
+    })
+
+    it.each([
+      {
+        testName: '更新に失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.UPDATE_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.UPDATE_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.UPDATE_BOOKMARK, params)
+
+      const { result } = renderHook(() => useUpdateBookmark())
+      result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates })
+
+      await verifyError(result, expected)
+    })
+  })
 })
 
 describe.skip('useBookmarks Hook (skip)', () => {
-  it('useUpdateBookmark が正常に動作すること', async () => {
-    let patchCalled = false
-    server.use(
-      http.patch(`*${API_PATHS.BOOKMARKS}/:id`, () => {
-        patchCalled = true
-        return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-      }),
-    )
-
-    const { result } = renderHook(() => useUpdateBookmark())
-
-    result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates: { title: 'New' } })
-
-    await waitFor(() => expect(patchCalled).toBe(true))
-  })
-
   it('useDeleteBookmark がエラー時にエラーを投げること', async () => {
     server.use(
       http.delete(`*${API_PATHS.BOOKMARKS}/:id`, () => {
