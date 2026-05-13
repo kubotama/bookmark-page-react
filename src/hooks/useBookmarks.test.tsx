@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,7 +9,7 @@ import {
   LOG_MESSAGES,
   UI_MESSAGES,
 } from '@shared/constants'
-import { ApiRequestSchema } from '@shared/schemas/api'
+import { ApiRequestSchema, type Bookmarks } from '@shared/schemas/api'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
@@ -26,6 +27,7 @@ import {
   useDeleteKeyword,
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
+import { QUERY_KEYS } from '../lib/queryKeys'
 import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
 
@@ -232,32 +234,151 @@ describe('useBookmarks Hook', () => {
       await verifyError(result, expected)
     })
   })
+
+  describe('REORDER_BOOKMARKS', () => {
+    const verifyReorderSuccess = async (
+      getHookState: () => { isSuccess?: boolean; data?: unknown },
+      action: string,
+      payload: unknown,
+      data: unknown,
+    ) => {
+      await waitFor(() => expect(getHookState().isSuccess).toBe(true))
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action,
+          payload,
+        }),
+        expect.any(Function),
+      )
+      expect(getHookState().data).toEqual(data)
+    }
+
+    const verifyReorderError = async (
+      getHookState: () => { isError?: boolean; error: unknown },
+      expected: { message: string; code: string },
+    ) => {
+      await waitFor(() => expect(getHookState().isError).toBe(true))
+
+      const error = getHookState().error
+      if (error instanceof BookmarkApiError) {
+        expect(error.message).toBe(expected.message)
+        expect(error.code).toBe(expected.code)
+      } else {
+        expect(error).toBeInstanceOf(BookmarkApiError)
+      }
+    }
+
+    const ids = {
+      ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id],
+    }
+    it('useReorderBookmark が正常に動作すること', async () => {
+      const expectedData = [MOCK_BOOKMARK_2, MOCK_BOOKMARK_1]
+
+      mockMessage(API_ACTIONS.REORDER_BOOKMARKS, {
+        success: true,
+        data: null,
+      })
+
+      const { result } = renderHook(() => ({
+        hook: useReorderBookmarks(),
+        queryClient: useQueryClient(), // QueryClientを取得
+      }))
+
+      result.current.queryClient.setQueryData(QUERY_KEYS.BOOKMARKS.LIST(), {
+        bookmarks: MOCK_BOOKMARKS,
+      })
+
+      result.current.hook.mutate(ids)
+
+      await waitFor(() => {
+        const cachedData = result.current.queryClient.getQueryData<Bookmarks>(
+          QUERY_KEYS.BOOKMARKS.LIST(),
+        )
+        expect(cachedData?.bookmarks).toEqual(expectedData)
+      })
+
+      await verifyReorderSuccess(
+        () => result.current.hook,
+        API_ACTIONS.REORDER_BOOKMARKS,
+        ids,
+        null,
+      )
+    })
+
+    it.each([
+      {
+        testName: '並び替えに失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.UPDATE_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.UPDATE_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: 'idが重複',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.REORDER_FAILED,
+            code: ERROR_CODES.BAD_REQUEST,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.REORDER_FAILED,
+          code: ERROR_CODES.BAD_REQUEST,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      mockMessage(API_ACTIONS.REORDER_BOOKMARKS, params)
+
+      const { result } = renderHook(() => ({
+        hook: useReorderBookmarks(),
+        queryClient: useQueryClient(),
+      }))
+
+      // 初期状態をセット
+      result.current.queryClient.setQueryData(QUERY_KEYS.BOOKMARKS.LIST(), {
+        bookmarks: MOCK_BOOKMARKS,
+      })
+
+      // 2. 実行
+      result.current.hook.mutate(ids)
+
+      await verifyReorderError(() => result.current.hook, expected)
+
+      expect(
+        result.current.queryClient.getQueryData(QUERY_KEYS.BOOKMARKS.LIST()),
+      ).toEqual({
+        bookmarks: MOCK_BOOKMARKS,
+      })
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          LOG_MESSAGES.REORDER_FAILED_LOG(expected.code, expected.message),
+        ),
+      )
+    })
+  })
 })
 
 describe.skip('useBookmarks Hook (skip)', () => {
-  it('useDeleteBookmark がエラー時にエラーを投げること', async () => {
-    server.use(
-      http.delete(`*${API_PATHS.BOOKMARKS}/:id`, () => {
-        return HttpResponse.json(
-          {
-            success: false,
-            error: { message: 'Delete Failed', code: 'DELETE_ERROR' },
-          },
-          { status: 400 },
-        )
-      }),
-    )
-
-    const { result } = renderHook(() => useDeleteBookmark())
-
-    result.current.mutate(MOCK_BOOKMARK_1.id)
-
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error).toBeInstanceOf(BookmarkApiError)
-    const error = result.current.error as BookmarkApiError
-    expect(error.message).toBe('Delete Failed')
-  })
-
   it('useUpdateKeyword が正常に動作すること', async () => {
     let patchCalled = false
     const updatedKeyword = { ...MOCK_KEYWORDS[0], name: 'New Name' }
@@ -298,28 +419,5 @@ describe.skip('useBookmarks Hook (skip)', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(deleteCalled).toBe(true)
-  })
-
-  describe('useReorderBookmarks', () => {
-    it('楽観的更新が行われ、エラー時にロールバックされること', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      server.use(
-        http.put(`*${API_PATHS.BOOKMARKS}/reorder`, () => {
-          return HttpResponse.json(
-            { success: false, error: { message: 'Fail', code: 'ERR' } },
-            { status: 500 },
-          )
-        }),
-      )
-
-      const { result } = renderHook(() => useReorderBookmarks())
-
-      result.current.mutate({ ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id] })
-
-      await waitFor(() => expect(result.current.isError).toBe(true))
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining(LOG_MESSAGES.REORDER_FAILED_LOG('ERR', 'Fail')),
-      )
-    })
   })
 })
