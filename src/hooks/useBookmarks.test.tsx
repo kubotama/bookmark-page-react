@@ -26,6 +26,7 @@ import {
   useUpdateKeyword,
   useDeleteKeyword,
   useKeywords,
+  useCreateKeyword,
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
@@ -436,6 +437,66 @@ describe('useBookmarks Hook', () => {
         () => result.current,
         API_ACTIONS.READ_KEYWORDS,
         undefined,
+        expected,
+      )
+    })
+  })
+
+  describe('CREATE_KEYWORD', () => {
+    const updates = { name: TEST_STRINGS.NEW_NAME }
+    it('キーワードを作成できること', async () => {
+      const expectedData = { keyword: { ...MOCK_KEYWORDS[0], ...updates } }
+
+      mockMessage(API_ACTIONS.CREATE_KEYWORD, {
+        success: true,
+        data: expectedData,
+      })
+
+      const { result } = renderHook(() => useCreateKeyword())
+
+      result.current.mutate(updates)
+
+      await verifySuccess(
+        () => result.current,
+        API_ACTIONS.CREATE_KEYWORD,
+        updates,
+        expectedData,
+      )
+    })
+
+    it.each([
+      {
+        testName: '作成に失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.CREATE_KEYWORD_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.CREATE_KEYWORD_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.CREATE_KEYWORD, params)
+
+      const { result } = renderHook(() => useCreateKeyword())
+      result.current.mutate(updates)
+
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.CREATE_KEYWORD,
+        updates,
         expected,
       )
     })
