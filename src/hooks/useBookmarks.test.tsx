@@ -49,37 +49,50 @@ describe('useBookmarks Hook', () => {
   }
 
   const verifySuccess = async (
-    result: { current: { isSuccess: boolean; data?: unknown } },
+    getHookState: () => { isSuccess?: boolean; data?: unknown },
     action: string,
     payload: unknown,
     data: unknown,
   ) => {
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action,
-        payload,
-      }),
-      expect.any(Function),
-    )
-    expect(result.current.data).toEqual(data)
+    await waitFor(() => {
+      expect(getHookState().isSuccess).toBe(true)
+      expect(getHookState().data).toEqual(data)
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action,
+          payload,
+        }),
+        expect.any(Function),
+      )
+    })
   }
 
   const verifyError = async (
-    result: {
-      current: { isSuccess?: boolean; isError?: boolean; error: unknown }
-    },
+    getHookState: () => { isError?: boolean; error: unknown },
+    action: string,
+    payload: unknown,
     expected: { message: string; code: string },
   ) => {
-    await waitFor(() => expect(result.current.isError).toBe(true))
+    await waitFor(() => {
+      expect(getHookState().isError).toBe(true)
 
-    const error = result.current.error
-    if (error instanceof BookmarkApiError) {
-      expect(error.message).toBe(expected.message)
-      expect(error.code).toBe(expected.code)
-    } else {
-      expect(error).toBeInstanceOf(BookmarkApiError)
-    }
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action,
+          payload,
+        }),
+        expect.any(Function),
+      )
+
+      const error = getHookState().error
+      if (error instanceof BookmarkApiError) {
+        expect(error.message).toBe(expected.message)
+        expect(error.code).toBe(expected.code)
+      } else {
+        expect(error).toBeInstanceOf(BookmarkApiError)
+      }
+    })
   }
 
   beforeEach(() => {
@@ -95,9 +108,14 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useBookmarks())
 
-      await verifySuccess(result, API_ACTIONS.READ_BOOKMARKS, undefined, {
-        bookmarks: MOCK_BOOKMARKS,
-      })
+      await verifySuccess(
+        () => result.current,
+        API_ACTIONS.READ_BOOKMARKS,
+        undefined,
+        {
+          bookmarks: MOCK_BOOKMARKS,
+        },
+      )
     })
 
     it.each([
@@ -128,20 +146,29 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useBookmarks())
 
-      await verifyError(result, expected)
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.READ_BOOKMARKS,
+        undefined,
+        expected,
+      )
     })
   })
 
   describe('DELETE_BOOKMARK', () => {
+    const id = MOCK_BOOKMARK_1.id
     it('useDeleteBookmark が正常に動作すること', async () => {
-      const id = MOCK_BOOKMARK_1.id
-
       mockMessage(API_ACTIONS.DELETE_BOOKMARK, { success: true, data: null })
 
       const { result } = renderHook(() => useDeleteBookmark())
       result.current.mutate(id)
 
-      await verifySuccess(result, API_ACTIONS.DELETE_BOOKMARK, { id }, null)
+      await verifySuccess(
+        () => result.current,
+        API_ACTIONS.DELETE_BOOKMARK,
+        { id },
+        null,
+      )
     })
 
     it.each([
@@ -173,7 +200,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useDeleteBookmark())
       result.current.mutate(MOCK_BOOKMARK_1.id)
 
-      await verifyError(result, expected)
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.DELETE_BOOKMARK,
+        { id },
+        expected,
+      )
     })
   })
 
@@ -195,7 +227,7 @@ describe('useBookmarks Hook', () => {
 
       // 3. 検証（共通ヘルパーを利用）
       await verifySuccess(
-        result,
+        () => result.current,
         API_ACTIONS.UPDATE_BOOKMARK,
         { id: MOCK_BOOKMARK_1.id, ...updates },
         expectedData,
@@ -231,44 +263,16 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useUpdateBookmark())
       result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates })
 
-      await verifyError(result, expected)
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.UPDATE_BOOKMARK,
+        { id: MOCK_BOOKMARK_1.id, ...updates },
+        expected,
+      )
     })
   })
 
   describe('REORDER_BOOKMARKS', () => {
-    const verifyReorderSuccess = async (
-      getHookState: () => { isSuccess?: boolean; data?: unknown },
-      action: string,
-      payload: unknown,
-      data: unknown,
-    ) => {
-      await waitFor(() => expect(getHookState().isSuccess).toBe(true))
-
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action,
-          payload,
-        }),
-        expect.any(Function),
-      )
-      expect(getHookState().data).toEqual(data)
-    }
-
-    const verifyReorderError = async (
-      getHookState: () => { isError?: boolean; error: unknown },
-      expected: { message: string; code: string },
-    ) => {
-      await waitFor(() => expect(getHookState().isError).toBe(true))
-
-      const error = getHookState().error
-      if (error instanceof BookmarkApiError) {
-        expect(error.message).toBe(expected.message)
-        expect(error.code).toBe(expected.code)
-      } else {
-        expect(error).toBeInstanceOf(BookmarkApiError)
-      }
-    }
-
     const ids = {
       ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id],
     }
@@ -298,7 +302,7 @@ describe('useBookmarks Hook', () => {
         expect(cachedData?.bookmarks).toEqual(expectedData)
       })
 
-      await verifyReorderSuccess(
+      await verifySuccess(
         () => result.current.hook,
         API_ACTIONS.REORDER_BOOKMARKS,
         ids,
@@ -361,7 +365,12 @@ describe('useBookmarks Hook', () => {
       // 2. 実行
       result.current.hook.mutate(ids)
 
-      await verifyReorderError(() => result.current.hook, expected)
+      await verifyError(
+        () => result.current.hook,
+        API_ACTIONS.REORDER_BOOKMARKS,
+        ids,
+        expected,
+      )
 
       expect(
         result.current.queryClient.getQueryData(QUERY_KEYS.BOOKMARKS.LIST()),
