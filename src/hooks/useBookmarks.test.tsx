@@ -25,6 +25,7 @@ import {
   useUpdateBookmark,
   useUpdateKeyword,
   useDeleteKeyword,
+  useKeywords,
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
@@ -382,6 +383,60 @@ describe('useBookmarks Hook', () => {
         expect.stringContaining(
           LOG_MESSAGES.REORDER_FAILED_LOG(expected.code, expected.message),
         ),
+      )
+    })
+  })
+
+  describe('READ_KEYWORDS', () => {
+    it('キーワード一覧を取得できること', async () => {
+      mockMessage(API_ACTIONS.READ_KEYWORDS, {
+        success: true,
+        data: { keywords: MOCK_KEYWORDS },
+      })
+
+      const { result } = renderHook(() => useKeywords())
+
+      await verifySuccess(
+        () => result.current,
+        API_ACTIONS.READ_KEYWORDS,
+        undefined,
+        { keywords: MOCK_KEYWORDS },
+      )
+    })
+
+    it.each([
+      {
+        testName: 'APIエラー',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.FETCH_KEYWORDS_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.FETCH_KEYWORDS_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.READ_KEYWORDS, params)
+
+      const { result } = renderHook(() => useKeywords())
+
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.READ_KEYWORDS,
+        undefined,
+        expected,
       )
     })
   })
