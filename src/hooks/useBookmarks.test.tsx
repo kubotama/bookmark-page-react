@@ -30,6 +30,7 @@ import {
   useKeywords,
   useCreateKeyword,
   useAttachKeyword,
+  useDetachKeyword,
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
@@ -738,6 +739,70 @@ describe('useBookmarks Hook', () => {
       await verifyError(
         () => result.current,
         API_ACTIONS.ATTACH_KEYWORD,
+        { bookmarkId, keywordId },
+        expected,
+      )
+    })
+  })
+
+  describe('DETACH_KEYWORD', () => {
+    const bookmark = MOCK_BOOKMARK_1
+    const bookmarkId = bookmark.id
+    const keywordId = MOCK_KEYWORDS[0].id
+
+    it('ブックマークからキーワードの紐付けを解除できること', async () => {
+      // 1. 拡張機能は成功（解除後のブックマーク）を返すと想定
+      mockMessage(API_ACTIONS.DETACH_KEYWORD, {
+        success: true,
+        data: bookmark,
+      })
+
+      const { result } = renderHook(() => useDetachKeyword())
+
+      // 2. 実行
+      result.current.mutate({ bookmarkId, keywordId })
+
+      // 3. 検証
+      await verifySuccess(
+        () => result.current,
+        API_ACTIONS.DETACH_KEYWORD,
+        { bookmarkId, keywordId },
+        bookmark,
+      )
+    })
+
+    it.each([
+      {
+        testName: '紐付けの解除に失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.DETACH_KEYWORD_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.DETACH_KEYWORD_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.DETACH_KEYWORD, params)
+
+      const { result } = renderHook(() => useDetachKeyword())
+      result.current.mutate({ bookmarkId, keywordId })
+
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.DETACH_KEYWORD,
         { bookmarkId, keywordId },
         expected,
       )
