@@ -1,10 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   API_ACTIONS,
-  API_PATHS,
   ERROR_CODES,
   LOG_MESSAGES,
   UI_MESSAGES,
@@ -34,7 +32,6 @@ import {
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
-import { server } from '../test/setup'
 import { renderHook, waitFor } from '../test/utils'
 
 describe('useBookmarks Hook', () => {
@@ -591,31 +588,94 @@ describe('useBookmarks Hook', () => {
       )
     })
   })
-})
 
-describe.skip('useBookmarks Hook (skip)', () => {
-  it('useUpdateKeyword が正常に動作すること', async () => {
-    let patchCalled = false
-    const updatedKeyword = { ...MOCK_KEYWORDS[0], name: 'New Name' }
-    server.use(
-      http.patch(`*${API_PATHS.KEYWORDS}/:id`, () => {
-        patchCalled = true
-        return HttpResponse.json({
-          success: true,
-          data: { keyword: updatedKeyword },
-        })
-      }),
-    )
+  describe('UPDATE_KEYWORD', () => {
+    const renderHookUpdateKeyword = () => {
+      const { result } = renderHook(() => ({
+        hook: useUpdateKeyword(),
+        queryClient: useQueryClient(),
+      }))
+      result.current.queryClient.setQueryData(QUERY_KEYS.KEYWORDS.LIST(), {
+        keywords: MOCK_KEYWORDS,
+      })
+      return result
+    }
 
-    const { result } = renderHook(() => useUpdateKeyword())
+    const id = MOCK_KEYWORDS[0].id
+    const name = TEST_STRINGS.NEW_NAME
+    const updates = { name }
+    const updatedKeyword = { ...MOCK_KEYWORDS[0], ...updates }
 
-    result.current.mutate({
-      id: MOCK_KEYWORDS[0].id,
-      updates: { name: 'New Name' },
+    it('キーワードの更新が正常に動作すること', async () => {
+      mockMessage(API_ACTIONS.UPDATE_KEYWORD, {
+        success: true,
+        data: { keyword: updatedKeyword },
+      })
+      const expectedKeywordsInCache = MOCK_KEYWORDS.map((kw) =>
+        kw.id === id ? { ...kw, name } : kw,
+      )
+
+      const result = renderHookUpdateKeyword()
+      result.current.hook.mutate({ id, updates })
+
+      await verifySuccess(
+        () => result.current.hook,
+        API_ACTIONS.UPDATE_KEYWORD,
+        { id, name },
+        { keyword: updatedKeyword },
+        () => {
+          expect(
+            result.current.queryClient.getQueryData<Keywords>(
+              QUERY_KEYS.KEYWORDS.LIST(),
+            ),
+          ).toEqual({ keywords: expectedKeywordsInCache })
+        },
+      )
     })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(patchCalled).toBe(true)
-    expect(result.current.data?.keyword.name).toBe('New Name')
+    it.each([
+      {
+        testName: '更新に失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.UPDATE_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.UPDATE_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.UPDATE_KEYWORD, params)
+
+      const result = renderHookUpdateKeyword()
+      result.current.hook.mutate({ id, updates })
+
+      await verifyError(
+        () => result.current.hook,
+        API_ACTIONS.UPDATE_KEYWORD,
+        { id, name }, // API_ACTIONS.UPDATE_KEYWORD の送信ペイロードは { id, name } です
+        expected,
+        () => {
+          // エラー時はキャッシュが元のままであることを検証
+          expect(
+            result.current.queryClient.getQueryData<Keywords>(
+              QUERY_KEYS.KEYWORDS.LIST(),
+            ),
+          ).toEqual({ keywords: MOCK_KEYWORDS })
+        },
+      )
+    })
   })
 })
