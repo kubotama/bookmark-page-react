@@ -305,18 +305,17 @@ describe('useBookmarks Hook', () => {
 
       result.current.hook.mutate(ids)
 
-      await waitFor(() => {
-        const cachedData = result.current.queryClient.getQueryData<Bookmarks>(
-          QUERY_KEYS.BOOKMARKS.LIST(),
-        )
-        expect(cachedData?.bookmarks).toEqual(expectedData)
-      })
-
       await verifySuccess(
         () => result.current.hook,
         API_ACTIONS.REORDER_BOOKMARKS,
         ids,
         null,
+        () =>
+          expect(
+            result.current.queryClient.getQueryData<Bookmarks>(
+              QUERY_KEYS.BOOKMARKS.LIST(),
+            ),
+          ).toEqual({ bookmarks: expectedData }),
       )
     })
 
@@ -380,13 +379,15 @@ describe('useBookmarks Hook', () => {
         API_ACTIONS.REORDER_BOOKMARKS,
         ids,
         expected,
+        () =>
+          expect(
+            result.current.queryClient.getQueryData<Bookmarks>(
+              QUERY_KEYS.BOOKMARKS.LIST(),
+            ),
+          ).toEqual({
+            bookmarks: MOCK_BOOKMARKS,
+          }),
       )
-
-      expect(
-        result.current.queryClient.getQueryData(QUERY_KEYS.BOOKMARKS.LIST()),
-      ).toEqual({
-        bookmarks: MOCK_BOOKMARKS,
-      })
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining(
