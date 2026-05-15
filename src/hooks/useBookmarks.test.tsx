@@ -29,6 +29,7 @@ import {
   useDeleteKeyword,
   useKeywords,
   useCreateKeyword,
+  useAttachKeyword,
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
@@ -675,6 +676,70 @@ describe('useBookmarks Hook', () => {
             ),
           ).toEqual({ keywords: MOCK_KEYWORDS })
         },
+      )
+    })
+  })
+
+  describe('ATTACH_KEYWORD', () => {
+    const bookmark = MOCK_BOOKMARK_1
+    const bookmarkId = bookmark.id
+    const keywordId = MOCK_KEYWORDS[0].id
+
+    it('ブックマークにキーワードを紐付けられること', async () => {
+      // 1. 拡張機能は成功（更新後のブックマーク）を返すと想定
+      mockMessage(API_ACTIONS.ATTACH_KEYWORD, {
+        success: true,
+        data: bookmark,
+      })
+
+      const { result } = renderHook(() => useAttachKeyword())
+
+      // 2. 実行
+      result.current.mutate({ bookmarkId, keywordId })
+
+      // 3. 検証
+      await verifySuccess(
+        () => result.current,
+        API_ACTIONS.ATTACH_KEYWORD,
+        { bookmarkId, keywordId },
+        bookmark,
+      )
+    })
+
+    it.each([
+      {
+        testName: '紐付けに失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.ATTACH_KEYWORD_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.ATTACH_KEYWORD_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.ATTACH_KEYWORD, params)
+
+      const { result } = renderHook(() => useAttachKeyword())
+      result.current.mutate({ bookmarkId, keywordId })
+
+      await verifyError(
+        () => result.current,
+        API_ACTIONS.ATTACH_KEYWORD,
+        { bookmarkId, keywordId },
+        expected,
       )
     })
   })
