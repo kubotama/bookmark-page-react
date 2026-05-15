@@ -9,7 +9,11 @@ import {
   LOG_MESSAGES,
   UI_MESSAGES,
 } from '@shared/constants'
-import { ApiRequestSchema, type Bookmarks } from '@shared/schemas/api'
+import {
+  ApiRequestSchema,
+  type Bookmarks,
+  type Keywords,
+} from '@shared/schemas/api'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
@@ -55,6 +59,7 @@ describe('useBookmarks Hook', () => {
     action: string,
     payload: unknown,
     data: unknown,
+    extraAssertions?: () => void,
   ) => {
     await waitFor(() => {
       expect(getHookState().isSuccess).toBe(true)
@@ -67,6 +72,7 @@ describe('useBookmarks Hook', () => {
         }),
         expect.any(Function),
       )
+      if (extraAssertions) extraAssertions()
     })
   }
 
@@ -75,6 +81,7 @@ describe('useBookmarks Hook', () => {
     action: string,
     payload: unknown,
     expected: { message: string; code: string },
+    extraAssertions?: () => void,
   ) => {
     await waitFor(() => {
       expect(getHookState().isError).toBe(true)
@@ -94,6 +101,7 @@ describe('useBookmarks Hook', () => {
       } else {
         expect(error).toBeInstanceOf(BookmarkApiError)
       }
+      if (extraAssertions) extraAssertions()
     })
   }
 
@@ -501,6 +509,87 @@ describe('useBookmarks Hook', () => {
       )
     })
   })
+
+  describe('DELETE_KEYWORD', () => {
+    const renderHookDeleteKeyword = () => {
+      const { result } = renderHook(() => ({
+        hook: useDeleteKeyword(),
+        queryClient: useQueryClient(),
+      }))
+      result.current.queryClient.setQueryData(QUERY_KEYS.KEYWORDS.LIST(), {
+        keywords: MOCK_KEYWORDS,
+      })
+      return result
+    }
+
+    const id = MOCK_KEYWORDS[0].id
+    const expectedKeywords = MOCK_KEYWORDS.filter((kw) => kw.id !== id)
+
+    it('キーワードの削除が正常に動作すること', async () => {
+      mockMessage(API_ACTIONS.DELETE_KEYWORD, { success: true, data: null })
+
+      const result = renderHookDeleteKeyword()
+      result.current.hook.mutate(id)
+
+      await verifySuccess(
+        () => result.current.hook,
+        API_ACTIONS.DELETE_KEYWORD,
+        { id },
+        id,
+        () => {
+          expect(
+            result.current.queryClient.getQueryData<Keywords>(
+              QUERY_KEYS.KEYWORDS.LIST(),
+            ),
+          ).toEqual({ keywords: expectedKeywords })
+        },
+      )
+    })
+
+    it.each([
+      {
+        testName: '削除に失敗',
+        params: {
+          success: false,
+          error: {
+            message: UI_MESSAGES.KEYWORD_DELETE_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        },
+        expected: {
+          message: UI_MESSAGES.KEYWORD_DELETE_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+      {
+        testName: '不正なレスポンス形式',
+        params: null,
+        expected: {
+          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+      },
+    ])('エラー処理: $testName', async ({ params, expected }) => {
+      mockMessage(API_ACTIONS.DELETE_KEYWORD, params)
+
+      const result = renderHookDeleteKeyword()
+      result.current.hook.mutate(id)
+
+      await verifyError(
+        () => result.current.hook,
+        API_ACTIONS.DELETE_KEYWORD,
+        { id },
+        expected,
+        () => {
+          expect(
+            result.current.queryClient.getQueryData<Keywords>(
+              QUERY_KEYS.KEYWORDS.LIST(),
+            ),
+          ).toEqual({ keywords: MOCK_KEYWORDS })
+        },
+      )
+    })
+  })
 })
 
 describe.skip('useBookmarks Hook (skip)', () => {
@@ -527,22 +616,5 @@ describe.skip('useBookmarks Hook (skip)', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(patchCalled).toBe(true)
     expect(result.current.data?.keyword.name).toBe('New Name')
-  })
-
-  it('useDeleteKeyword が正常に動作すること', async () => {
-    let deleteCalled = false
-    server.use(
-      http.delete(`*${API_PATHS.KEYWORDS}/:id`, () => {
-        deleteCalled = true
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
-
-    const { result } = renderHook(() => useDeleteKeyword())
-
-    result.current.mutate(MOCK_KEYWORDS[0].id)
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(deleteCalled).toBe(true)
   })
 })
