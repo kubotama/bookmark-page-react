@@ -6,6 +6,7 @@ import {
   LOG_MESSAGES,
   DROPPABLE_IDS,
   KEY_VALUES,
+  API_ACTIONS,
 } from '@shared/constants'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
@@ -13,6 +14,7 @@ import * as urlUtils from '@shared/utils/url'
 import { useBookmarkPage } from './useBookmarkPage'
 import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { createKeyboardEvent } from '../test/event-utils'
+import { mockMessage } from '../test/mock'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -35,9 +37,21 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe.skip('useBookmarkPage Hook', () => {
+describe('useBookmarkPage Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // 1. ブックマーク情報の取得をモック
+    mockMessage(API_ACTIONS.READ_BOOKMARKS, {
+      success: true,
+      data: { bookmarks: [MOCK_BOOKMARK_1] },
+    })
+
+    // 2. キーワード一覧の取得をモック (フックの初期化を正常に完了させるために必要)
+    mockMessage(API_ACTIONS.READ_KEYWORDS, {
+      success: true,
+      data: { keywords: MOCK_KEYWORDS },
+    })
   })
 
   it('初期化時にブックマークデータを取得し、ステートを更新すること', async () => {
@@ -48,6 +62,12 @@ describe.skip('useBookmarkPage Hook', () => {
     )
     expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
     expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url)
+  })
+})
+
+describe.skip('useBookmarkPage Hook (skip)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
   it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
