@@ -1,6 +1,9 @@
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
 
 import { ApiRequestSchema } from '@shared/schemas/api'
+
+import { waitFor } from './utils'
+import { BookmarkApiError } from '../lib/api-client'
 
 /**
  * 拡張機能へのメッセージ送信をモックする共通関数。
@@ -30,5 +33,70 @@ export const mockMessage = (action: string, params: unknown) => {
       // unknown[] を受け取る関数として扱うことで any を回避
       ;(previous as (...args: unknown[]) => void)(message, callback)
     }
+  })
+}
+
+export const verifySuccess = async ({
+  getHookState,
+  action,
+  payload,
+  data,
+  extraAssertions,
+}: {
+  getHookState?: () => { isSuccess?: boolean; data?: unknown }
+  action: string
+  payload: unknown
+  data: unknown
+  extraAssertions?: () => void
+}) => {
+  await waitFor(() => {
+    if (getHookState) {
+      expect(getHookState().isSuccess).toBe(true)
+      expect(getHookState().data).toEqual(data)
+    }
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action,
+        payload,
+      }),
+      expect.any(Function),
+    )
+    if (extraAssertions) extraAssertions()
+  })
+}
+
+export const verifyError = async ({
+  getHookState,
+  action,
+  payload,
+  expected,
+  extraAssertions,
+}: {
+  getHookState: () => { isError?: boolean; error: unknown }
+  action: string
+  payload: unknown
+  expected: { message: string; code: string }
+  extraAssertions?: () => void
+}) => {
+  await waitFor(() => {
+    expect(getHookState().isError).toBe(true)
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action,
+        payload,
+      }),
+      expect.any(Function),
+    )
+
+    const error = getHookState().error
+    if (error instanceof BookmarkApiError) {
+      expect(error.message).toBe(expected.message)
+      expect(error.code).toBe(expected.code)
+    } else {
+      expect(error).toBeInstanceOf(BookmarkApiError)
+    }
+    if (extraAssertions) extraAssertions()
   })
 }

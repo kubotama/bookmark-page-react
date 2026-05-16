@@ -28,63 +28,11 @@ import {
   useAttachKeyword,
   useDetachKeyword,
 } from './useBookmarks'
-import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
-import { mockMessage } from '../test/mock'
-import { renderHook, waitFor } from '../test/utils'
+import { mockMessage, verifyError, verifySuccess } from '../test/mock'
+import { renderHook } from '../test/utils'
 
 describe('useBookmarks Hook', () => {
-  const verifySuccess = async (
-    getHookState: () => { isSuccess?: boolean; data?: unknown },
-    action: string,
-    payload: unknown,
-    data: unknown,
-    extraAssertions?: () => void,
-  ) => {
-    await waitFor(() => {
-      expect(getHookState().isSuccess).toBe(true)
-      expect(getHookState().data).toEqual(data)
-
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action,
-          payload,
-        }),
-        expect.any(Function),
-      )
-      if (extraAssertions) extraAssertions()
-    })
-  }
-
-  const verifyError = async (
-    getHookState: () => { isError?: boolean; error: unknown },
-    action: string,
-    payload: unknown,
-    expected: { message: string; code: string },
-    extraAssertions?: () => void,
-  ) => {
-    await waitFor(() => {
-      expect(getHookState().isError).toBe(true)
-
-      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action,
-          payload,
-        }),
-        expect.any(Function),
-      )
-
-      const error = getHookState().error
-      if (error instanceof BookmarkApiError) {
-        expect(error.message).toBe(expected.message)
-        expect(error.code).toBe(expected.code)
-      } else {
-        expect(error).toBeInstanceOf(BookmarkApiError)
-      }
-      if (extraAssertions) extraAssertions()
-    })
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -98,14 +46,14 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useBookmarks())
 
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.READ_BOOKMARKS,
-        undefined,
-        {
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.READ_BOOKMARKS,
+        payload: undefined,
+        data: {
           bookmarks: MOCK_BOOKMARKS,
         },
-      )
+      })
     })
 
     it.each([
@@ -136,12 +84,12 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useBookmarks())
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.READ_BOOKMARKS,
-        undefined,
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.READ_BOOKMARKS,
+        payload: undefined,
         expected,
-      )
+      })
     })
   })
 
@@ -153,12 +101,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useDeleteBookmark())
       result.current.mutate(id)
 
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.DELETE_BOOKMARK,
-        { id },
-        null,
-      )
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: { id },
+        data: null,
+      })
     })
 
     it.each([
@@ -190,12 +138,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useDeleteBookmark())
       result.current.mutate(MOCK_BOOKMARK_1.id)
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.DELETE_BOOKMARK,
-        { id },
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: { id },
         expected,
-      )
+      })
     })
   })
 
@@ -216,12 +164,12 @@ describe('useBookmarks Hook', () => {
       result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates })
 
       // 3. 検証（共通ヘルパーを利用）
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.UPDATE_BOOKMARK,
-        { id: MOCK_BOOKMARK_1.id, ...updates },
-        expectedData,
-      )
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: { id: MOCK_BOOKMARK_1.id, ...updates },
+        data: expectedData,
+      })
     })
 
     it.each([
@@ -253,12 +201,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useUpdateBookmark())
       result.current.mutate({ id: MOCK_BOOKMARK_1.id, updates })
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.UPDATE_BOOKMARK,
-        { id: MOCK_BOOKMARK_1.id, ...updates },
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: { id: MOCK_BOOKMARK_1.id, ...updates },
         expected,
-      )
+      })
     })
   })
 
@@ -285,18 +233,18 @@ describe('useBookmarks Hook', () => {
 
       result.current.hook.mutate(ids)
 
-      await verifySuccess(
-        () => result.current.hook,
-        API_ACTIONS.REORDER_BOOKMARKS,
-        ids,
-        null,
-        () =>
+      await verifySuccess({
+        getHookState: () => result.current.hook,
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: ids,
+        data: null,
+        extraAssertions: () =>
           expect(
             result.current.queryClient.getQueryData<Bookmarks>(
               QUERY_KEYS.BOOKMARKS.LIST(),
             ),
           ).toEqual({ bookmarks: expectedData }),
-      )
+      })
     })
 
     it.each([
@@ -354,12 +302,12 @@ describe('useBookmarks Hook', () => {
       // 2. 実行
       result.current.hook.mutate(ids)
 
-      await verifyError(
-        () => result.current.hook,
-        API_ACTIONS.REORDER_BOOKMARKS,
-        ids,
+      await verifyError({
+        getHookState: () => result.current.hook,
+        action: API_ACTIONS.REORDER_BOOKMARKS,
+        payload: ids,
         expected,
-        () =>
+        extraAssertions: () =>
           expect(
             result.current.queryClient.getQueryData<Bookmarks>(
               QUERY_KEYS.BOOKMARKS.LIST(),
@@ -367,7 +315,7 @@ describe('useBookmarks Hook', () => {
           ).toEqual({
             bookmarks: MOCK_BOOKMARKS,
           }),
-      )
+      })
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining(
@@ -386,12 +334,12 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useKeywords())
 
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.READ_KEYWORDS,
-        undefined,
-        { keywords: MOCK_KEYWORDS },
-      )
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.READ_KEYWORDS,
+        payload: undefined,
+        data: { keywords: MOCK_KEYWORDS },
+      })
     })
 
     it.each([
@@ -422,12 +370,12 @@ describe('useBookmarks Hook', () => {
 
       const { result } = renderHook(() => useKeywords())
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.READ_KEYWORDS,
-        undefined,
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.READ_KEYWORDS,
+        payload: undefined,
         expected,
-      )
+      })
     })
   })
 
@@ -445,12 +393,12 @@ describe('useBookmarks Hook', () => {
 
       result.current.mutate(updates)
 
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.CREATE_KEYWORD,
-        updates,
-        expectedData,
-      )
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.CREATE_KEYWORD,
+        payload: updates,
+        data: expectedData,
+      })
     })
 
     it.each([
@@ -482,12 +430,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useCreateKeyword())
       result.current.mutate(updates)
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.CREATE_KEYWORD,
-        updates,
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.CREATE_KEYWORD,
+        payload: updates,
         expected,
-      )
+      })
     })
   })
 
@@ -512,19 +460,19 @@ describe('useBookmarks Hook', () => {
       const result = renderHookDeleteKeyword()
       result.current.hook.mutate(id)
 
-      await verifySuccess(
-        () => result.current.hook,
-        API_ACTIONS.DELETE_KEYWORD,
-        { id },
-        id,
-        () => {
+      await verifySuccess({
+        getHookState: () => result.current.hook,
+        action: API_ACTIONS.DELETE_KEYWORD,
+        payload: { id },
+        data: id,
+        extraAssertions: () => {
           expect(
             result.current.queryClient.getQueryData<Keywords>(
               QUERY_KEYS.KEYWORDS.LIST(),
             ),
           ).toEqual({ keywords: expectedKeywords })
         },
-      )
+      })
     })
 
     it.each([
@@ -556,19 +504,19 @@ describe('useBookmarks Hook', () => {
       const result = renderHookDeleteKeyword()
       result.current.hook.mutate(id)
 
-      await verifyError(
-        () => result.current.hook,
-        API_ACTIONS.DELETE_KEYWORD,
-        { id },
+      await verifyError({
+        getHookState: () => result.current.hook,
+        action: API_ACTIONS.DELETE_KEYWORD,
+        payload: { id },
         expected,
-        () => {
+        extraAssertions: () => {
           expect(
             result.current.queryClient.getQueryData<Keywords>(
               QUERY_KEYS.KEYWORDS.LIST(),
             ),
           ).toEqual({ keywords: MOCK_KEYWORDS })
         },
-      )
+      })
     })
   })
 
@@ -601,19 +549,19 @@ describe('useBookmarks Hook', () => {
       const result = renderHookUpdateKeyword()
       result.current.hook.mutate({ id, updates })
 
-      await verifySuccess(
-        () => result.current.hook,
-        API_ACTIONS.UPDATE_KEYWORD,
-        { id, name },
-        { keyword: updatedKeyword },
-        () => {
+      await verifySuccess({
+        getHookState: () => result.current.hook,
+        action: API_ACTIONS.UPDATE_KEYWORD,
+        payload: { id, name },
+        data: { keyword: updatedKeyword },
+        extraAssertions: () => {
           expect(
             result.current.queryClient.getQueryData<Keywords>(
               QUERY_KEYS.KEYWORDS.LIST(),
             ),
           ).toEqual({ keywords: expectedKeywordsInCache })
         },
-      )
+      })
     })
 
     it.each([
@@ -645,12 +593,12 @@ describe('useBookmarks Hook', () => {
       const result = renderHookUpdateKeyword()
       result.current.hook.mutate({ id, updates })
 
-      await verifyError(
-        () => result.current.hook,
-        API_ACTIONS.UPDATE_KEYWORD,
-        { id, name }, // API_ACTIONS.UPDATE_KEYWORD の送信ペイロードは { id, name } です
+      await verifyError({
+        getHookState: () => result.current.hook,
+        action: API_ACTIONS.UPDATE_KEYWORD,
+        payload: { id, name }, // API_ACTIONS.UPDATE_KEYWORD の送信ペイロードは { id, name } です
         expected,
-        () => {
+        extraAssertions: () => {
           // エラー時はキャッシュが元のままであることを検証
           expect(
             result.current.queryClient.getQueryData<Keywords>(
@@ -658,7 +606,7 @@ describe('useBookmarks Hook', () => {
             ),
           ).toEqual({ keywords: MOCK_KEYWORDS })
         },
-      )
+      })
     })
   })
 
@@ -680,12 +628,12 @@ describe('useBookmarks Hook', () => {
       result.current.mutate({ bookmarkId, keywordId })
 
       // 3. 検証
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.ATTACH_KEYWORD,
-        { bookmarkId, keywordId },
-        bookmark,
-      )
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: { bookmarkId, keywordId },
+        data: bookmark,
+      })
     })
 
     it.each([
@@ -717,12 +665,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useAttachKeyword())
       result.current.mutate({ bookmarkId, keywordId })
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.ATTACH_KEYWORD,
-        { bookmarkId, keywordId },
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: { bookmarkId, keywordId },
         expected,
-      )
+      })
     })
   })
 
@@ -744,12 +692,12 @@ describe('useBookmarks Hook', () => {
       result.current.mutate({ bookmarkId, keywordId })
 
       // 3. 検証
-      await verifySuccess(
-        () => result.current,
-        API_ACTIONS.DETACH_KEYWORD,
-        { bookmarkId, keywordId },
-        bookmark,
-      )
+      await verifySuccess({
+        getHookState: () => result.current,
+        action: API_ACTIONS.DETACH_KEYWORD,
+        payload: { bookmarkId, keywordId },
+        data: bookmark,
+      })
     })
 
     it.each([
@@ -781,12 +729,12 @@ describe('useBookmarks Hook', () => {
       const { result } = renderHook(() => useDetachKeyword())
       result.current.mutate({ bookmarkId, keywordId })
 
-      await verifyError(
-        () => result.current,
-        API_ACTIONS.DETACH_KEYWORD,
-        { bookmarkId, keywordId },
+      await verifyError({
+        getHookState: () => result.current,
+        action: API_ACTIONS.DETACH_KEYWORD,
+        payload: { bookmarkId, keywordId },
         expected,
-      )
+      })
     })
   })
 })
