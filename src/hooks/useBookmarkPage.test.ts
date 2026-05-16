@@ -1,21 +1,18 @@
 import { fireEvent } from '@testing-library/react'
-import { http, HttpResponse, delay } from 'msw'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import {
   APP_PATHS,
-  HTTP_STATUS,
   LOG_MESSAGES,
   DROPPABLE_IDS,
   KEY_VALUES,
 } from '@shared/constants'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
+import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
 import { useBookmarkPage } from './useBookmarkPage'
 import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { createKeyboardEvent } from '../test/event-utils'
-import { server } from '../test/setup'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -41,22 +38,6 @@ vi.mock('@shared/utils/url', async () => {
 describe.skip('useBookmarkPage Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    server.use(
-      http.get('*/api/bookmarks', () => {
-        return HttpResponse.json({
-          success: true,
-          data: { bookmarks: [MOCK_BOOKMARK_1] },
-        })
-      }),
-      http.get('*/api/keywords', () => {
-        return HttpResponse.json({
-          success: true,
-          data: {
-            keywords: MOCK_KEYWORDS,
-          },
-        })
-      }),
-    )
   })
 
   it('初期化時にブックマークデータを取得し、ステートを更新すること', async () => {
@@ -71,18 +52,10 @@ describe.skip('useBookmarkPage Hook', () => {
 
   it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
     // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-    const bookmarkWithKeyword = {
-      ...MOCK_BOOKMARK_1,
-      keywords: [MOCK_KEYWORDS[0]],
-    }
-    server.use(
-      http.get('*/api/bookmarks', () => {
-        return HttpResponse.json({
-          success: true,
-          data: { bookmarks: [bookmarkWithKeyword] },
-        })
-      }),
-    )
+    // const bookmarkWithKeyword = {
+    //   ...MOCK_BOOKMARK_1,
+    //   keywords: [MOCK_KEYWORDS[0]],
+    // }
 
     const { result } = renderHook(() => useBookmarkPage())
 
@@ -94,13 +67,7 @@ describe.skip('useBookmarkPage Hook', () => {
   })
 
   it('handleUpdate が成功した際、一覧へ戻ること', async () => {
-    let patchCalled = false
-    server.use(
-      http.patch('*/api/bookmarks/:id', () => {
-        patchCalled = true
-        return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-      }),
-    )
+    const patchCalled = false
 
     const { result } = renderHook(() => useBookmarkPage())
     await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -114,12 +81,6 @@ describe.skip('useBookmarkPage Hook', () => {
   })
 
   it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
-    server.use(
-      http.delete('*/api/bookmarks/:id', () => {
-        return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
-      }),
-    )
-
     const { result } = renderHook(() => useBookmarkPage())
     await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
 
@@ -154,19 +115,7 @@ describe.skip('useBookmarkPage Hook', () => {
   })
 
   it('handleKeywordKeyDown が Enter キーで handleCreateKeyword を呼び出すこと', async () => {
-    let createCalled = false
-    server.use(
-      http.post('*/api/keywords', () => {
-        createCalled = true
-        return HttpResponse.json({
-          success: true,
-          data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: 'Enter' } },
-        })
-      }),
-      http.post('*/api/bookmarks/:id/keywords', () => {
-        return HttpResponse.json({ success: true, data: null })
-      }),
-    )
+    const createCalled = false
 
     const { result } = renderHook(() => useBookmarkPage())
     await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -198,13 +147,7 @@ describe.skip('useBookmarkPage Hook', () => {
     })
 
     it('handleDragEnd が割当済み領域へのドロップで handleAttachKeyword を呼び出すこと', async () => {
-      let attachCalled = false
-      server.use(
-        http.post('*/api/bookmarks/:id/keywords', () => {
-          attachCalled = true
-          return HttpResponse.json({ success: true, data: null })
-        }),
-      )
+      const attachCalled = false
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -220,13 +163,7 @@ describe.skip('useBookmarkPage Hook', () => {
     })
 
     it('handleDragEnd が未割当領域へのドロップでは何もしないこと', async () => {
-      let attachCalled = false
-      server.use(
-        http.post('*/api/bookmarks/:id/keywords', () => {
-          attachCalled = true
-          return HttpResponse.json({ success: true, data: null })
-        }),
-      )
+      const attachCalled = false
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -245,24 +182,12 @@ describe.skip('useBookmarkPage Hook', () => {
     })
 
     it('handleDragEnd が未割当領域へのドロップで handleDetachKeyword を呼び出すこと', async () => {
-      let detachCalled = false
+      const detachCalled = false
       // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-      const bookmarkWithKeyword = {
-        ...MOCK_BOOKMARK_1,
-        keywords: [MOCK_KEYWORDS[0]],
-      }
-      server.use(
-        http.get('*/api/bookmarks', () => {
-          return HttpResponse.json({
-            success: true,
-            data: { bookmarks: [bookmarkWithKeyword] },
-          })
-        }),
-        http.delete('*/api/bookmarks/:id/keywords/:keywordId', () => {
-          detachCalled = true
-          return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
-        }),
-      )
+      // const bookmarkWithKeyword = {
+      //   ...MOCK_BOOKMARK_1,
+      //   keywords: [MOCK_KEYWORDS[0]],
+      // }
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -282,31 +207,9 @@ describe.skip('useBookmarkPage Hook', () => {
   })
 
   it('handleCreateKeyword が成功した際、キーワードを作成して紐付けること', async () => {
-    let createCalled = false
-    let attachCalled = false
+    const createCalled = false
+    const attachCalled = false
     const NEW_TAG = 'NewTag'
-
-    server.use(
-      http.post('*/api/keywords', async ({ request }) => {
-        const body = (await request.json()) as { name: string }
-        if (body.name === NEW_TAG) {
-          createCalled = true
-          return HttpResponse.json({
-            success: true,
-            data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: NEW_TAG } },
-          })
-        }
-        return new HttpResponse(null, { status: 400 })
-      }),
-      http.post('*/api/bookmarks/:id/keywords', async ({ request }) => {
-        const body = (await request.json()) as { keywordId: string }
-        if (body.keywordId === MOCK_IDS.NEW_KEYWORD) {
-          attachCalled = true
-          return HttpResponse.json({ success: true, data: null })
-        }
-        return new HttpResponse(null, { status: 400 })
-      }),
-    )
 
     const { result } = renderHook(() => useBookmarkPage())
     await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -341,13 +244,7 @@ describe.skip('useBookmarkPage Hook', () => {
     })
 
     it('Ctrl + Enter キーで handleUpdate が呼ばれること', async () => {
-      let patchCalled = false
-      server.use(
-        http.patch('*/api/bookmarks/:id', () => {
-          patchCalled = true
-          return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-        }),
-      )
+      const patchCalled = false
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -360,13 +257,6 @@ describe.skip('useBookmarkPage Hook', () => {
 
   describe('Boundary Conditions & Error Handling', () => {
     it('ローディング中は isLoading が true であること', () => {
-      server.use(
-        http.get('*/api/bookmarks', async () => {
-          await delay('infinite')
-          return HttpResponse.json({ success: true, data: { bookmarks: [] } })
-        }),
-      )
-
       const { result } = renderHook(() => useBookmarkPage())
       expect(result.current.isLoading).toBe(true)
     })
@@ -387,20 +277,6 @@ describe.skip('useBookmarkPage Hook', () => {
 
     it('API エラー時に例外をキャッチしログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      server.use(
-        http.patch('*/api/bookmarks/:id', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-        http.delete('*/api/bookmarks/:id', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-      )
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -424,14 +300,6 @@ describe.skip('useBookmarkPage Hook', () => {
 
     it('handleCreateKeyword の作成失敗時にログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      server.use(
-        http.post('*/api/keywords', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-      )
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
@@ -452,20 +320,6 @@ describe.skip('useBookmarkPage Hook', () => {
 
     it('handleCreateKeyword の紐付け失敗時にログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      server.use(
-        http.post('*/api/keywords', () => {
-          return HttpResponse.json({
-            success: true,
-            data: { keyword: { id: MOCK_IDS.NEW_KEYWORD, name: 'Success' } },
-          })
-        }),
-        http.post('*/api/bookmarks/:id/keywords', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-      )
 
       const { result } = renderHook(() => useBookmarkPage())
       await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())

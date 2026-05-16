@@ -7,11 +7,7 @@ import {
   LOG_MESSAGES,
   UI_MESSAGES,
 } from '@shared/constants'
-import {
-  ApiRequestSchema,
-  type Bookmarks,
-  type Keywords,
-} from '@shared/schemas/api'
+import { type Bookmarks, type Keywords } from '@shared/schemas/api'
 import {
   MOCK_BOOKMARK_1,
   MOCK_BOOKMARK_2,
@@ -34,25 +30,10 @@ import {
 } from './useBookmarks'
 import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
+import { mockMessage } from '../test/mock'
 import { renderHook, waitFor } from '../test/utils'
 
 describe('useBookmarks Hook', () => {
-  const mockMessage = (action: string, params: unknown) => {
-    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
-      (message, callback) => {
-        const parsed = ApiRequestSchema.safeParse(message)
-
-        if (
-          parsed.success &&
-          parsed.data.action === action &&
-          typeof callback === 'function'
-        ) {
-          callback(params)
-        }
-      },
-    )
-  }
-
   const verifySuccess = async (
     getHookState: () => { isSuccess?: boolean; data?: unknown },
     action: string,
