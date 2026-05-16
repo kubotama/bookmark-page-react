@@ -183,16 +183,10 @@ describe('useBookmarkPage Hook', () => {
     // ✅ 通信の検証ではなく、副作用の検証を行う
     expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
   })
-})
 
-describe.skip('useBookmarkPage Hook (skip)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('handleBack が呼ばれた際、onBack を実行し一覧へ戻ること', () => {
+  it('handleBack が呼ばれた際、onBack を実行し一覧へ戻ること', async () => {
     const onBack = vi.fn()
-    const { result } = renderHook(() => useBookmarkPage(onBack))
+    const result = await setupHook({ onBack })
 
     act(() => {
       result.current.handleBack()
@@ -200,6 +194,12 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
 
     expect(onBack).toHaveBeenCalled()
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+  })
+})
+
+describe.skip('useBookmarkPage Hook (skip)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
   it('handleKeywordKeyDown が Enter キーで handleCreateKeyword を呼び出すこと', async () => {
