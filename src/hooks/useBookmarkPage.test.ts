@@ -14,7 +14,7 @@ import * as urlUtils from '@shared/utils/url'
 import { useBookmarkPage } from './useBookmarkPage'
 import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { createKeyboardEvent } from '../test/event-utils'
-import { mockMessage } from '../test/mock'
+import { mockMessage, verifySuccess } from '../test/mock'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -86,25 +86,42 @@ describe('useBookmarkPage Hook', () => {
     // 1番目以外が残っていることを確認
     expect(result.current.unassignedKeywords).toEqual(MOCK_KEYWORDS.slice(1))
   })
+
+  it('handleUpdate が成功した際、一覧へ戻ること', async () => {
+    // 1. 更新の成功をモック
+    mockMessage(API_ACTIONS.UPDATE_BOOKMARK, {
+      success: true,
+      data: MOCK_BOOKMARK_1,
+    })
+
+    const { result } = renderHook(() => useBookmarkPage())
+
+    // データロード完了を待機
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    // 2. 更新実行
+    await act(async () => {
+      await result.current.handleUpdate()
+    })
+
+    await verifySuccess({
+      action: API_ACTIONS.UPDATE_BOOKMARK,
+      payload: {
+        id: MOCK_BOOKMARK_1.id,
+        title: MOCK_BOOKMARK_1.title,
+        url: MOCK_BOOKMARK_1.url,
+      },
+      data: MOCK_BOOKMARK_1,
+      extraAssertions: () => {
+        expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+      },
+    })
+  })
 })
 
 describe.skip('useBookmarkPage Hook (skip)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  it('handleUpdate が成功した際、一覧へ戻ること', async () => {
-    const patchCalled = false
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      await result.current.handleUpdate()
-    })
-
-    expect(patchCalled).toBe(true)
-    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
 
   it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
