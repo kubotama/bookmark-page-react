@@ -117,22 +117,36 @@ describe('useBookmarkPage Hook', () => {
       },
     })
   })
-})
-
-describe.skip('useBookmarkPage Hook (skip)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
+    mockMessage(API_ACTIONS.DELETE_BOOKMARK, {
+      success: true,
+      data: null,
+    })
     const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+
+    // データロード完了を待機
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     await act(async () => {
       await result.current.handleDelete()
     })
 
-    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+    await verifySuccess({
+      action: API_ACTIONS.DELETE_BOOKMARK,
+      payload: { id: MOCK_BOOKMARK_1.id },
+      data: null,
+      extraAssertions: () => {
+        expect(result.current.isDeleting).toBe(false)
+        expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+      },
+    })
+  })
+})
+
+describe.skip('useBookmarkPage Hook (skip)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
   it('handleOpen が呼ばれた際、openUrlInNewTab を実行すること', async () => {
