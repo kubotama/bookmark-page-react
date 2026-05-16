@@ -8,6 +8,7 @@ import {
   KEY_VALUES,
   API_ACTIONS,
 } from '@shared/constants'
+import type { Bookmark } from '@shared/schemas/bookmark'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
@@ -38,6 +39,35 @@ vi.mock('@shared/utils/url', async () => {
 })
 
 describe('useBookmarkPage Hook', () => {
+  /**
+   * useBookmarkPage フックをレンダリングし、初期化が完了するまで待機する
+   */
+  const setupHook = async ({
+    mock,
+    onBack,
+    bookmark,
+  }: {
+    mock?: { action: string; params: unknown }
+    onBack?: () => void
+    bookmark?: Bookmark
+  }) => {
+    if (mock) mockMessage(mock.action, mock.params)
+
+    const { result } = renderHook(() => useBookmarkPage(onBack))
+
+    // 初期化（データのロードとステートへの反映）を待機
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      if (bookmark) {
+        expect(result.current.bookmark).toEqual(bookmark)
+        expect(result.current.editTitle).toBe(bookmark.title)
+        expect(result.current.editUrl).toBe(bookmark.url)
+      }
+    })
+
+    return result
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
 
@@ -57,47 +87,46 @@ describe('useBookmarkPage Hook', () => {
   it('初期化時にブックマークデータを取得し、ステートを更新すること', async () => {
     const { result } = renderHook(() => useBookmarkPage())
 
-    await waitFor(() =>
-      expect(result.current.bookmark).toEqual(MOCK_BOOKMARK_1),
-    )
-    expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
-    expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url)
+    // 初期化（データのロードとステートへの反映）を待機
+    await waitFor(() => {
+      expect(result.current.bookmark).toEqual(MOCK_BOOKMARK_1)
+      expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
+      expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url) // レビュアーの指摘箇所
+    })
   })
 
   it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
-    // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-    mockMessage(API_ACTIONS.READ_BOOKMARKS, {
-      success: true,
-      data: {
-        bookmarks: [
-          {
-            ...MOCK_BOOKMARK_1,
-            keywords: [MOCK_KEYWORDS[0]],
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.READ_BOOKMARKS,
+        params: {
+          success: true,
+          data: {
+            bookmarks: [
+              {
+                ...MOCK_BOOKMARK_1,
+                keywords: [MOCK_KEYWORDS[0]],
+              },
+            ],
           },
-        ],
+        },
       },
     })
-
-    const { result } = renderHook(() => useBookmarkPage())
-
-    // ロード完了を待機
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     // 1番目以外が残っていることを確認
     expect(result.current.unassignedKeywords).toEqual(MOCK_KEYWORDS.slice(1))
   })
 
   it('handleUpdate が成功した際、一覧へ戻ること', async () => {
-    // 1. 更新の成功をモック
-    mockMessage(API_ACTIONS.UPDATE_BOOKMARK, {
-      success: true,
-      data: MOCK_BOOKMARK_1,
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        params: {
+          success: true,
+          data: MOCK_BOOKMARK_1,
+        },
+      },
     })
-
-    const { result } = renderHook(() => useBookmarkPage())
-
-    // データロード完了を待機
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     // 2. 更新実行
     await act(async () => {
@@ -119,14 +148,15 @@ describe('useBookmarkPage Hook', () => {
   })
 
   it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
-    mockMessage(API_ACTIONS.DELETE_BOOKMARK, {
-      success: true,
-      data: null,
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        params: {
+          success: true,
+          data: null,
+        },
+      },
     })
-    const { result } = renderHook(() => useBookmarkPage())
-
-    // データロード完了を待機
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     await act(async () => {
       await result.current.handleDelete()
@@ -142,22 +172,22 @@ describe('useBookmarkPage Hook', () => {
       },
     })
   })
-})
-
-describe.skip('useBookmarkPage Hook (skip)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   it('handleOpen が呼ばれた際、openUrlInNewTab を実行すること', async () => {
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+    const result = await setupHook({})
 
     act(() => {
       result.current.handleOpen()
     })
 
+    // ✅ 通信の検証ではなく、副作用の検証を行う
     expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
+  })
+})
+
+describe.skip('useBookmarkPage Hook (skip)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
   it('handleBack が呼ばれた際、onBack を実行し一覧へ戻ること', () => {
