@@ -63,19 +63,20 @@ describe('useBookmarkPage Hook', () => {
     expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
     expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url)
   })
-})
-
-describe.skip('useBookmarkPage Hook (skip)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
     // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-    // const bookmarkWithKeyword = {
-    //   ...MOCK_BOOKMARK_1,
-    //   keywords: [MOCK_KEYWORDS[0]],
-    // }
+    mockMessage(API_ACTIONS.READ_BOOKMARKS, {
+      success: true,
+      data: {
+        bookmarks: [
+          {
+            ...MOCK_BOOKMARK_1,
+            keywords: [MOCK_KEYWORDS[0]],
+          },
+        ],
+      },
+    })
 
     const { result } = renderHook(() => useBookmarkPage())
 
@@ -84,6 +85,12 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
 
     // 1番目以外が残っていることを確認
     expect(result.current.unassignedKeywords).toEqual(MOCK_KEYWORDS.slice(1))
+  })
+})
+
+describe.skip('useBookmarkPage Hook (skip)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
   it('handleUpdate が成功した際、一覧へ戻ること', async () => {
