@@ -195,6 +195,64 @@ describe('useBookmarkPage Hook', () => {
     expect(onBack).toHaveBeenCalled()
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
   })
+
+  it('handleAttachKeyword が成功した際、正しくメッセージを送信すること', async () => {
+    const bookmarkId = MOCK_BOOKMARK_1.id
+    const keywordId = MOCK_KEYWORDS[0].id
+
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        params: { success: true, data: MOCK_BOOKMARK_1 },
+      },
+    })
+
+    await act(async () => {
+      await result.current.handleAttachKeyword(keywordId)
+    })
+
+    await verifySuccess({
+      action: API_ACTIONS.ATTACH_KEYWORD,
+      payload: { bookmarkId, keywordId },
+      data: MOCK_BOOKMARK_1,
+      extraAssertions: () =>
+        expect(result.current.isKeywordProcessing).toBe(false),
+    })
+  })
+
+  it('handleDragEnd が割当済み領域へのドロップで handleAttachKeyword を呼び出すこと', async () => {
+    const bookmark = MOCK_BOOKMARK_1
+    const keywordId = MOCK_KEYWORDS[1].id
+
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        params: { success: true, data: bookmark },
+      },
+    })
+
+    await act(async () => {
+      result.current.handleDragStart(createDragStartEvent(keywordId))
+    })
+    expect(result.current.activeKeyword?.id).toBe(keywordId)
+
+    await act(async () => {
+      result.current.handleDragEnd(
+        createDragEndEvent(keywordId, DROPPABLE_IDS.ASSIGNED_LIST),
+      )
+    })
+
+    // 通信が発生したことを検証
+    await verifySuccess({
+      action: API_ACTIONS.ATTACH_KEYWORD,
+      payload: { bookmarkId: bookmark.id, keywordId: keywordId },
+      data: bookmark,
+      extraAssertions: () => {
+        expect(result.current.isKeywordProcessing).toBe(false)
+        expect(result.current.activeKeyword).toBeNull()
+      },
+    })
+  })
 })
 
 describe.skip('useBookmarkPage Hook (skip)', () => {
@@ -232,22 +290,6 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
       })
 
       expect(result.current.activeKeyword?.id).toBe(MOCK_KEYWORDS[1].id)
-    })
-
-    it('handleDragEnd が割当済み領域へのドロップで handleAttachKeyword を呼び出すこと', async () => {
-      const attachCalled = false
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      await act(async () => {
-        result.current.handleDragEnd(
-          createDragEndEvent(MOCK_KEYWORDS[1].id, DROPPABLE_IDS.ASSIGNED_LIST),
-        )
-      })
-
-      expect(attachCalled).toBe(true)
-      expect(result.current.activeKeyword).toBeNull()
     })
 
     it('handleDragEnd が未割当領域へのドロップでは何もしないこと', async () => {
