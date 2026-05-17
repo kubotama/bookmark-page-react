@@ -255,14 +255,23 @@ describe('useBookmarkPage Hook', () => {
   })
 
   it('handleDetachKeyword が成功した際、正しくメッセージを送信すること', async () => {
-    const bookmark = MOCK_BOOKMARK_1
+    const bookmarkWithKeyword = {
+      ...MOCK_BOOKMARK_1,
+      keywords: [MOCK_KEYWORDS[0]],
+    }
     const keywordId = MOCK_KEYWORDS[0].id
 
     const result = await setupHook({
       mock: {
-        action: API_ACTIONS.DETACH_KEYWORD,
-        params: { success: true, data: bookmark },
+        action: API_ACTIONS.READ_BOOKMARKS,
+        params: { success: true, data: { bookmarks: [bookmarkWithKeyword] } },
       },
+      bookmark: bookmarkWithKeyword,
+    })
+
+    mockMessage(API_ACTIONS.DETACH_KEYWORD, {
+      success: true,
+      data: MOCK_BOOKMARK_1,
     })
 
     await act(async () => {
@@ -271,8 +280,8 @@ describe('useBookmarkPage Hook', () => {
 
     await verifySuccess({
       action: API_ACTIONS.DETACH_KEYWORD,
-      payload: { bookmarkId: bookmark.id, keywordId },
-      data: bookmark,
+      payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
+      data: MOCK_BOOKMARK_1,
       extraAssertions: () =>
         expect(result.current.isKeywordProcessing).toBe(false),
     })
@@ -295,7 +304,7 @@ describe('useBookmarkPage Hook', () => {
 
     mockMessage(API_ACTIONS.DETACH_KEYWORD, {
       success: true,
-      data: bookmarkWithKeyword,
+      data: MOCK_BOOKMARK_1,
     })
 
     await act(async () => {
@@ -313,7 +322,7 @@ describe('useBookmarkPage Hook', () => {
     await verifySuccess({
       action: API_ACTIONS.DETACH_KEYWORD,
       payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
-      data: bookmarkWithKeyword,
+      data: MOCK_BOOKMARK_1,
       extraAssertions: () => {
         expect(result.current.isKeywordProcessing).toBe(false)
         expect(result.current.activeKeyword).toBeNull()
@@ -375,30 +384,6 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
       })
 
       expect(attachCalled).toBe(false)
-      expect(result.current.activeKeyword).toBeNull()
-    })
-
-    it('handleDragEnd が未割当領域へのドロップで handleDetachKeyword を呼び出すこと', async () => {
-      const detachCalled = false
-      // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-      // const bookmarkWithKeyword = {
-      //   ...MOCK_BOOKMARK_1,
-      //   keywords: [MOCK_KEYWORDS[0]],
-      // }
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      await act(async () => {
-        result.current.handleDragEnd(
-          createDragEndEvent(
-            MOCK_KEYWORDS[0].id,
-            DROPPABLE_IDS.UNASSIGNED_LIST,
-          ),
-        )
-      })
-
-      expect(detachCalled).toBe(true)
       expect(result.current.activeKeyword).toBeNull()
     })
   })
