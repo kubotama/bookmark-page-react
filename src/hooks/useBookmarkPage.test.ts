@@ -253,6 +253,73 @@ describe('useBookmarkPage Hook', () => {
       },
     })
   })
+
+  it('handleDetachKeyword が成功した際、正しくメッセージを送信すること', async () => {
+    const bookmark = MOCK_BOOKMARK_1
+    const keywordId = MOCK_KEYWORDS[0].id
+
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.DETACH_KEYWORD,
+        params: { success: true, data: bookmark },
+      },
+    })
+
+    await act(async () => {
+      await result.current.handleDetachKeyword(keywordId)
+    })
+
+    await verifySuccess({
+      action: API_ACTIONS.DETACH_KEYWORD,
+      payload: { bookmarkId: bookmark.id, keywordId },
+      data: bookmark,
+      extraAssertions: () =>
+        expect(result.current.isKeywordProcessing).toBe(false),
+    })
+  })
+
+  it('handleDragEnd が未割当領域領域へのドロップで handleDetachKeyword を呼び出すこと', async () => {
+    const bookmarkWithKeyword = {
+      ...MOCK_BOOKMARK_1,
+      keywords: [MOCK_KEYWORDS[0]],
+    }
+    const keywordId = MOCK_KEYWORDS[0].id
+
+    const result = await setupHook({
+      mock: {
+        action: API_ACTIONS.READ_BOOKMARKS,
+        params: { success: true, data: { bookmarks: [bookmarkWithKeyword] } },
+      },
+      bookmark: bookmarkWithKeyword,
+    })
+
+    mockMessage(API_ACTIONS.DETACH_KEYWORD, {
+      success: true,
+      data: bookmarkWithKeyword,
+    })
+
+    await act(async () => {
+      result.current.handleDragStart(createDragStartEvent(keywordId))
+    })
+    expect(result.current.activeKeyword?.id).toBe(keywordId)
+
+    await act(async () => {
+      result.current.handleDragEnd(
+        createDragEndEvent(keywordId, DROPPABLE_IDS.UNASSIGNED_LIST),
+      )
+    })
+
+    // 通信が発生したことを検証
+    await verifySuccess({
+      action: API_ACTIONS.DETACH_KEYWORD,
+      payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
+      data: bookmarkWithKeyword,
+      extraAssertions: () => {
+        expect(result.current.isKeywordProcessing).toBe(false)
+        expect(result.current.activeKeyword).toBeNull()
+      },
+    })
+  })
 })
 
 describe.skip('useBookmarkPage Hook (skip)', () => {
