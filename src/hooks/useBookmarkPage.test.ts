@@ -7,15 +7,23 @@ import {
   DROPPABLE_IDS,
   KEY_VALUES,
   API_ACTIONS,
+  ERROR_MESSAGES,
+  ERROR_CODES,
 } from '@shared/constants'
-import type { Bookmark } from '@shared/schemas/bookmark'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { type Bookmark } from '@shared/schemas/bookmark'
+import { KeywordIdSchema } from '@shared/schemas/keyword'
+import {
+  MOCK_BOOKMARK_1,
+  MOCK_IDS,
+  MOCK_KEYWORDS,
+  TEST_STRINGS,
+} from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
 import { useBookmarkPage } from './useBookmarkPage'
 import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { createKeyboardEvent } from '../test/event-utils'
-import { mockMessage, verifySuccess } from '../test/mock'
+import { mockMessage, verifyCalledMessage, verifySuccess } from '../test/mock'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -329,6 +337,148 @@ describe('useBookmarkPage Hook', () => {
       },
     })
   })
+
+  describe('handleCreateKeyword', () => {
+    const newKeyword = {
+      id: KeywordIdSchema.parse(MOCK_IDS.NEW_KEYWORD),
+      name: TEST_STRINGS.NEW_NAME,
+    }
+    const bookmark = MOCK_BOOKMARK_1
+
+    it('handleCreateKeyword が成功した際、キーワードを作成して紐付けること', async () => {
+      mockMessage(API_ACTIONS.CREATE_KEYWORD, {
+        success: true,
+        data: { keyword: newKeyword },
+      }).mockMessage(API_ACTIONS.ATTACH_KEYWORD, {
+        success: true,
+        data: bookmark,
+      })
+
+      const result = await setupHook({})
+
+      await act(async () => {
+        result.current.setKeywordInput(newKeyword.name)
+      })
+      await act(async () => {
+        await result.current.handleCreateKeyword()
+      })
+
+      await waitFor(() => {
+        // CREATE_KEYWORD の検証
+        verifyCalledMessage({
+          action: API_ACTIONS.CREATE_KEYWORD,
+          payload: {
+            name: newKeyword.name,
+          },
+        })
+        // ATTACH_KEYWORD の検証
+        verifyCalledMessage({
+          action: API_ACTIONS.ATTACH_KEYWORD,
+          payload: {
+            bookmarkId: bookmark.id,
+            keywordId: newKeyword.id,
+          },
+        })
+        // 副作用の検証
+        expect(result.current.keywordInput).toBe('')
+        expect(result.current.isKeywordProcessing).toBe(false)
+      })
+    })
+
+    describe('handleCreateKeyword の失敗', () => {
+      let consoleSpy: ReturnType<typeof vi.spyOn>
+
+      beforeEach(() => {
+        consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      })
+
+      it('キーワード作成失敗時にログ出力し、紐付けを行わないこと', async () => {
+        // CREATE_KEYWORD をエラーにする
+        mockMessage(API_ACTIONS.CREATE_KEYWORD, {
+          success: false,
+          error: {
+            message: ERROR_MESSAGES.CREATE_KEYWORD_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        }).mockMessage(API_ACTIONS.ATTACH_KEYWORD, {
+          success: true,
+          data: MOCK_BOOKMARK_1,
+        })
+
+        const result = await setupHook({})
+
+        await act(async () => {
+          result.current.setKeywordInput(TEST_STRINGS.NEW_NAME)
+        })
+        await act(async () => {
+          await result.current.handleCreateKeyword()
+        })
+
+        await waitFor(() => {
+          // CREATE_KEYWORD は呼ばれている
+          verifyCalledMessage({
+            action: API_ACTIONS.CREATE_KEYWORD,
+            payload: { name: TEST_STRINGS.NEW_NAME },
+          })
+          // ❌ ATTACH_KEYWORD は呼ばれていないはず
+          verifyCalledMessage({
+            action: API_ACTIONS.ATTACH_KEYWORD,
+            isNotCalled: true,
+          })
+
+          expect(result.current.keywordInput).toBe(TEST_STRINGS.NEW_NAME)
+          expect(result.current.isKeywordProcessing).toBe(false)
+
+          // ログ出力を確認
+          expect(consoleSpy).toHaveBeenCalledWith(
+            LOG_MESSAGES.CREATE_KEYWORD_FAILED,
+            expect.anything(),
+          )
+        })
+      })
+
+      it('キーワードの紐付け失敗時にログ出力し、紐付けのアクション（通信）は行い、その失敗をキャッチすること', async () => {
+        // ATTACH_KEYWORD をエラーにする
+        mockMessage(API_ACTIONS.CREATE_KEYWORD, {
+          success: true,
+          data: { keyword: newKeyword },
+        }).mockMessage(API_ACTIONS.ATTACH_KEYWORD, {
+          success: false,
+          error: {
+            message: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+          },
+        })
+
+        const result = await setupHook({})
+
+        await act(async () => {
+          result.current.setKeywordInput(TEST_STRINGS.NEW_NAME)
+        })
+        await act(async () => {
+          await result.current.handleCreateKeyword()
+        })
+
+        await waitFor(() => {
+          // CREATE_KEYWORD は呼ばれている
+          verifyCalledMessage({
+            action: API_ACTIONS.CREATE_KEYWORD,
+            payload: { name: TEST_STRINGS.NEW_NAME },
+          })
+          // ❌ ATTACH_KEYWORD も呼ばれている
+          verifyCalledMessage({ action: API_ACTIONS.ATTACH_KEYWORD })
+
+          expect(result.current.keywordInput).toBe(TEST_STRINGS.NEW_NAME)
+          expect(result.current.isKeywordProcessing).toBe(false)
+          // ログ出力を確認
+          expect(consoleSpy).toHaveBeenCalledWith(
+            LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+            expect.anything(),
+          )
+        })
+      })
+    })
+  })
 })
 
 describe.skip('useBookmarkPage Hook (skip)', () => {
@@ -386,27 +536,6 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
       expect(attachCalled).toBe(false)
       expect(result.current.activeKeyword).toBeNull()
     })
-  })
-
-  it('handleCreateKeyword が成功した際、キーワードを作成して紐付けること', async () => {
-    const createCalled = false
-    const attachCalled = false
-    const NEW_TAG = 'NewTag'
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      result.current.setKeywordInput(NEW_TAG)
-    })
-
-    await act(async () => {
-      await result.current.handleCreateKeyword()
-    })
-
-    expect(createCalled).toBe(true)
-    expect(attachCalled).toBe(true)
-    expect(result.current.keywordInput).toBe('')
   })
 
   describe('Keyboard shortcuts', () => {

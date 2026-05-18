@@ -34,6 +34,34 @@ export const mockMessage = (action: string, params: unknown) => {
       ;(previous as (...args: unknown[]) => void)(message, callback)
     }
   })
+  return { mockMessage }
+}
+
+export const verifyCalledMessage = ({
+  action,
+  payload,
+  isNotCalled,
+}: {
+  action: string
+  payload?: unknown
+  isNotCalled?: boolean
+}) => {
+  let param: unknown
+  if (payload) {
+    param = { action, payload }
+  } else {
+    param = { action }
+  }
+  if (isNotCalled)
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining(param),
+      expect.any(Function),
+    )
+  else
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining(param),
+      expect.any(Function),
+    )
 }
 
 export const verifySuccess = async ({
@@ -55,13 +83,7 @@ export const verifySuccess = async ({
       expect(getHookState().data).toEqual(data)
     }
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action,
-        payload,
-      }),
-      expect.any(Function),
-    )
+    verifyCalledMessage({ action, payload })
     if (extraAssertions) extraAssertions()
   })
 }
@@ -73,7 +95,10 @@ export const verifyError = async ({
   expected,
   extraAssertions,
 }: {
-  getHookState: () => { isError?: boolean; error: unknown }
+  getHookState: () => {
+    isError?: boolean
+    error: unknown
+  }
   action: string
   payload: unknown
   expected: { message: string; code: string }
@@ -82,14 +107,7 @@ export const verifyError = async ({
   await waitFor(() => {
     expect(getHookState().isError).toBe(true)
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action,
-        payload,
-      }),
-      expect.any(Function),
-    )
-
+    verifyCalledMessage({ action, payload })
     const error = getHookState().error
     if (error instanceof BookmarkApiError) {
       expect(error.message).toBe(expected.message)

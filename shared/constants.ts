@@ -162,6 +162,7 @@ export const ERROR_MESSAGES = {
   API_PROVIDER_REQUIRED: 'useApi は ApiProvider の内側で使用する必要があります',
   UPDATE_API_URL_FAILED: 'API URL の更新に失敗しました:',
   UNEXPECTED_ID_TYPE: '予期しない ID 型が検出されました',
+  ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
 } as const
 
 /**
