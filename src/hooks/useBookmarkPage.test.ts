@@ -23,7 +23,12 @@ import * as urlUtils from '@shared/utils/url'
 import { useBookmarkPage } from './useBookmarkPage'
 import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
 import { createKeyboardEvent } from '../test/event-utils'
-import { mockMessage, verifyCalledMessage, verifySuccess } from '../test/mock'
+import {
+  mockMessage,
+  verifyCalledMessage,
+  verifyKeywordStatus,
+  verifySuccess,
+} from '../test/mock'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -479,29 +484,78 @@ describe('useBookmarkPage Hook', () => {
       })
     })
   })
+
+  describe('handleKeywordKeyDown', () => {
+    it('handleKeywordKeyDown が Enter キーで handleCreateKeyword を呼び出すこと', async () => {
+      const keywordName = TEST_STRINGS.NEW_NAME
+
+      // 1. 通信のモック（呼び出されることを確認するため）
+      mockMessage(API_ACTIONS.CREATE_KEYWORD, {
+        success: true,
+        data: {
+          keyword: { id: MOCK_IDS.NEW_KEYWORD, name: keywordName },
+        },
+      }).mockMessage(API_ACTIONS.ATTACH_KEYWORD, {
+        success: true,
+        data: MOCK_BOOKMARK_1,
+      })
+
+      const result = await setupHook({})
+
+      // 2. 入力を設定し、反映を待つ
+      await act(async () => {
+        result.current.setKeywordInput(keywordName)
+      })
+
+      // 3. Enter キーイベントをシミュレート
+      act(() => {
+        const event = createKeyboardEvent(KEY_VALUES.ENTER)
+        result.current.handleKeywordKeyDown(event)
+      })
+
+      // 4. 検証：通信が発生し、入力がクリアされること
+      await waitFor(() => {
+        verifyCalledMessage({
+          action: API_ACTIONS.CREATE_KEYWORD,
+          payload: { name: keywordName },
+        })
+        verifyKeywordStatus(() => result.current, '')
+      })
+    })
+
+    it.each([
+      {
+        testName: 'Enter以外のキー',
+        key: KEY_VALUES.SPACE,
+        options: undefined,
+      },
+      {
+        testName: 'Shift+Enter',
+        key: KEY_VALUES.ENTER,
+        options: { shiftKey: true },
+      },
+    ])(
+      '$testName が呼び出された場合にhandleCreateKeyword を呼び出さないこと',
+      async ({ key, options }) => {
+        const result = await setupHook({})
+        act(() => {
+          result.current.handleKeywordKeyDown(createKeyboardEvent(key, options))
+        })
+
+        await waitFor(() => {
+          verifyCalledMessage({
+            action: API_ACTIONS.CREATE_KEYWORD,
+            isNotCalled: true,
+          })
+        })
+      },
+    )
+  })
 })
 
 describe.skip('useBookmarkPage Hook (skip)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  it('handleKeywordKeyDown が Enter キーで handleCreateKeyword を呼び出すこと', async () => {
-    const createCalled = false
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      result.current.setKeywordInput('Enter')
-    })
-
-    act(() => {
-      const event = createKeyboardEvent(KEY_VALUES.ENTER)
-      result.current.handleKeywordKeyDown(event)
-    })
-
-    await waitFor(() => expect(createCalled).toBe(true))
   })
 
   describe('Drag and Drop Handlers', () => {

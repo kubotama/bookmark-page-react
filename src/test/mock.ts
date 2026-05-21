@@ -1,6 +1,7 @@
 import { expect, vi } from 'vitest'
 
 import { ApiRequestSchema } from '@shared/schemas/api'
+import type { Keyword } from '@shared/schemas/keyword'
 
 import { waitFor } from './utils'
 import { BookmarkApiError } from '../lib/api-client'
@@ -117,4 +118,17 @@ export const verifyError = async ({
     }
     if (extraAssertions) extraAssertions()
   })
+}
+
+export const verifyKeywordStatus = (
+  getHookState: () => {
+    keywordInput?: string
+    isKeywordProcessing?: boolean
+    activeKeyword?: Keyword | null
+  },
+  input: string,
+) => {
+  expect(getHookState().keywordInput).toBe(input)
+  expect(getHookState().isKeywordProcessing).toBe(false)
+  expect(getHookState().activeKeyword).toBeNull()
 }
