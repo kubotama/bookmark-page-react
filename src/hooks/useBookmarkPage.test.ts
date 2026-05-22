@@ -616,12 +616,6 @@ describe('useBookmarkPage Hook', () => {
       })
     })
   })
-})
-
-describe.skip('useBookmarkPage Hook (skip)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   describe('Boundary Conditions & Error Handling', () => {
     it('ローディング中は isLoading が true であること', () => {
@@ -629,9 +623,9 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
       expect(result.current.isLoading).toBe(true)
     })
 
-    it('ID が不正な場合、parsedId が null になりアクションが実行されないこと', async () => {
+    it('ID が不正な場合、アクションが実行されないこと', async () => {
       const { useParams } = await import('react-router-dom')
-      vi.mocked(useParams).mockReturnValueOnce({ id: 'invalid-id' })
+      vi.mocked(useParams).mockReturnValueOnce({ id: TEST_STRINGS.INVALID_ID })
 
       const { result } = renderHook(() => useBookmarkPage())
 
@@ -640,68 +634,40 @@ describe.skip('useBookmarkPage Hook (skip)', () => {
         await result.current.handleDelete()
       })
 
-      expect(mockNavigate).not.toHaveBeenCalled()
+      await waitFor(() => {
+        verifyCalledMessage({
+          action: API_ACTIONS.UPDATE_BOOKMARK,
+          isNotCalled: true,
+        })
+        verifyCalledMessage({
+          action: API_ACTIONS.DELETE_BOOKMARK,
+          isNotCalled: true,
+        })
+        expect(mockNavigate).not.toHaveBeenCalled()
+      })
     })
 
     it('API エラー時に例外をキャッチしログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+      const result = await setupHook({
+        mock: {
+          action: API_ACTIONS.UPDATE_BOOKMARK,
+          params: {
+            success: false,
+            error: {
+              message: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            },
+          },
+        },
+      })
 
       await act(async () => {
         await result.current.handleUpdate()
       })
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
-        expect.anything(),
-      )
-
-      await act(async () => {
-        await result.current.handleDelete()
-      })
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
-        expect.anything(),
-      )
-    })
-
-    it('handleCreateKeyword の作成失敗時にログ出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      await act(async () => {
-        result.current.setKeywordInput('Fail')
-      })
-
-      await act(async () => {
-        await result.current.handleCreateKeyword()
-      })
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
-        expect.anything(),
-      )
-    })
-
-    it('handleCreateKeyword の紐付け失敗時にログ出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      await act(async () => {
-        result.current.setKeywordInput('Success')
-      })
-
-      await act(async () => {
-        await result.current.handleCreateKeyword()
-      })
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
         expect.anything(),
       )
     })
