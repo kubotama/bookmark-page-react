@@ -581,39 +581,46 @@ describe('useBookmarkPage Hook', () => {
       verifyKeywordStatus(() => result.current)
     })
   })
-})
-
-describe.skip('useBookmarkPage Hook (skip)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('Keyboard shortcuts', () => {
     it('Escape キーで handleBack が呼ばれること', async () => {
-      renderHook(() => useBookmarkPage())
-
+      await setupHook({})
       fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
       expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
     })
 
     it('Enter キー単体で handleOpen が呼ばれること', async () => {
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
+      await setupHook({})
       fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
       expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
     })
 
     it('Ctrl + Enter キーで handleUpdate が呼ばれること', async () => {
-      const patchCalled = false
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
+      mockMessage(API_ACTIONS.UPDATE_BOOKMARK, {
+        success: true,
+        data: MOCK_BOOKMARK_1,
+      })
+      await setupHook({})
       fireEvent.keyDown(window, { key: KEY_VALUES.ENTER, ctrlKey: true })
-
-      await waitFor(() => expect(patchCalled).toBe(true))
+      // 通信の発生を検証
+      await verifySuccess({
+        action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_BOOKMARK_1.id,
+          title: MOCK_BOOKMARK_1.title,
+          url: MOCK_BOOKMARK_1.url,
+        },
+        data: MOCK_BOOKMARK_1,
+        extraAssertions: () => {
+          expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+        },
+      })
     })
+  })
+})
+
+describe.skip('useBookmarkPage Hook (skip)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
   describe('Boundary Conditions & Error Handling', () => {
