@@ -422,7 +422,9 @@ describe('useBookmarkPage Hook', () => {
             isNotCalled: true,
           })
 
-          verifyKeywordStatus(() => result.current, TEST_STRINGS.NEW_NAME)
+          verifyKeywordStatus(() => result.current, {
+            keywordInput: TEST_STRINGS.NEW_NAME,
+          })
 
           // ログ出力を確認
           expect(consoleSpy).toHaveBeenCalledWith(
@@ -463,7 +465,9 @@ describe('useBookmarkPage Hook', () => {
           // ❌ ATTACH_KEYWORD も呼ばれている
           verifyCalledMessage({ action: API_ACTIONS.ATTACH_KEYWORD })
 
-          verifyKeywordStatus(() => result.current, TEST_STRINGS.NEW_NAME)
+          verifyKeywordStatus(() => result.current, {
+            keywordInput: TEST_STRINGS.NEW_NAME,
+          })
 
           // ログ出力を確認
           expect(consoleSpy).toHaveBeenCalledWith(
@@ -541,45 +545,47 @@ describe('useBookmarkPage Hook', () => {
       },
     )
   })
+
+  describe('handleDragStartとhandleDragEnd', () => {
+    it('handleDragStart が activeKeyword を設定すること', async () => {
+      const result = await setupHook({})
+      const keyword = MOCK_KEYWORDS[1]
+
+      act(() => {
+        result.current.handleDragStart(createDragStartEvent(keyword.id))
+      })
+
+      // 拡張したヘルパーで、activeKeyword が設定されていることを検証
+      verifyKeywordStatus(() => result.current, { activeKeyword: keyword })
+    })
+
+    it('handleDragEnd が無効なドロップ先では何もしないこと', async () => {
+      const result = await setupHook({})
+      const keywordId = MOCK_KEYWORDS[1].id
+
+      await act(async () => {
+        result.current.handleDragEnd(
+          createDragEndEvent(keywordId, DROPPABLE_IDS.UNASSIGNED_LIST),
+        )
+      })
+
+      // 検証：通信が発生していないこと、および状態がリセットされていること
+      verifyCalledMessage({
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        isNotCalled: true,
+      })
+      verifyCalledMessage({
+        action: API_ACTIONS.DETACH_KEYWORD,
+        isNotCalled: true,
+      })
+      verifyKeywordStatus(() => result.current)
+    })
+  })
 })
 
 describe.skip('useBookmarkPage Hook (skip)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  describe('Drag and Drop Handlers', () => {
-    it('handleDragStart が activeKeyword を設定すること', async () => {
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      act(() => {
-        result.current.handleDragStart(
-          createDragStartEvent(MOCK_KEYWORDS[1].id),
-        )
-      })
-
-      expect(result.current.activeKeyword?.id).toBe(MOCK_KEYWORDS[1].id)
-    })
-
-    it('handleDragEnd が未割当領域へのドロップでは何もしないこと', async () => {
-      const attachCalled = false
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      await act(async () => {
-        result.current.handleDragEnd(
-          createDragEndEvent(
-            MOCK_KEYWORDS[1].id,
-            DROPPABLE_IDS.UNASSIGNED_LIST,
-          ),
-        )
-      })
-
-      expect(attachCalled).toBe(false)
-      expect(result.current.activeKeyword).toBeNull()
-    })
   })
 
   describe('Keyboard shortcuts', () => {
