@@ -126,9 +126,10 @@ export const verifyKeywordStatus = (
     isKeywordProcessing?: boolean
     activeKeyword?: Keyword | null
   },
-  input: string,
+  input: string = '',
 ) => {
-  expect(getHookState().keywordInput).toBe(input)
-  expect(getHookState().isKeywordProcessing).toBe(false)
-  expect(getHookState().activeKeyword).toBeNull()
+  const state = getHookState()
+  expect(state.isKeywordProcessing).toBe(false)
+  expect(state.activeKeyword).toBeNull()
+  expect(state.keywordInput).toBe(input)
 }

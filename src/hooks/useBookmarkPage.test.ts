@@ -228,8 +228,7 @@ describe('useBookmarkPage Hook', () => {
       action: API_ACTIONS.ATTACH_KEYWORD,
       payload: { bookmarkId, keywordId },
       data: MOCK_BOOKMARK_1,
-      extraAssertions: () =>
-        expect(result.current.isKeywordProcessing).toBe(false),
+      extraAssertions: () => verifyKeywordStatus(() => result.current),
     })
   })
 
@@ -260,10 +259,7 @@ describe('useBookmarkPage Hook', () => {
       action: API_ACTIONS.ATTACH_KEYWORD,
       payload: { bookmarkId: bookmark.id, keywordId: keywordId },
       data: bookmark,
-      extraAssertions: () => {
-        expect(result.current.isKeywordProcessing).toBe(false)
-        expect(result.current.activeKeyword).toBeNull()
-      },
+      extraAssertions: () => verifyKeywordStatus(() => result.current),
     })
   })
 
@@ -295,8 +291,7 @@ describe('useBookmarkPage Hook', () => {
       action: API_ACTIONS.DETACH_KEYWORD,
       payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
       data: MOCK_BOOKMARK_1,
-      extraAssertions: () =>
-        expect(result.current.isKeywordProcessing).toBe(false),
+      extraAssertions: () => verifyKeywordStatus(() => result.current),
     })
   })
 
@@ -336,10 +331,7 @@ describe('useBookmarkPage Hook', () => {
       action: API_ACTIONS.DETACH_KEYWORD,
       payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
       data: MOCK_BOOKMARK_1,
-      extraAssertions: () => {
-        expect(result.current.isKeywordProcessing).toBe(false)
-        expect(result.current.activeKeyword).toBeNull()
-      },
+      extraAssertions: () => verifyKeywordStatus(() => result.current),
     })
   })
 
@@ -385,8 +377,7 @@ describe('useBookmarkPage Hook', () => {
           },
         })
         // 副作用の検証
-        expect(result.current.keywordInput).toBe('')
-        expect(result.current.isKeywordProcessing).toBe(false)
+        verifyKeywordStatus(() => result.current)
       })
     })
 
@@ -431,8 +422,7 @@ describe('useBookmarkPage Hook', () => {
             isNotCalled: true,
           })
 
-          expect(result.current.keywordInput).toBe(TEST_STRINGS.NEW_NAME)
-          expect(result.current.isKeywordProcessing).toBe(false)
+          verifyKeywordStatus(() => result.current, TEST_STRINGS.NEW_NAME)
 
           // ログ出力を確認
           expect(consoleSpy).toHaveBeenCalledWith(
@@ -473,8 +463,8 @@ describe('useBookmarkPage Hook', () => {
           // ❌ ATTACH_KEYWORD も呼ばれている
           verifyCalledMessage({ action: API_ACTIONS.ATTACH_KEYWORD })
 
-          expect(result.current.keywordInput).toBe(TEST_STRINGS.NEW_NAME)
-          expect(result.current.isKeywordProcessing).toBe(false)
+          verifyKeywordStatus(() => result.current, TEST_STRINGS.NEW_NAME)
+
           // ログ出力を確認
           expect(consoleSpy).toHaveBeenCalledWith(
             LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
@@ -519,7 +509,7 @@ describe('useBookmarkPage Hook', () => {
           action: API_ACTIONS.CREATE_KEYWORD,
           payload: { name: keywordName },
         })
-        verifyKeywordStatus(() => result.current, '')
+        verifyKeywordStatus(() => result.current)
       })
     })
 
