@@ -50,7 +50,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.READ_BOOKMARKS,
         payload: undefined,
-        data: {
+        expectedData: {
           bookmarks: MOCK_BOOKMARKS,
         },
       })
@@ -105,7 +105,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.DELETE_BOOKMARK,
         payload: { id },
-        data: null,
+        expectedData: null,
       })
     })
 
@@ -168,7 +168,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: { id: MOCK_BOOKMARK_1.id, ...updates },
-        data: expectedData,
+        expectedData: expectedData,
       })
     })
 
@@ -237,7 +237,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current.hook,
         action: API_ACTIONS.REORDER_BOOKMARKS,
         payload: ids,
-        data: null,
+        expectedData: null,
         extraAssertions: () =>
           expect(
             result.current.queryClient.getQueryData<Bookmarks>(
@@ -338,7 +338,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.READ_KEYWORDS,
         payload: undefined,
-        data: { keywords: MOCK_KEYWORDS },
+        expectedData: { keywords: MOCK_KEYWORDS },
       })
     })
 
@@ -397,7 +397,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.CREATE_KEYWORD,
         payload: updates,
-        data: expectedData,
+        expectedData: expectedData,
       })
     })
 
@@ -464,7 +464,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current.hook,
         action: API_ACTIONS.DELETE_KEYWORD,
         payload: { id },
-        data: id,
+        expectedData: id,
         extraAssertions: () => {
           expect(
             result.current.queryClient.getQueryData<Keywords>(
@@ -553,7 +553,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current.hook,
         action: API_ACTIONS.UPDATE_KEYWORD,
         payload: { id, name },
-        data: { keyword: updatedKeyword },
+        expectedData: { keyword: updatedKeyword },
         extraAssertions: () => {
           expect(
             result.current.queryClient.getQueryData<Keywords>(
@@ -632,7 +632,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.ATTACH_KEYWORD,
         payload: { bookmarkId, keywordId },
-        data: bookmark,
+        expectedData: bookmark,
       })
     })
 
@@ -696,7 +696,7 @@ describe('useBookmarks Hook', () => {
         getHookState: () => result.current,
         action: API_ACTIONS.DETACH_KEYWORD,
         payload: { bookmarkId, keywordId },
-        data: bookmark,
+        expectedData: bookmark,
       })
     })
 
