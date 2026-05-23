@@ -6,6 +6,14 @@ import type { Keyword } from '@shared/schemas/keyword'
 import { waitFor } from './utils'
 import { BookmarkApiError } from '../lib/api-client'
 
+// 各ファイルで共通して使うモック関数
+export const mockNavigate = vi.fn()
+
+//  指定されたパスへの遷移が行われたことを検証する
+export const verifyNavigateToPath = (path: string) => {
+  expect(mockNavigate).toHaveBeenCalledWith(path)
+}
+
 /**
  * 拡張機能へのメッセージ送信をモックする共通関数。
  * 呼び出されるたびに以前の実装をラップし、複数のアクションを同時に待ち受けられる（チェイン構造）。
@@ -69,22 +77,26 @@ export const verifySuccess = async ({
   getHookState,
   action,
   payload,
-  data,
+  expectedData,
+  path,
   extraAssertions,
 }: {
   getHookState?: () => { isSuccess?: boolean; data?: unknown }
   action: string
   payload: unknown
-  data: unknown
+  expectedData: unknown
+  path?: string
   extraAssertions?: () => void
 }) => {
   await waitFor(() => {
     if (getHookState) {
       expect(getHookState().isSuccess).toBe(true)
-      expect(getHookState().data).toEqual(data)
+      expect(getHookState().data).toEqual(expectedData)
     }
 
     verifyCalledMessage({ action, payload })
+    if (path) verifyNavigateToPath(path)
+
     if (extraAssertions) extraAssertions()
   })
 }
