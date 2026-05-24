@@ -10,8 +10,11 @@ import { BookmarkApiError } from '../lib/api-client'
 export const mockNavigate = vi.fn()
 
 //  指定されたパスへの遷移が行われたことを検証する
-export const verifyNavigateToPath = (path: string) => {
-  expect(mockNavigate).toHaveBeenCalledWith(path)
+export const verifyNavigateToPath = (
+  path: string,
+  navigation: (url: string) => void = mockNavigate,
+) => {
+  expect(navigation).toHaveBeenCalledWith(path)
 }
 
 /**
