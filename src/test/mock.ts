@@ -1,4 +1,4 @@
-import { expect, vi } from 'vitest'
+import { expect, vi, type MockInstance } from 'vitest'
 
 import { APP_PATHS } from '@shared/constants'
 import { ApiRequestSchema } from '@shared/schemas/api'
@@ -12,7 +12,7 @@ export const mockNavigate = vi.fn()
 
 //  指定されたパスへの遷移が行われたことを検証する
 export const verifyNavigateToPath = ({
-  path = APP_PATHS.HOME,
+  path,
   navigation = mockNavigate,
   isNotCalled = false,
 }: {
@@ -20,8 +20,11 @@ export const verifyNavigateToPath = ({
   navigation?: (url: string) => void
   isNotCalled?: boolean
 } = {}) => {
-  if (isNotCalled) expect(navigation).not.toHaveBeenCalledWith(path)
-  else expect(navigation).toHaveBeenCalledWith(path)
+  const targetPath = path ?? APP_PATHS.HOME
+  if (isNotCalled) {
+    if (!path) expect(navigation).not.toHaveBeenCalled()
+    else expect(navigation).not.toHaveBeenCalledWith(targetPath)
+  } else expect(navigation).toHaveBeenCalledWith(targetPath)
 }
 
 /**
@@ -118,6 +121,7 @@ export const verifyError = async ({
   action,
   payload,
   expected,
+  navigateToPath,
   extraAssertions,
 }: {
   getHookState?: () => {
@@ -125,10 +129,15 @@ export const verifyError = async ({
     error: unknown
   }
   logMessage?: string
-  consoleSpy?: ReturnType<typeof vi.spyOn>
+  consoleSpy?: MockInstance
   action: string
   payload?: unknown
   expected: { message: string; code: string }
+  navigateToPath?: {
+    path?: string
+    navigation?: (url: string) => void
+    isNotCalled?: boolean
+  }
   extraAssertions?: () => void
 }) => {
   let error: unknown
@@ -154,6 +163,7 @@ export const verifyError = async ({
       expect(error).toBeInstanceOf(BookmarkApiError)
     }
 
+    if (navigateToPath) verifyNavigateToPath(navigateToPath)
     if (extraAssertions) extraAssertions()
   })
 }

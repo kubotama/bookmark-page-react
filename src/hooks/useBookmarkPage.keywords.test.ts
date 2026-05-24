@@ -1,4 +1,4 @@
-import { describe, it, vi, beforeEach, expect } from 'vitest'
+import { describe, it, vi, beforeEach, expect, type MockInstance } from 'vitest'
 
 import {
   API_ACTIONS,
@@ -188,7 +188,7 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
     })
 
     describe('handleCreateKeyword の失敗', () => {
-      let consoleSpy: ReturnType<typeof vi.spyOn>
+      let consoleSpy: MockInstance
 
       beforeEach(() => {
         consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

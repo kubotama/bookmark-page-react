@@ -77,36 +77,76 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
 
       await verifyError({
         action: API_ACTIONS.UPDATE_BOOKMARK,
+        payload: {
+          id: MOCK_BOOKMARK_1.id,
+          title: MOCK_BOOKMARK_1.title,
+          url: MOCK_BOOKMARK_1.url,
+        },
         expected: {
           message: UI_MESSAGES.UPDATE_FAILED,
           code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         },
         logMessage: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
         consoleSpy,
+        navigateToPath: { isNotCalled: true },
       })
     })
   })
 
-  it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
-    const result = await setupHook({
-      mock: {
-        action: API_ACTIONS.DELETE_BOOKMARK,
-        params: {
-          success: true,
-          data: null,
+  describe('handleDelete', () => {
+    it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
+      const result = await setupHook({
+        mock: {
+          action: API_ACTIONS.DELETE_BOOKMARK,
+          params: {
+            success: true,
+            data: null,
+          },
         },
-      },
+      })
+
+      await act(async () => {
+        await result.current.handleDelete()
+      })
+
+      await verifySuccess({
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: { id: MOCK_BOOKMARK_1.id },
+        expectedData: null,
+        path: APP_PATHS.HOME,
+      })
     })
 
-    await act(async () => {
-      await result.current.handleDelete()
-    })
+    it('handleDelete の API エラー時にログ出力すること', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const result = await setupHook({
+        mock: {
+          action: API_ACTIONS.DELETE_BOOKMARK,
+          params: {
+            success: false,
+            error: {
+              message: UI_MESSAGES.DELETE_FAILED,
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            },
+          },
+        },
+      })
 
-    await verifySuccess({
-      action: API_ACTIONS.DELETE_BOOKMARK,
-      payload: { id: MOCK_BOOKMARK_1.id },
-      expectedData: null,
-      path: APP_PATHS.HOME,
+      await act(async () => {
+        await result.current.handleDelete()
+      })
+
+      await verifyError({
+        action: API_ACTIONS.DELETE_BOOKMARK,
+        payload: { id: MOCK_BOOKMARK_1.id },
+        expected: {
+          message: UI_MESSAGES.DELETE_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+        logMessage: LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
+        consoleSpy,
+        navigateToPath: { isNotCalled: true },
+      })
     })
   })
 })

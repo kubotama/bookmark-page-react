@@ -1,4 +1,4 @@
-import { expect, vi } from 'vitest'
+import { expect, vi, type MockInstance } from 'vitest'
 
 import { API_ACTIONS } from '@shared/constants'
 import type { Bookmark, Keyword } from '@shared/schemas/bookmark'
@@ -75,7 +75,7 @@ export const verifyActionFailure = async ({
   calledMessages: CallMessagesParams[]
   logMessage?: string
   expectedKeywordInput?: string
-  consoleSpy?: ReturnType<typeof vi.spyOn>
+  consoleSpy?: MockInstance
 }) => {
   await waitFor(() => {
     // 1. 通信の検証
