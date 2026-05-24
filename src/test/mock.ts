@@ -1,5 +1,6 @@
 import { expect, vi } from 'vitest'
 
+import { APP_PATHS } from '@shared/constants'
 import { ApiRequestSchema } from '@shared/schemas/api'
 import type { Keyword } from '@shared/schemas/keyword'
 
@@ -10,11 +11,17 @@ import { BookmarkApiError } from '../lib/api-client'
 export const mockNavigate = vi.fn()
 
 //  指定されたパスへの遷移が行われたことを検証する
-export const verifyNavigateToPath = (
-  path: string,
-  navigation: (url: string) => void = mockNavigate,
-) => {
-  expect(navigation).toHaveBeenCalledWith(path)
+export const verifyNavigateToPath = ({
+  path = APP_PATHS.HOME,
+  navigation = mockNavigate,
+  isNotCalled = false,
+}: {
+  path?: string
+  navigation?: (url: string) => void
+  isNotCalled?: boolean
+} = {}) => {
+  if (isNotCalled) expect(navigation).not.toHaveBeenCalledWith(path)
+  else expect(navigation).toHaveBeenCalledWith(path)
 }
 
 /**
@@ -98,7 +105,7 @@ export const verifySuccess = async ({
     }
 
     verifyCalledMessage({ action, payload })
-    if (path) verifyNavigateToPath(path)
+    if (path) verifyNavigateToPath({ path })
 
     if (extraAssertions) extraAssertions()
   })
