@@ -8,7 +8,7 @@ import * as urlUtils from '@shared/utils/url'
 import { openUrlInNewTab } from '@shared/utils/url'
 
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
-import { mockNavigate, verifySuccess } from '../test/mock'
+import { mockNavigate, verifyNavigateToPath, verifySuccess } from '../test/mock'
 import { fireEvent } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要
@@ -45,7 +45,7 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
       })
 
       expect(onBack).toHaveBeenCalled()
-      expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+      verifyNavigateToPath(APP_PATHS.HOME)
     })
 
     it('handleOpen が呼ばれた際、URL を別タブで開くこと', async () => {
@@ -55,7 +55,7 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
         result.current.handleOpen()
       })
 
-      expect(openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
+      verifyNavigateToPath(MOCK_BOOKMARK_1.url, openUrlInNewTab)
     })
   })
 
@@ -63,13 +63,13 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
     it('Escape キーで handleBack が呼ばれること', async () => {
       await setupHook()
       fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
-      expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+      verifyNavigateToPath(APP_PATHS.HOME)
     })
 
     it('Enter キー単体で handleOpen が呼ばれること', async () => {
       await setupHook()
       fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
-      expect(openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
+      verifyNavigateToPath(MOCK_BOOKMARK_1.url, openUrlInNewTab)
     })
 
     it('Ctrl + Enter キーで handleUpdate が呼ばれること', async () => {
