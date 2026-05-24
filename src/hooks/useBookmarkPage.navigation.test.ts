@@ -45,7 +45,7 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
       })
 
       expect(onBack).toHaveBeenCalled()
-      verifyNavigateToPath(APP_PATHS.HOME)
+      verifyNavigateToPath()
     })
 
     it('handleOpen が呼ばれた際、URL を別タブで開くこと', async () => {
@@ -55,7 +55,10 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
         result.current.handleOpen()
       })
 
-      verifyNavigateToPath(MOCK_BOOKMARK_1.url, openUrlInNewTab)
+      verifyNavigateToPath({
+        path: MOCK_BOOKMARK_1.url,
+        navigation: openUrlInNewTab,
+      })
     })
   })
 
@@ -63,13 +66,16 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
     it('Escape キーで handleBack が呼ばれること', async () => {
       await setupHook()
       fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
-      verifyNavigateToPath(APP_PATHS.HOME)
+      verifyNavigateToPath()
     })
 
     it('Enter キー単体で handleOpen が呼ばれること', async () => {
       await setupHook()
       fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
-      verifyNavigateToPath(MOCK_BOOKMARK_1.url, openUrlInNewTab)
+      verifyNavigateToPath({
+        path: MOCK_BOOKMARK_1.url,
+        navigation: openUrlInNewTab,
+      })
     })
 
     it('Ctrl + Enter キーで handleUpdate が呼ばれること', async () => {
