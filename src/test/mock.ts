@@ -1,6 +1,5 @@
-import { expect, vi, type MockInstance } from 'vitest'
+import { expect, vi } from 'vitest'
 
-import { APP_PATHS } from '@shared/constants'
 import { ApiRequestSchema } from '@shared/schemas/api'
 import type { Keyword } from '@shared/schemas/keyword'
 
@@ -11,20 +10,11 @@ import { BookmarkApiError } from '../lib/api-client'
 export const mockNavigate = vi.fn()
 
 //  指定されたパスへの遷移が行われたことを検証する
-export const verifyNavigateToPath = ({
-  path,
-  navigation = mockNavigate,
-  isNotCalled = false,
-}: {
-  path?: string
-  navigation?: (url: string) => void
-  isNotCalled?: boolean
-} = {}) => {
-  const targetPath = path ?? APP_PATHS.HOME
-  if (isNotCalled) {
-    if (!path) expect(navigation).not.toHaveBeenCalled()
-    else expect(navigation).not.toHaveBeenCalledWith(targetPath)
-  } else expect(navigation).toHaveBeenCalledWith(targetPath)
+export const verifyNavigateToPath = (
+  path: string,
+  navigation: (url: string) => void = mockNavigate,
+) => {
+  expect(navigation).toHaveBeenCalledWith(path)
 }
 
 /**
@@ -108,7 +98,7 @@ export const verifySuccess = async ({
     }
 
     verifyCalledMessage({ action, payload })
-    if (path) verifyNavigateToPath({ path })
+    if (path) verifyNavigateToPath(path)
 
     if (extraAssertions) extraAssertions()
   })
@@ -116,54 +106,31 @@ export const verifySuccess = async ({
 
 export const verifyError = async ({
   getHookState,
-  logMessage,
-  consoleSpy,
   action,
   payload,
   expected,
-  navigateToPath,
   extraAssertions,
 }: {
-  getHookState?: () => {
+  getHookState: () => {
     isError?: boolean
     error: unknown
   }
-  logMessage?: string
-  consoleSpy?: MockInstance
   action: string
-  payload?: unknown
+  payload: unknown
   expected: { message: string; code: string }
-  navigateToPath?: {
-    path?: string
-    navigation?: (url: string) => void
-    isNotCalled?: boolean
-  }
   extraAssertions?: () => void
 }) => {
-  let error: unknown
-
   await waitFor(() => {
-    if (getHookState) {
-      error = getHookState().error
-      expect(getHookState().isError).toBe(true)
-    } else if (consoleSpy && logMessage) {
-      const call = consoleSpy.mock.calls.find(
-        (args: string[]) => args[0] === logMessage,
-      )
-      expect(call).toBeDefined()
-      error = call![1] // 2番目の引数がエラーオブジェクト
-    }
+    expect(getHookState().isError).toBe(true)
 
     verifyCalledMessage({ action, payload })
-
+    const error = getHookState().error
     if (error instanceof BookmarkApiError) {
       expect(error.message).toBe(expected.message)
       expect(error.code).toBe(expected.code)
     } else {
       expect(error).toBeInstanceOf(BookmarkApiError)
     }
-
-    if (navigateToPath) verifyNavigateToPath(navigateToPath)
     if (extraAssertions) extraAssertions()
   })
 }
