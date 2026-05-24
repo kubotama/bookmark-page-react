@@ -106,31 +106,47 @@ export const verifySuccess = async ({
 
 export const verifyError = async ({
   getHookState,
+  logMessage,
+  consoleSpy,
   action,
   payload,
   expected,
   extraAssertions,
 }: {
-  getHookState: () => {
+  getHookState?: () => {
     isError?: boolean
     error: unknown
   }
+  logMessage?: string
+  consoleSpy?: ReturnType<typeof vi.spyOn>
   action: string
-  payload: unknown
+  payload?: unknown
   expected: { message: string; code: string }
   extraAssertions?: () => void
 }) => {
+  let error: unknown
+
   await waitFor(() => {
-    expect(getHookState().isError).toBe(true)
+    if (getHookState) {
+      error = getHookState().error
+      expect(getHookState().isError).toBe(true)
+    } else if (consoleSpy && logMessage) {
+      const call = consoleSpy.mock.calls.find(
+        (args: string[]) => args[0] === logMessage,
+      )
+      expect(call).toBeDefined()
+      error = call![1] // 2番目の引数がエラーオブジェクト
+    }
 
     verifyCalledMessage({ action, payload })
-    const error = getHookState().error
+
     if (error instanceof BookmarkApiError) {
       expect(error.message).toBe(expected.message)
       expect(error.code).toBe(expected.code)
     } else {
       expect(error).toBeInstanceOf(BookmarkApiError)
     }
+
     if (extraAssertions) extraAssertions()
   })
 }
