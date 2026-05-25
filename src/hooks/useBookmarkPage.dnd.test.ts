@@ -1,6 +1,12 @@
-import { beforeEach, describe, it, vi } from 'vitest'
+import { beforeEach, describe, it, vi, type MockInstance } from 'vitest'
 
-import { DROPPABLE_IDS, API_ACTIONS } from '@shared/constants'
+import {
+  DROPPABLE_IDS,
+  API_ACTIONS,
+  ERROR_CODES,
+  LOG_MESSAGES,
+  UI_MESSAGES,
+} from '@shared/constants'
 import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import {
@@ -9,7 +15,7 @@ import {
   verifyActionFailure,
 } from './useBookmarkPage.test-utils'
 import { createDragEndEvent, createDragStartEvent } from '../test/dnd-utils'
-import { mockNavigate, verifyKeywordStatus } from '../test/mock'
+import { mockNavigate, verifyError, verifyKeywordStatus } from '../test/mock'
 import { act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -65,6 +71,104 @@ describe('handleDragStartとhandleDragEnd', () => {
             isNotCalled: true,
           },
         ],
+      })
+    })
+  })
+
+  describe('エラーハンドリング', () => {
+    let consoleSpy: MockInstance
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('割当領域へのドロップで紐付けに失敗した場合にログ出力すること', async () => {
+      const keywordId = MOCK_KEYWORDS[1].id
+      const result = await setupHook({
+        mock: {
+          action: API_ACTIONS.ATTACH_KEYWORD,
+          params: {
+            success: false,
+            error: {
+              message: UI_MESSAGES.ATTACH_KEYWORD_FAILED,
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            },
+          },
+        },
+      })
+
+      await act(async () => {
+        result.current.handleDragEnd(
+          createDragEndEvent(keywordId, DROPPABLE_IDS.ASSIGNED_LIST),
+        )
+      })
+
+      await verifyError({
+        action: API_ACTIONS.ATTACH_KEYWORD,
+        payload: { bookmarkId: MOCK_BOOKMARK_1.id, keywordId },
+        expected: {
+          message: UI_MESSAGES.ATTACH_KEYWORD_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+        logMessage: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+        consoleSpy,
+        navigateToPath: { isNotCalled: true },
+        extraAssertions: () => {
+          const state = result.current
+          verifyKeywordStatus(() => state)
+        },
+      })
+    })
+
+    it('未割当領域へのドロップで解除に失敗した場合にログ出力すること', async () => {
+      const bookmarkWithKeyword = {
+        ...MOCK_BOOKMARK_1,
+        keywords: [MOCK_KEYWORDS[0]],
+      }
+      const keywordId = MOCK_KEYWORDS[0].id
+
+      const result = await setupHook({
+        mocks: [
+          {
+            action: API_ACTIONS.READ_BOOKMARKS,
+            params: {
+              success: true,
+              data: { bookmarks: [bookmarkWithKeyword] },
+            },
+          },
+          {
+            action: API_ACTIONS.DETACH_KEYWORD,
+            params: {
+              success: false,
+              error: {
+                message: UI_MESSAGES.DETACH_KEYWORD_FAILED,
+                code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+              },
+            },
+          },
+        ],
+        bookmark: bookmarkWithKeyword,
+      })
+
+      await act(async () => {
+        result.current.handleDragEnd(
+          createDragEndEvent(keywordId, DROPPABLE_IDS.UNASSIGNED_LIST),
+        )
+      })
+
+      await verifyError({
+        action: API_ACTIONS.DETACH_KEYWORD,
+        payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
+        expected: {
+          message: UI_MESSAGES.DETACH_KEYWORD_FAILED,
+          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        },
+        logMessage: LOG_MESSAGES.DETACH_KEYWORD_FAILED,
+        consoleSpy,
+        navigateToPath: { isNotCalled: true },
+        extraAssertions: () => {
+          const state = result.current
+          verifyKeywordStatus(() => state)
+        },
       })
     })
   })
