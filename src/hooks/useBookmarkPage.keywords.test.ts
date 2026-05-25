@@ -26,7 +26,7 @@ import {
   verifyCalledMessage,
   verifyKeywordStatus,
   verifySuccess,
-} from '../test/mock'
+} from '../test/messaging'
 import { act, waitFor } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要
