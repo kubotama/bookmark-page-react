@@ -10,7 +10,7 @@ import {
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
-import { mockNavigate, verifyError, verifySuccess } from '../test/mock'
+import { mockNavigate, verifyError, verifySuccess } from '../test/messaging'
 import { act } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要

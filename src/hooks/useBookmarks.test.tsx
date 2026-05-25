@@ -29,7 +29,7 @@ import {
   useDetachKeyword,
 } from './useBookmarks'
 import { QUERY_KEYS } from '../lib/queryKeys'
-import { mockMessage, verifyError, verifySuccess } from '../test/mock'
+import { mockMessage, verifyError, verifySuccess } from '../test/messaging'
 import { renderHook } from '../test/utils'
 
 describe('useBookmarks Hook', () => {

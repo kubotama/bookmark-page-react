@@ -15,7 +15,11 @@ import {
   verifyActionFailure,
 } from './useBookmarkPage.test-utils'
 import { createDragEndEvent, createDragStartEvent } from '../test/dnd-utils'
-import { mockNavigate, verifyError, verifyKeywordStatus } from '../test/mock'
+import {
+  mockNavigate,
+  verifyError,
+  verifyKeywordStatus,
+} from '../test/messaging'
 import { act, waitFor } from '../test/utils'
 
 // モックの設定

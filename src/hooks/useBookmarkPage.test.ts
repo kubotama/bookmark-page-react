@@ -6,7 +6,7 @@ import * as urlUtils from '@shared/utils/url'
 
 import { useBookmarkPage } from './useBookmarkPage'
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
-import { mockNavigate, verifyCalledMessage } from '../test/mock'
+import { mockNavigate, verifyCalledMessage } from '../test/messaging'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定

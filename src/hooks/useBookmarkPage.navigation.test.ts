@@ -8,7 +8,11 @@ import * as urlUtils from '@shared/utils/url'
 import { openUrlInNewTab } from '@shared/utils/url'
 
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
-import { mockNavigate, verifyNavigateToPath, verifySuccess } from '../test/mock'
+import {
+  mockNavigate,
+  verifyNavigateToPath,
+  verifySuccess,
+} from '../test/messaging'
 import { fireEvent } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要

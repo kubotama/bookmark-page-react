@@ -9,7 +9,7 @@ import {
   mockMessage,
   verifyCalledMessage,
   verifyKeywordStatus,
-} from '../test/mock'
+} from '../test/messaging'
 import { renderHook, waitFor } from '../test/utils'
 
 export type MockParam = { action: string; params: unknown }
