@@ -148,7 +148,7 @@ export const verifyError = async ({
       expect(getHookState().isError).toBe(true)
     } else if (consoleSpy && logMessage) {
       const call = consoleSpy.mock.calls.find(
-        (args: string[]) => args[0] === logMessage,
+        (args: unknown[]) => args[0] === logMessage,
       )
       expect(call).toBeDefined()
       error = call![1] // 2番目の引数がエラーオブジェクト

@@ -74,7 +74,7 @@ export class ExtensionApiClient implements ApiClient {
         if (!response || typeof response !== 'object') {
           reject(
             new BookmarkApiError(
-              UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENTION,
+              UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENSION,
               ERROR_CODES.INTERNAL_SERVER_ERROR,
             ),
           )
