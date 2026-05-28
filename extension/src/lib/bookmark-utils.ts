@@ -1,4 +1,4 @@
-import { BOOKMARK_STATUS } from '@shared/constants'
+import { BOOKMARK_STATUS, type BookmarkStatus } from '@shared/constants'
 import type { Bookmark } from '@shared/schemas/bookmark'
 
 /**
@@ -19,13 +19,14 @@ export const findBookmarkByUrl = (
  * - MODIFIED: 登録済みだがタイトルが異なる
  */
 export const determineBookmarkStatus = (
-  storedTitle: string | undefined,
+  bookmark: Bookmark | undefined,
   currentTitle: string | undefined,
-) => {
-  if (storedTitle === undefined) {
+): BookmarkStatus => {
+  if (!bookmark) {
     return BOOKMARK_STATUS.NONE
   }
-  return storedTitle === currentTitle
-    ? BOOKMARK_STATUS.REGISTERED
-    : BOOKMARK_STATUS.MODIFIED
+  if (bookmark.title === currentTitle) {
+    return BOOKMARK_STATUS.REGISTERED
+  }
+  return BOOKMARK_STATUS.MODIFIED
 }

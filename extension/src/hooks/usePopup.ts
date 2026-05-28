@@ -13,7 +13,6 @@ import {
   UI_STATUS,
   EXTENSION_MESSAGE_TYPES,
   type StatusInfo,
-  API_ACTIONS,
 } from '@shared/constants'
 import { createBookmarkInputSchema } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
@@ -52,11 +51,9 @@ export const usePopup = () => {
           // 2. バックグラウンドに登録状態を問い合わせる
           chrome.runtime.sendMessage(
             {
-              action: API_ACTIONS.READ_BOOKMARK_STATUS,
-              payload: {
-                url: activeTab.url,
-                title: activeTab.title,
-              },
+              type: EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS,
+              url: activeTab.url,
+              title: activeTab.title,
             },
             (response) => {
               if (isMounted && response?.success) {

@@ -38,22 +38,19 @@ describe('bookmark-utils', () => {
 
     it('タイトルが一致する場合は REGISTERED を返すこと', () => {
       const bookmark = mockBookmarks[0]
-      const result = determineBookmarkStatus(
-        bookmark.title,
-        MOCK_BOOKMARK_1.title,
-      )
+      const result = determineBookmarkStatus(bookmark, MOCK_BOOKMARK_1.title)
       expect(result).toBe(BOOKMARK_STATUS.REGISTERED)
     })
 
     it('タイトルが異なる場合は MODIFIED を返すこと', () => {
       const bookmark = mockBookmarks[0]
-      const result = determineBookmarkStatus(bookmark.title, 'Different Title')
+      const result = determineBookmarkStatus(bookmark, 'Different Title')
       expect(result).toBe(BOOKMARK_STATUS.MODIFIED)
     })
 
     it('タイトルが undefined の場合（かつブックマークあり）は MODIFIED を返すこと', () => {
       const bookmark = mockBookmarks[0]
-      const result = determineBookmarkStatus(bookmark.title, undefined)
+      const result = determineBookmarkStatus(bookmark, undefined)
       expect(result).toBe(BOOKMARK_STATUS.MODIFIED)
     })
   })

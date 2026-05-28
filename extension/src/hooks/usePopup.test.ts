@@ -9,8 +9,8 @@ import {
   UI_STATUS,
   EXTENSION_MESSAGES,
   LOG_MESSAGES,
-  API_ACTIONS,
   BOOKMARK_STATUS,
+  EXTENSION_MESSAGE_TYPES,
 } from '@shared/constants'
 import {
   INVALID_URLS,
@@ -55,7 +55,7 @@ describe('usePopup Hook', () => {
     ])
 
     mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
-      if (message.action === API_ACTIONS.READ_BOOKMARK_STATUS) {
+      if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
         callback({
           success: true,
           data: {
@@ -123,7 +123,7 @@ describe('usePopup Hook', () => {
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       callback({
         success: true,
-        status: 'REGISTERED',
+        status: BOOKMARK_STATUS.REGISTERED,
         bookmarkId: MOCK_BOOKMARK_1.id,
       })
     })
@@ -152,7 +152,7 @@ describe('usePopup Hook', () => {
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
       callback({
         success: true,
-        status: 'REGISTERED',
+        status: BOOKMARK_STATUS.REGISTERED,
         bookmarkId: MOCK_BOOKMARK_1.id,
       })
     })
@@ -177,7 +177,7 @@ describe('usePopup Hook', () => {
       { title: MOCK_BOOKMARK_TITLE_PREFIX, url: VALID_URLS.GOOGLE },
     ])
     mockChrome.runtime.sendMessage.mockImplementation((_message, callback) => {
-      if (callback) callback({ success: true, status: 'NONE' })
+      if (callback) callback({ success: true, status: BOOKMARK_STATUS.NONE })
     })
 
     const fetchMock = vi.fn().mockResolvedValue({
