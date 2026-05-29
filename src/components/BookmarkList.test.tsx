@@ -16,6 +16,7 @@ import {
   MOCK_BOOKMARK_2,
   MOCK_BOOKMARKS,
   MOCK_BOOKMARK_TITLE_PREFIX,
+  MOCK_NUMERIC_IDS,
 } from '@shared/test/fixtures'
 
 import { BookmarkList } from './BookmarkList'
@@ -41,19 +42,31 @@ vi.mock('@dnd-kit/core', async () => {
       <div
         data-testid="mock-dnd-context"
         onClick={(e) => {
+          const type = e.currentTarget.getAttribute('data-id-type')
+
+          // type が number の場合は、data-active-id-num 等から数値を取得する
+          if (type === 'number') {
+            const activeIdNum = Number(
+              e.currentTarget.getAttribute('data-active-id-num'),
+            )
+            const overIdNum = Number(
+              e.currentTarget.getAttribute('data-over-id-num'),
+            )
+            onDragEnd({
+              active: { id: activeIdNum },
+              over: { id: overIdNum },
+            })
+            return
+          }
+
           const activeId =
             e.currentTarget.getAttribute('data-active-id') || MOCK_BOOKMARK_1.id
           const overId =
             e.currentTarget.getAttribute('data-over-id') || MOCK_BOOKMARK_2.id
-          const type = e.currentTarget.getAttribute('data-id-type')
-
-          // 型ガードのテスト用に number を渡せるようにする
-          const finalActiveId = type === 'number' ? Number(activeId) : activeId
-          const finalOverId = type === 'number' ? Number(overId) : overId
 
           onDragEnd({
-            active: { id: finalActiveId },
-            over: { id: finalOverId },
+            active: { id: activeId },
+            over: { id: overId },
           })
         }}
       >
@@ -104,12 +117,12 @@ describe('BookmarkList', () => {
 
         // リスト項目の階層構造を確認 (list > listitem > button)
         const listItems = screen.getAllByRole(ARIA_ROLES.LISTITEM)
-        expect(listItems).toHaveLength(2)
+        expect(listItems).toHaveLength(3)
 
         const buttons = screen.getAllByRole(ARIA_ROLES.BUTTON, {
           name: new RegExp(MOCK_BOOKMARK_TITLE_PREFIX),
         })
-        expect(buttons).toHaveLength(2)
+        expect(buttons).toHaveLength(3)
 
         // 各リスト項目の中にボタンが含まれていることを確認
         listItems.forEach((item, index) => {
@@ -280,8 +293,8 @@ describe('BookmarkList', () => {
 
     const context = screen.getByTestId('mock-dnd-context')
     // ID に number をセットしてクリック
-    context.setAttribute('data-active-id', '1')
-    context.setAttribute('data-over-id', '2')
+    context.setAttribute('data-active-id-num', String(MOCK_NUMERIC_IDS.VALID))
+    context.setAttribute('data-over-id-num', String(MOCK_NUMERIC_IDS.OVER))
     context.setAttribute('data-id-type', 'number')
 
     await user.click(context)

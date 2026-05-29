@@ -31,7 +31,7 @@ export const FIELD_LABELS = {
   OTHER_BOOKMARKS_LABEL: 'その他のブックマーク',
   ASSIGNED_KEYWORDS_LABEL: '割り当て済みのキーワード',
   UNASSIGNED_KEYWORDS_LABEL: '利用可能なキーワード',
-  ADD_KEYWORD_LABEL: '追加するキーワード',
+  CREATE_KEYWORD_LABEL: '作成するキーワード',
   FRONTEND_URL: 'Web アプリ URL',
 } as const
 
@@ -55,6 +55,13 @@ export const DEFAULT_PORTS = {
 export const DEFAULT_API_URL = `http://localhost:${DEFAULT_PORTS.BACKEND}`
 export const DEFAULT_FRONTEND_URL = `http://localhost:${DEFAULT_PORTS.FRONTEND}`
 export const DEFAULT_SERVER_PORT = DEFAULT_PORTS.BACKEND
+
+export const VALIDATION_LIMITS = {
+  BOOKMARK_TITLE_MIN_LENGTH: 1,
+  REORDER_MAX_ITEMS: 1000,
+  KEYWORD_NAME_MIN_LENGTH: 1,
+  KEYWORD_NAME_MAX_LENGTH: 50,
+} as const
 
 /**
  * UI の処理状態定義
@@ -121,6 +128,17 @@ export const COMMON_MESSAGES = {
 } as const
 
 /**
+ * API エラーコード
+ */
+export const ERROR_CODES = {
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+  NOT_FOUND: 'NOT_FOUND',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  CONFLICT: 'CONFLICT',
+  BAD_REQUEST: 'BAD_REQUEST',
+} as const
+
+/**
  * API サーバーが返す共通のエラーメッセージ
  */
 export const ERROR_MESSAGES = {
@@ -144,6 +162,7 @@ export const ERROR_MESSAGES = {
   API_PROVIDER_REQUIRED: 'useApi は ApiProvider の内側で使用する必要があります',
   UPDATE_API_URL_FAILED: 'API URL の更新に失敗しました:',
   UNEXPECTED_ID_TYPE: '予期しない ID 型が検出されました',
+  ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
 } as const
 
 /**
@@ -167,6 +186,9 @@ export const UI_MESSAGES = {
   KEYWORD_NOT_FOUND: (id: string | number) =>
     `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
+  CHROME_EXTENSION_NOT_AVAILABLE: 'chromeの拡張機能が利用できません',
+  INVALID_RESPONSE_FROM_EXTENSION: '拡張機能からの返り値の形式が不正です',
+  UNKNOWN_EXTENSION_ERROR: '拡張機能での不明なエラーです',
 } as const
 
 /**
@@ -320,11 +342,41 @@ export const ELEMENT_IDS = {
  * データベース関連の定数
  */
 export const DB_CONSTANTS = {
+  DB_NAME: 'BookmarkDatabase',
+  IDB_VERSION: 1,
+  IDB_SCHEMA: {
+    bookmarks: 'id, &url, sortOrder, *keywordIds',
+    keywords: 'id, name',
+  },
   FILENAME: 'bookmarks.sqlite',
   MIGRATIONS_DIR: 'server/db/migrations',
   PRAGMA_FOREIGN_KEYS_ON: 'foreign_keys = ON',
   PRAGMA_FOREIGN_KEYS_OFF: 'foreign_keys = OFF',
   PRAGMA_JOURNAL_MODE_WAL: 'journal_mode = WAL',
+} as const
+
+/**
+ * メッセージングで使用するアクション名
+ */
+export const API_ACTIONS = {
+  // ブックマーク操作
+  READ_BOOKMARKS: 'READ_BOOKMARKS',
+  CREATE_BOOKMARK: 'CREATE_BOOKMARK',
+  UPDATE_BOOKMARK: 'UPDATE_BOOKMARK',
+  DELETE_BOOKMARK: 'DELETE_BOOKMARK',
+  REORDER_BOOKMARKS: 'REORDER_BOOKMARKS',
+
+  READ_BOOKMARK_STATUS: 'READ_BOOKMARK_STATUS',
+
+  // キーワード操作
+  READ_KEYWORDS: 'READ_KEYWORDS',
+  CREATE_KEYWORD: 'CREATE_KEYWORD',
+  UPDATE_KEYWORD: 'UPDATE_KEYWORD',
+  DELETE_KEYWORD: 'DELETE_KEYWORD',
+
+  // リレーション操作
+  ATTACH_KEYWORD: 'ATTACH_KEYWORD',
+  DETACH_KEYWORD: 'DETACH_KEYWORD',
 } as const
 
 /**
@@ -377,11 +429,16 @@ export const LOG_MESSAGES = {
   DELETE_KEYWORD_FAILED: 'Failed to delete keyword:',
   ATTACH_KEYWORD_FAILED: 'Failed to attach keyword:',
   DETACH_KEYWORD_FAILED: 'Failed to detach keyword:',
-  UNEXPECTED_ERROR_IN_ADD_KEYWORD: 'Unexpected error in handleAddKeyword:',
+  UNEXPECTED_ERROR_IN_CREATE_KEYWORD:
+    'Unexpected error in handleCreateKeyword:',
   UPDATE_KEYWORD_PLACEHOLDER: (name: string) => `Update keyword: ${name}`,
   DELETE_KEYWORD_PLACEHOLDER: (id: string | number) => `Delete keyword: ${id}`,
   API_RESPONSE_PARSE_FAILED: (status: number) =>
     `Failed to parse API response (Status: ${status}):`,
+  ACTION_NOT_IMPLEMENTED: (action: string) =>
+    `Action ${action} is not yet implemented.`,
+  UNKNOWN_ACTION: 'Unknown action received.',
+  INVALID_PAYLOAD: (message: string) => `Invalid payload: ${message}`,
 } as const
 
 /**
@@ -400,13 +457,17 @@ export const VALIDATION_MESSAGES = {
   TITLE_REQUIRED: 'タイトルは必須です',
   TITLE_MIN_LENGTH: 'タイトルは1文字以上である必要があります',
   KEYWORD_MIN_LENGTH: 'キーワード名は1文字以上である必要があります',
-  KEYWORD_MAX_LENGTH: 'キーワード名は50文字以内で入力してください',
+  KEYWORD_MAX_LENGTH: `キーワード名は${VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH}文字以内で入力してください`,
   URL_INVALID_PROTOCOL: 'URL は http:// または https:// で始まる必要があります',
   URL_INVALID_FORMAT: '有効な URL形式である必要があります',
   UPDATE_MIN_FIELDS:
     'タイトルまたは URL の少なくとも一方は指定する必要があります',
-  REORDER_MAX_ITEMS: '一度に並び替えられるのは1000件までです',
+  REORDER_MAX_ITEMS: `一度に並び替えられるのは${VALIDATION_LIMITS.REORDER_MAX_ITEMS}件までです`,
   REORDER_DUPLICATE_IDS: 'IDリストに重複が含まれています',
+  BOOKMARK_STATUS_REQUIRED_BOOKMARKID:
+    '登録済み、変更ありの場合にはBOOKMARK IDが必要です',
+  REORDER_COUNT_MISMATCH:
+    '並べ替え対象の件数が一致しません。全件を指定してください',
 } as const
 
 /**

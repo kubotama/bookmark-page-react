@@ -14,7 +14,7 @@ import {
   EXTENSION_MESSAGE_TYPES,
   type StatusInfo,
 } from '@shared/constants'
-import { createBookmarkSchema } from '@shared/schemas/bookmark'
+import { createBookmarkInputSchema } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
 import { storage } from '../lib/storage'
@@ -76,7 +76,7 @@ export const usePopup = () => {
   const handleSave = useCallback(async () => {
     setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
 
-    const validation = createBookmarkSchema.safeParse({ title, url })
+    const validation = createBookmarkInputSchema.safeParse({ title, url })
     if (!validation.success) {
       setStatus({
         type: UI_STATUS.ERROR,

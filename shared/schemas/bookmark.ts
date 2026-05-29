@@ -1,7 +1,11 @@
 import { z } from 'zod'
 
-import { VALIDATION_MESSAGES } from '../constants'
-import { keywordSchema } from './keyword'
+import {
+  BOOKMARK_STATUS,
+  VALIDATION_LIMITS,
+  VALIDATION_MESSAGES,
+} from '../constants'
+import { keywordSchema, KeywordIdSchema } from './keyword'
 import { isHttpUrl } from '../utils/url'
 
 export {
@@ -11,69 +15,134 @@ export {
   type Keyword,
 } from './keyword'
 
-export const BookmarkIdSchema = z
-  .string()
-  .regex(/^[1-9]\d*$/)
-  .brand<'BookmarkId'>()
+export const BookmarkIdSchema = z.string().uuid().brand<'BookmarkId'>()
 export type BookmarkId = z.infer<typeof BookmarkIdSchema>
+
+/**
+ * ブックマークタイトルの共通バリデーションスキーマ
+ */
+const bookmarkTitleSchema = z
+  .string()
+  .trim()
+  .min(
+    VALIDATION_LIMITS.BOOKMARK_TITLE_MIN_LENGTH,
+    VALIDATION_MESSAGES.TITLE_REQUIRED,
+  )
+
+/**
+ * ブックマークURLの共通バリデーションスキーマ
+ */
+const bookmarkUrlSchema = z
+  .string()
+  .trim()
+  .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
+  .refine(isHttpUrl, {
+    message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
+  })
 
 export const bookmarkSchema = z.object({
   id: BookmarkIdSchema,
-  title: z.string(),
-  url: z
-    .string()
-    .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
-    .refine(isHttpUrl, {
-      message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-    }),
+  title: bookmarkTitleSchema,
+  url: bookmarkUrlSchema,
   sortOrder: z.number(),
   keywords: z.array(keywordSchema),
 })
 
 export type Bookmark = z.infer<typeof bookmarkSchema>
 
-export const createBookmarkSchema = z.object({
-  title: z.string().min(1, VALIDATION_MESSAGES.TITLE_REQUIRED),
-  url: z
-    .string()
-    .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
-    .refine(isHttpUrl, {
-      message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-    }),
+/**
+ * IndexedDB に保存するブックマークのエンティティ型
+ * keywords オブジェクト配列の代わりに ID 配列を持つ
+ */
+export const bookmarkEntitySchema = bookmarkSchema
+  .omit({ keywords: true })
+  .extend({
+    keywordIds: z.array(KeywordIdSchema),
+  })
+
+export type BookmarkEntity = z.infer<typeof bookmarkEntitySchema>
+
+export const createBookmarkInputSchema = z.object({
+  title: bookmarkTitleSchema,
+  url: bookmarkUrlSchema,
 })
 
-export type CreateBookmarkRequest = z.infer<typeof createBookmarkSchema>
+export type CreateBookmarkInput = z.infer<typeof createBookmarkInputSchema>
 
-export const updateBookmarkSchema = z
+export const updateBookmarkInputSchema = z
   .object({
-    title: z.string().min(1, VALIDATION_MESSAGES.TITLE_MIN_LENGTH).optional(),
-    url: z
-      .string()
-      .url(VALIDATION_MESSAGES.URL_INVALID_FORMAT)
-      .refine(isHttpUrl, {
-        message: VALIDATION_MESSAGES.URL_INVALID_PROTOCOL,
-      })
-      .optional(),
+    title: bookmarkTitleSchema.optional(),
+    url: bookmarkUrlSchema.optional(),
   })
   .refine((data) => data.title !== undefined || data.url !== undefined, {
     message: VALIDATION_MESSAGES.UPDATE_MIN_FIELDS,
   })
 
-export type UpdateBookmarkRequest = z.infer<typeof updateBookmarkSchema>
+export type UpdateBookmarkInput = z.infer<typeof updateBookmarkInputSchema>
 
-export const reorderBookmarksSchema = z.object({
+/**
+ * ブックマーク削除のバリデーションスキーマ
+ */
+export const deleteBookmarkInputSchema = z.object({
+  id: BookmarkIdSchema,
+})
+
+export type DeleteBookmarkInput = z.infer<typeof deleteBookmarkInputSchema>
+
+export const reorderBookmarksInputSchema = z.object({
   ids: z
     .array(BookmarkIdSchema)
-    .max(1000, VALIDATION_MESSAGES.REORDER_MAX_ITEMS)
+    .max(
+      VALIDATION_LIMITS.REORDER_MAX_ITEMS,
+      VALIDATION_MESSAGES.REORDER_MAX_ITEMS,
+    )
     .refine((ids) => new Set(ids).size === ids.length, {
       message: VALIDATION_MESSAGES.REORDER_DUPLICATE_IDS,
     }),
 })
 
-export type ReorderBookmarksRequest = z.infer<typeof reorderBookmarksSchema>
+export type ReorderBookmarksInput = z.infer<typeof reorderBookmarksInputSchema>
 
-export const bookmarksResponseSchema = z.object({
+/**
+ * ブックマーク登録状態確認のバリデーションスキーマ
+ */
+
+export const readBookmarkStatusInputSchema = z.object({
+  url: bookmarkUrlSchema,
+  title: z.string().optional(),
+})
+
+export type ReadBookmarkStatusInput = z.infer<
+  typeof readBookmarkStatusInputSchema
+>
+
+export const bookmarkStatusSchema = z.enum(
+  Object.values(BOOKMARK_STATUS) as [string, ...string[]],
+)
+
+export const bookmarkStatusResponseSchema = z
+  .object({
+    status: bookmarkStatusSchema,
+    bookmarkId: BookmarkIdSchema.optional(), // 登録済みの場合はIDを返す
+  })
+  .refine(
+    (data) => {
+      if (
+        data.status === BOOKMARK_STATUS.REGISTERED ||
+        data.status === BOOKMARK_STATUS.MODIFIED
+      ) {
+        return !!data.bookmarkId // IDが必須
+      }
+      return true
+    },
+    {
+      message: VALIDATION_MESSAGES.BOOKMARK_STATUS_REQUIRED_BOOKMARKID,
+      path: ['bookmarkId'],
+    },
+  )
+
+export const bookmarksSchema = z.object({
   bookmarks: z.array(bookmarkSchema),
 })
 
-export type BookmarksResponse = z.infer<typeof bookmarksResponseSchema>
+export type Bookmarks = z.infer<typeof bookmarksSchema>

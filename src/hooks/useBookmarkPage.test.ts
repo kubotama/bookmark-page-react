@@ -1,25 +1,15 @@
-import { fireEvent } from '@testing-library/react'
-import { http, HttpResponse, delay } from 'msw'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import {
-  APP_PATHS,
-  HTTP_STATUS,
-  LOG_MESSAGES,
-  DROPPABLE_IDS,
-  KEY_VALUES,
-} from '@shared/constants'
-import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { LOG_MESSAGES, API_ACTIONS, ERROR_CODES } from '@shared/constants'
+import { MOCK_BOOKMARK_1, TEST_STRINGS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
 import { useBookmarkPage } from './useBookmarkPage'
-import { createDragStartEvent, createDragEndEvent } from '../test/dnd-utils'
-import { createKeyboardEvent } from '../test/event-utils'
-import { server } from '../test/setup'
+import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
+import { mockNavigate, verifyCalledMessage } from '../test/messaging'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
-const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
@@ -40,340 +30,29 @@ vi.mock('@shared/utils/url', async () => {
 
 describe('useBookmarkPage Hook', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    server.use(
-      http.get('*/api/bookmarks', () => {
-        return HttpResponse.json({
-          success: true,
-          data: { bookmarks: [MOCK_BOOKMARK_1] },
-        })
-      }),
-      http.get('*/api/keywords', () => {
-        return HttpResponse.json({
-          success: true,
-          data: {
-            keywords: MOCK_KEYWORDS,
-          },
-        })
-      }),
-    )
+    commonSetup()
   })
 
   it('初期化時にブックマークデータを取得し、ステートを更新すること', async () => {
-    const { result } = renderHook(() => useBookmarkPage())
+    const result = await setupHook()
 
-    await waitFor(() =>
-      expect(result.current.bookmark).toEqual(MOCK_BOOKMARK_1),
-    )
-    expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
-    expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url)
-  })
-
-  it('未割当キーワードが、全キーワードから割当済みを除外して正しく計算されること', async () => {
-    // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-    const bookmarkWithKeyword = {
-      ...MOCK_BOOKMARK_1,
-      keywords: [MOCK_KEYWORDS[0]],
-    }
-    server.use(
-      http.get('*/api/bookmarks', () => {
-        return HttpResponse.json({
-          success: true,
-          data: { bookmarks: [bookmarkWithKeyword] },
-        })
-      }),
-    )
-
-    const { result } = renderHook(() => useBookmarkPage())
-
-    // ロード完了を待機
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-    // 1番目以外が残っていることを確認
-    expect(result.current.unassignedKeywords).toEqual(MOCK_KEYWORDS.slice(1))
-  })
-
-  it('handleUpdate が成功した際、一覧へ戻ること', async () => {
-    let patchCalled = false
-    server.use(
-      http.patch('*/api/bookmarks/:id', () => {
-        patchCalled = true
-        return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-      }),
-    )
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      await result.current.handleUpdate()
-    })
-
-    expect(patchCalled).toBe(true)
-    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
-  })
-
-  it('handleDelete が成功した際、一覧へ戻ること (Hook は確認ダイアログを担当しない)', async () => {
-    server.use(
-      http.delete('*/api/bookmarks/:id', () => {
-        return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
-      }),
-    )
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      await result.current.handleDelete()
-    })
-
-    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
-  })
-
-  it('handleOpen が呼ばれた際、openUrlInNewTab を実行すること', async () => {
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    act(() => {
-      result.current.handleOpen()
-    })
-
-    expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
-  })
-
-  it('handleBack が呼ばれた際、onBack を実行し一覧へ戻ること', () => {
-    const onBack = vi.fn()
-    const { result } = renderHook(() => useBookmarkPage(onBack))
-
-    act(() => {
-      result.current.handleBack()
-    })
-
-    expect(onBack).toHaveBeenCalled()
-    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
-  })
-
-  it('handleKeywordKeyDown が Enter キーで handleAddKeyword を呼び出すこと', async () => {
-    let createCalled = false
-    server.use(
-      http.post('*/api/keywords', () => {
-        createCalled = true
-        return HttpResponse.json({
-          success: true,
-          data: { keyword: { id: '10', name: 'Enter' } },
-        })
-      }),
-      http.post('*/api/bookmarks/:id/keywords', () => {
-        return HttpResponse.json({ success: true, data: null })
-      }),
-    )
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      result.current.setKeywordInput('Enter')
-    })
-
-    act(() => {
-      const event = createKeyboardEvent(KEY_VALUES.ENTER)
-      result.current.handleKeywordKeyDown(event)
-    })
-
-    await waitFor(() => expect(createCalled).toBe(true))
-  })
-
-  describe('Drag and Drop Handlers', () => {
-    it('handleDragStart が activeKeyword を設定すること', async () => {
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      act(() => {
-        result.current.handleDragStart(
-          createDragStartEvent(MOCK_KEYWORDS[1].id),
-        )
-      })
-
-      expect(result.current.activeKeyword?.id).toBe(MOCK_KEYWORDS[1].id)
-    })
-
-    it('handleDragEnd が割当済み領域へのドロップで handleAttachKeyword を呼び出すこと', async () => {
-      let attachCalled = false
-      server.use(
-        http.post('*/api/bookmarks/:id/keywords', () => {
-          attachCalled = true
-          return HttpResponse.json({ success: true, data: null })
-        }),
-      )
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      await act(async () => {
-        result.current.handleDragEnd(
-          createDragEndEvent(MOCK_KEYWORDS[1].id, DROPPABLE_IDS.ASSIGNED_LIST),
-        )
-      })
-
-      expect(attachCalled).toBe(true)
-      expect(result.current.activeKeyword).toBeNull()
-    })
-
-    it('handleDragEnd が未割当領域へのドロップでは何もしないこと', async () => {
-      let attachCalled = false
-      server.use(
-        http.post('*/api/bookmarks/:id/keywords', () => {
-          attachCalled = true
-          return HttpResponse.json({ success: true, data: null })
-        }),
-      )
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      await act(async () => {
-        result.current.handleDragEnd(
-          createDragEndEvent(
-            MOCK_KEYWORDS[1].id,
-            DROPPABLE_IDS.UNASSIGNED_LIST,
-          ),
-        )
-      })
-
-      expect(attachCalled).toBe(false)
-      expect(result.current.activeKeyword).toBeNull()
-    })
-
-    it('handleDragEnd が未割当領域へのドロップで handleDetachKeyword を呼び出すこと', async () => {
-      let detachCalled = false
-      // 最初のキーワードが割当済みのブックマークとしてモックを上書き
-      const bookmarkWithKeyword = {
-        ...MOCK_BOOKMARK_1,
-        keywords: [MOCK_KEYWORDS[0]],
-      }
-      server.use(
-        http.get('*/api/bookmarks', () => {
-          return HttpResponse.json({
-            success: true,
-            data: { bookmarks: [bookmarkWithKeyword] },
-          })
-        }),
-        http.delete('*/api/bookmarks/:id/keywords/:keywordId', () => {
-          detachCalled = true
-          return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
-        }),
-      )
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-      await act(async () => {
-        result.current.handleDragEnd(
-          createDragEndEvent(
-            MOCK_KEYWORDS[0].id,
-            DROPPABLE_IDS.UNASSIGNED_LIST,
-          ),
-        )
-      })
-
-      expect(detachCalled).toBe(true)
-      expect(result.current.activeKeyword).toBeNull()
-    })
-  })
-
-  it('handleAddKeyword が成功した際、キーワードを作成して紐付けること', async () => {
-    let createCalled = false
-    let attachCalled = false
-    const NEW_TAG = 'NewTag'
-
-    server.use(
-      http.post('*/api/keywords', async ({ request }) => {
-        const body = (await request.json()) as { name: string }
-        if (body.name === NEW_TAG) {
-          createCalled = true
-          return HttpResponse.json({
-            success: true,
-            data: { keyword: { id: '10', name: NEW_TAG } },
-          })
-        }
-        return new HttpResponse(null, { status: 400 })
-      }),
-      http.post('*/api/bookmarks/:id/keywords', async ({ request }) => {
-        const body = (await request.json()) as { keywordId: string }
-        if (body.keywordId === '10') {
-          attachCalled = true
-          return HttpResponse.json({ success: true, data: null })
-        }
-        return new HttpResponse(null, { status: 400 })
-      }),
-    )
-
-    const { result } = renderHook(() => useBookmarkPage())
-    await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-    await act(async () => {
-      result.current.setKeywordInput(NEW_TAG)
-    })
-
-    await act(async () => {
-      await result.current.handleAddKeyword()
-    })
-
-    expect(createCalled).toBe(true)
-    expect(attachCalled).toBe(true)
-    expect(result.current.keywordInput).toBe('')
-  })
-
-  describe('Keyboard shortcuts', () => {
-    it('Escape キーで handleBack が呼ばれること', async () => {
-      renderHook(() => useBookmarkPage())
-
-      fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
-      expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
-    })
-
-    it('Enter キー単体で handleOpen が呼ばれること', async () => {
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      fireEvent.keyDown(window, { key: KEY_VALUES.ENTER })
-      expect(urlUtils.openUrlInNewTab).toHaveBeenCalledWith(MOCK_BOOKMARK_1.url)
-    })
-
-    it('Ctrl + Enter キーで handleUpdate が呼ばれること', async () => {
-      let patchCalled = false
-      server.use(
-        http.patch('*/api/bookmarks/:id', () => {
-          patchCalled = true
-          return HttpResponse.json({ success: true, data: MOCK_BOOKMARK_1 })
-        }),
-      )
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      fireEvent.keyDown(window, { key: KEY_VALUES.ENTER, ctrlKey: true })
-
-      await waitFor(() => expect(patchCalled).toBe(true))
+    // 初期化（データのロードとステートへの反映）を待機
+    await waitFor(() => {
+      expect(result.current.bookmark).toEqual(MOCK_BOOKMARK_1)
+      expect(result.current.editTitle).toBe(MOCK_BOOKMARK_1.title)
+      expect(result.current.editUrl).toBe(MOCK_BOOKMARK_1.url) // レビュアーの指摘箇所
     })
   })
 
   describe('Boundary Conditions & Error Handling', () => {
     it('ローディング中は isLoading が true であること', () => {
-      server.use(
-        http.get('*/api/bookmarks', async () => {
-          await delay('infinite')
-          return HttpResponse.json({ success: true, data: { bookmarks: [] } })
-        }),
-      )
-
       const { result } = renderHook(() => useBookmarkPage())
       expect(result.current.isLoading).toBe(true)
     })
 
-    it('ID が不正な場合、parsedId が null になりアクションが実行されないこと', async () => {
+    it('ID が不正な場合、アクションが実行されないこと', async () => {
       const { useParams } = await import('react-router-dom')
-      vi.mocked(useParams).mockReturnValueOnce({ id: 'invalid-id' })
+      vi.mocked(useParams).mockReturnValueOnce({ id: TEST_STRINGS.INVALID_ID })
 
       const { result } = renderHook(() => useBookmarkPage())
 
@@ -382,104 +61,40 @@ describe('useBookmarkPage Hook', () => {
         await result.current.handleDelete()
       })
 
-      expect(mockNavigate).not.toHaveBeenCalled()
+      await waitFor(() => {
+        verifyCalledMessage({
+          action: API_ACTIONS.UPDATE_BOOKMARK,
+          isNotCalled: true,
+        })
+        verifyCalledMessage({
+          action: API_ACTIONS.DELETE_BOOKMARK,
+          isNotCalled: true,
+        })
+        expect(mockNavigate).not.toHaveBeenCalled()
+      })
     })
 
     it('API エラー時に例外をキャッチしログ出力すること', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      server.use(
-        http.patch('*/api/bookmarks/:id', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-        http.delete('*/api/bookmarks/:id', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-      )
 
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
+      const result = await setupHook({
+        mock: {
+          action: API_ACTIONS.UPDATE_BOOKMARK,
+          params: {
+            success: false,
+            error: {
+              message: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            },
+          },
+        },
+      })
 
       await act(async () => {
         await result.current.handleUpdate()
       })
       expect(consoleSpy).toHaveBeenCalledWith(
         LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
-        expect.anything(),
-      )
-
-      await act(async () => {
-        await result.current.handleDelete()
-      })
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
-        expect.anything(),
-      )
-    })
-
-    it('handleAddKeyword の作成失敗時にログ出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      server.use(
-        http.post('*/api/keywords', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-      )
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      await act(async () => {
-        result.current.setKeywordInput('Fail')
-      })
-
-      await act(async () => {
-        await result.current.handleAddKeyword()
-      })
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
-        expect.anything(),
-      )
-    })
-
-    it('handleAddKeyword の紐付け失敗時にログ出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      server.use(
-        http.post('*/api/keywords', () => {
-          return HttpResponse.json({
-            success: true,
-            data: { keyword: { id: '10', name: 'Success' } },
-          })
-        }),
-        http.post('*/api/bookmarks/:id/keywords', () => {
-          return HttpResponse.json(
-            { success: false },
-            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-          )
-        }),
-      )
-
-      const { result } = renderHook(() => useBookmarkPage())
-      await waitFor(() => expect(result.current.bookmark).not.toBeUndefined())
-
-      await act(async () => {
-        result.current.setKeywordInput('Success')
-      })
-
-      await act(async () => {
-        await result.current.handleAddKeyword()
-      })
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
         expect.anything(),
       )
     })

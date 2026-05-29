@@ -8,14 +8,16 @@ import {
   STORAGE_KEYS,
   LOG_MESSAGES,
 } from '@shared/constants'
-import type { BookmarksResponse } from '@shared/schemas/bookmark'
+import { type ReadBookmarksResponse } from '@shared/schemas/api'
+import { type Bookmarks } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
 
 import {
   findBookmarkByUrl,
   determineBookmarkStatus,
 } from './lib/bookmark-utils'
-import { QUERY_KEYS } from '../../src/lib/queryKeys'
+
+import { QUERY_KEYS } from '@/lib/queryKeys'
 
 /**
  * 拡張機能のバックグラウンドプロセス
@@ -34,7 +36,7 @@ const queryClient = new QueryClient({
 /**
  * ブックマーク一覧をキャッシュまたは API から取得する内部関数
  */
-const getBookmarksData = async (apiUrl: string) => {
+const getBookmarksData = async (apiUrl: string): Promise<Bookmarks> => {
   const urlError = validateApiUrl(apiUrl)
   if (urlError) {
     throw new Error(urlError)
@@ -42,16 +44,21 @@ const getBookmarksData = async (apiUrl: string) => {
 
   const sanitizedBaseUrl = getOrigin(apiUrl)
 
-  return await queryClient.fetchQuery<BookmarksResponse>({
-    queryKey: [...QUERY_KEYS.BOOKMARKS.ALL, sanitizedBaseUrl],
+  const result = await queryClient.fetchQuery<ReadBookmarksResponse>({
     queryFn: async () => {
       const res = await fetch(`${sanitizedBaseUrl}/api/bookmarks`)
       if (!res.ok) throw new Error(`HTTP Error: ${res.status}`)
-      const result = await res.json()
-      if (!result.success) throw new Error(result.error?.message || 'Failed')
-      return result.data
+      return await res.json() // ここで ReadBookmarksResponse 型を期待
     },
+    queryKey: [],
   })
+
+  // ReadBookmarksResponse はユニオン型なので、success をチェックして分岐
+  if (!result.success) {
+    throw new Error(result.error.message || LOG_MESSAGES.FETCH_BOOKMARKS_FAILED)
+  }
+
+  return result.data // 成功時の data は Bookmarks 型
 }
 
 /**
@@ -91,7 +98,7 @@ const updateIconStatus = async (
 
     chrome.action.setIcon({
       tabId,
-      path: EXTENSION_ICONS[BOOKMARK_STATUS[statusKey]],
+      path: EXTENSION_ICONS[statusKey],
     })
   } catch (err) {
     console.error(LOG_MESSAGES.ICON_STATUS_UPDATE_FAILED, err)

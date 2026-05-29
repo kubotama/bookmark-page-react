@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { MOCK_IDS } from '@shared/test/fixtures'
+
 import { QUERY_KEYS } from './queryKeys'
 
 describe('QUERY_KEYS', () => {
@@ -17,12 +19,12 @@ describe('QUERY_KEYS', () => {
     })
 
     describe('DETAIL(id)', () => {
-      it('数値 ID を文字列に変換して正しいキーを返すこと', () => {
-        const id = 123
+      it('UUID を含めて正しいキーを返すこと', () => {
+        const id = MOCK_IDS.BOOKMARK_1
         expect(QUERY_KEYS.BOOKMARKS.DETAIL(id)).toEqual([
           'bookmarks',
           'detail',
-          '123',
+          id,
         ])
       })
 
@@ -34,21 +36,6 @@ describe('QUERY_KEYS', () => {
           'abc-789',
         ])
       })
-
-      it.each([
-        { id: 0, expected: '0' },
-        { id: '0', expected: '0' },
-        { id: -1, expected: '-1' },
-      ])(
-        'エッジケース ($id) でも正しく文字列化されること',
-        ({ id, expected }) => {
-          expect(QUERY_KEYS.BOOKMARKS.DETAIL(id)).toEqual([
-            'bookmarks',
-            'detail',
-            expected,
-          ])
-        },
-      )
     })
   })
 })

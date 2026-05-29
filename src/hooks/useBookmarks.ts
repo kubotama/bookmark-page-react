@@ -1,64 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { HTTP_STATUS, LOG_MESSAGES, UI_MESSAGES } from '@shared/constants'
+import { LOG_MESSAGES } from '@shared/constants'
 import type {
   BookmarkId,
-  BookmarksResponse,
-  ReorderBookmarksRequest,
-  UpdateBookmarkRequest,
+  Bookmarks,
+  ReorderBookmarksInput,
+  UpdateBookmarkInput,
 } from '@shared/schemas/bookmark'
 import type {
   KeywordId,
-  KeywordResponse,
-  KeywordsResponse,
-  CreateKeywordRequest,
-  UpdateKeywordRequest,
+  Keywords,
+  CreateKeywordInput,
+  UpdateKeywordInput,
 } from '@shared/schemas/keyword'
 
 import { useApi } from '../contexts/ApiContext'
+import { BookmarkApiError } from '../lib/api-client'
 import { QUERY_KEYS } from '../lib/queryKeys'
-
-/**
- * API エラー情報を保持するカスタムエラークラス
- */
-export class BookmarkApiError extends Error {
-  code: string
-
-  constructor(message: string, code: string) {
-    super(message)
-    this.code = code
-    this.name = 'BookmarkApiError'
-  }
-}
-
-/**
- * レスポンスをパースし、エラーがある場合は適切なエラーオブジェクトを投げる
- */
-const parseResponse = async <T>(
-  res: Response,
-  defaultMessage: string,
-): Promise<T> => {
-  try {
-    const result = await res.json()
-    if (res.ok && 'success' in result && result.success) {
-      return result.data as T
-    }
-
-    if (result.success === false && result.error) {
-      throw new BookmarkApiError(
-        result.error.message || defaultMessage,
-        result.error.code,
-      )
-    }
-  } catch (err) {
-    if (err instanceof BookmarkApiError) throw err
-
-    // パース失敗時などのデバッグ情報をログ出力
-    console.error(LOG_MESSAGES.API_RESPONSE_PARSE_FAILED(res.status), err)
-  }
-
-  throw new Error(defaultMessage)
-}
 
 export const useBookmarks = () => {
   const { client } = useApi()
@@ -66,11 +24,7 @@ export const useBookmarks = () => {
   return useQuery({
     queryKey: QUERY_KEYS.BOOKMARKS.LIST(),
     queryFn: async () => {
-      const res = await client.api.bookmarks.$get()
-      return await parseResponse<BookmarksResponse>(
-        res,
-        UI_MESSAGES.FETCH_BOOKMARKS_FAILED,
-      )
+      return await client.readBookmarks()
     },
   })
 }
@@ -81,11 +35,7 @@ export const useKeywords = () => {
   return useQuery({
     queryKey: QUERY_KEYS.KEYWORDS.LIST(),
     queryFn: async () => {
-      const res = await client.api.keywords.$get()
-      return await parseResponse<KeywordsResponse>(
-        res,
-        UI_MESSAGES.FETCH_KEYWORDS_FAILED,
-      )
+      return await client.readKeywords()
     },
   })
 }
@@ -100,17 +50,9 @@ export const useUpdateBookmark = () => {
       updates,
     }: {
       id: BookmarkId
-      updates: UpdateBookmarkRequest
+      updates: UpdateBookmarkInput
     }) => {
-      const res = await client.api.bookmarks[':id'].$patch({
-        param: { id },
-        json: updates,
-      })
-
-      return await parseResponse<import('@shared/schemas/bookmark').Bookmark>(
-        res,
-        UI_MESSAGES.UPDATE_FAILED,
-      )
+      return await client.updateBookmark(id, updates)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
@@ -124,15 +66,7 @@ export const useDeleteBookmark = () => {
 
   return useMutation({
     mutationFn: async (id: BookmarkId) => {
-      const res = await client.api.bookmarks[':id'].$delete({
-        param: { id },
-      })
-
-      if (res.status === HTTP_STATUS.NO_CONTENT) {
-        return
-      }
-
-      return await parseResponse<void>(res, UI_MESSAGES.DELETE_FAILED)
+      return await client.deleteBookmark(id)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
@@ -145,19 +79,15 @@ export const useReorderBookmarks = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (req: ReorderBookmarksRequest) => {
-      const res = await client.api.bookmarks.reorder.$put({
-        json: req,
-      })
-
-      return await parseResponse<void>(res, UI_MESSAGES.REORDER_FAILED)
+    mutationFn: async (req: ReorderBookmarksInput) => {
+      return await client.reorderBookmarks(req.ids)
     },
     onMutate: async (variables) => {
       // 1. 進行中のクエリを確実にキャンセル（競合防止）
       await queryClient.cancelQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
 
       // 2. 現在の状態を保存
-      const previousData = queryClient.getQueryData<BookmarksResponse>(
+      const previousData = queryClient.getQueryData<Bookmarks>(
         QUERY_KEYS.BOOKMARKS.LIST(),
       )
 
@@ -170,13 +100,10 @@ export const useReorderBookmarks = () => {
           .map((id) => bookmarkMap.get(id))
           .filter((b): b is import('@shared/schemas/bookmark').Bookmark => !!b)
 
-        queryClient.setQueryData<BookmarksResponse>(
-          QUERY_KEYS.BOOKMARKS.LIST(),
-          {
-            ...previousData,
-            bookmarks: newBookmarks,
-          },
-        )
+        queryClient.setQueryData<Bookmarks>(QUERY_KEYS.BOOKMARKS.LIST(), {
+          ...previousData,
+          bookmarks: newBookmarks,
+        })
       }
 
       return { previousData }
@@ -207,15 +134,8 @@ export const useCreateKeyword = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (req: CreateKeywordRequest) => {
-      const res = await client.api.keywords.$post({
-        json: req,
-      })
-
-      return await parseResponse<KeywordResponse>(
-        res,
-        UI_MESSAGES.CREATE_KEYWORD_FAILED,
-      )
+    mutationFn: async (req: CreateKeywordInput) => {
+      return await client.createKeyword(req)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.KEYWORDS.LIST() })
@@ -233,22 +153,14 @@ export const useUpdateKeyword = () => {
       updates,
     }: {
       id: KeywordId
-      updates: UpdateKeywordRequest
+      updates: UpdateKeywordInput
     }) => {
-      const res = await client.api.keywords[':id'].$patch({
-        param: { id },
-        json: updates,
-      })
-
-      return await parseResponse<KeywordResponse>(
-        res,
-        UI_MESSAGES.UPDATE_FAILED,
-      )
+      return await client.updateKeyword(id, updates)
     },
     onSuccess: (data) => {
       // キャッシュを直接更新して即座に UI に反映させる
       const updatedKeyword = data.keyword
-      queryClient.setQueryData<KeywordsResponse>(
+      queryClient.setQueryData<Keywords>(
         QUERY_KEYS.KEYWORDS.LIST(),
         (oldData) => {
           if (!oldData) return oldData
@@ -275,22 +187,12 @@ export const useDeleteKeyword = () => {
 
   return useMutation({
     mutationFn: async (id: KeywordId) => {
-      const res = await client.api.keywords[':id'].$delete({
-        param: { id },
-      })
-
-      if (res.status === HTTP_STATUS.NO_CONTENT) {
-        return id
-      }
-
-      return await parseResponse<KeywordId>(
-        res,
-        UI_MESSAGES.KEYWORD_DELETE_FAILED,
-      )
+      await client.deleteKeyword(id)
+      return id
     },
     onSuccess: (deletedId) => {
       // キャッシュから削除対象を取り除く
-      queryClient.setQueryData<KeywordsResponse>(
+      queryClient.setQueryData<Keywords>(
         QUERY_KEYS.KEYWORDS.LIST(),
         (oldData) => {
           if (!oldData) return oldData
@@ -321,12 +223,7 @@ export const useAttachKeyword = () => {
       bookmarkId: BookmarkId
       keywordId: KeywordId
     }) => {
-      const res = await client.api.bookmarks[':id'].keywords.$post({
-        param: { id: bookmarkId },
-        json: { keywordId },
-      })
-
-      return await parseResponse<void>(res, UI_MESSAGES.ATTACH_KEYWORD_FAILED)
+      return await client.attachKeyword(bookmarkId, keywordId)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })
@@ -346,17 +243,7 @@ export const useDetachKeyword = () => {
       bookmarkId: BookmarkId
       keywordId: KeywordId
     }) => {
-      const res = await client.api.bookmarks[':id'].keywords[
-        ':keywordId'
-      ].$delete({
-        param: { id: bookmarkId, keywordId },
-      })
-
-      if (res.status === HTTP_STATUS.NO_CONTENT) {
-        return
-      }
-
-      return await parseResponse<void>(res, UI_MESSAGES.DETACH_KEYWORD_FAILED)
+      return await client.detachKeyword(bookmarkId, keywordId)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BOOKMARKS.LIST() })

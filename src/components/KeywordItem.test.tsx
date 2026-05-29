@@ -2,7 +2,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ARIA_ROLES, KEY_VALUES } from '@shared/constants'
-import type { Keyword, KeywordId } from '@shared/schemas/keyword'
+import type { Keyword } from '@shared/schemas/keyword'
+import { MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import { KeywordItem } from './KeywordItem'
 import { render, screen } from '../test/utils'
@@ -10,10 +11,7 @@ import { render, screen } from '../test/utils'
 import type { DraggableAttributes } from '@dnd-kit/core'
 
 describe('KeywordItem', () => {
-  const mockKeyword: Keyword = {
-    id: '1' as KeywordId,
-    name: 'TestKeyword',
-  }
+  const mockKeyword: Keyword = MOCK_KEYWORDS[0]
   const defaultProps = {
     keyword: mockKeyword,
     isSelected: false,

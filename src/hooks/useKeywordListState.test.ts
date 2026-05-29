@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { KeywordIdSchema } from '@shared/schemas/keyword'
+import { MOCK_IDS } from '@shared/test/fixtures'
 
 import { useKeywordListState } from './useKeywordListState'
 import { renderHook, act } from '../test/utils'
@@ -60,33 +61,33 @@ describe('useKeywordListState', () => {
   })
 
   it('URL に keywords パラメータがある場合、初期化時に復元されること', () => {
-    vi.stubGlobal('location', { search: '?keywords=1,2' })
+    vi.stubGlobal('location', { search: `?keywords=${MOCK_IDS.KEYWORD_1},${MOCK_IDS.KEYWORD_2}` })
     const { result } = renderHook(() => useKeywordListState())
 
     expect(result.current.selectedKeywordIds).toEqual([
-      KeywordIdSchema.parse('1'),
-      KeywordIdSchema.parse('2'),
+      KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1),
+      KeywordIdSchema.parse(MOCK_IDS.KEYWORD_2),
     ])
   })
 
   it('不正な形式の ID が URL に含まれている場合、無視して正常なものだけ復元されること', () => {
-    vi.stubGlobal('location', { search: '?keywords=1,, ,invalid!' })
+    vi.stubGlobal('location', { search: `?keywords=${MOCK_IDS.KEYWORD_1},, ,invalid!` })
     const { result } = renderHook(() => useKeywordListState())
 
     expect(result.current.selectedKeywordIds).toEqual([
-      KeywordIdSchema.parse('1'),
+      KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1),
     ])
   })
 
   it('クリックでキーワードが選択され、再度クリックで解除されること', async () => {
     const { result } = renderHook(() => useKeywordListState())
-    const keywordId = KeywordIdSchema.parse('1')
+    const keywordId = KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1)
 
     await act(async () => {
       result.current.toggleKeywordSelection(keywordId)
     })
     expect(result.current.selectedKeywordIds).toContain(keywordId)
-    expect(capturedParams.get('keywords')).toBe('1')
+    expect(capturedParams.get('keywords')).toBe(MOCK_IDS.KEYWORD_1)
 
     await act(async () => {
       result.current.toggleKeywordSelection(keywordId)
@@ -97,8 +98,8 @@ describe('useKeywordListState', () => {
 
   it('複数のキーワードを選択した際、カンマ区切りで URL パラメータに反映されること', async () => {
     const { result } = renderHook(() => useKeywordListState())
-    const id1 = KeywordIdSchema.parse('1')
-    const id2 = KeywordIdSchema.parse('2')
+    const id1 = KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1)
+    const id2 = KeywordIdSchema.parse(MOCK_IDS.KEYWORD_2)
 
     await act(async () => {
       result.current.toggleKeywordSelection(id1)
@@ -108,12 +109,12 @@ describe('useKeywordListState', () => {
     })
 
     expect(result.current.selectedKeywordIds).toEqual([id1, id2])
-    expect(capturedParams.get('keywords')).toBe('1,2')
+    expect(capturedParams.get('keywords')).toBe(`${MOCK_IDS.KEYWORD_1},${MOCK_IDS.KEYWORD_2}`)
   })
 
   it('clearKeywordSelection で全ての選択が解除され、URL からも削除されること', async () => {
     const { result } = renderHook(() => useKeywordListState())
-    const id1 = KeywordIdSchema.parse('1')
+    const id1 = KeywordIdSchema.parse(MOCK_IDS.KEYWORD_1)
 
     await act(async () => {
       result.current.toggleKeywordSelection(id1)

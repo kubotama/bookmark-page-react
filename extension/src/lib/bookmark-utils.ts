@@ -1,4 +1,4 @@
-import { BOOKMARK_STATUS } from '@shared/constants'
+import { BOOKMARK_STATUS, type BookmarkStatus } from '@shared/constants'
 import type { Bookmark } from '@shared/schemas/bookmark'
 
 /**
@@ -21,12 +21,12 @@ export const findBookmarkByUrl = (
 export const determineBookmarkStatus = (
   bookmark: Bookmark | undefined,
   currentTitle: string | undefined,
-): keyof typeof BOOKMARK_STATUS => {
+): BookmarkStatus => {
   if (!bookmark) {
-    return 'NONE'
+    return BOOKMARK_STATUS.NONE
   }
   if (bookmark.title === currentTitle) {
-    return 'REGISTERED'
+    return BOOKMARK_STATUS.REGISTERED
   }
-  return 'MODIFIED'
+  return BOOKMARK_STATUS.MODIFIED
 }

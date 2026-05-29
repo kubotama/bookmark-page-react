@@ -63,7 +63,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
     handleDelete,
     handleOpen,
     handleBack,
-    handleAddKeyword,
+    handleCreateKeyword,
     handleKeywordKeyDown,
     handleDragStart,
     handleDragEnd,
@@ -143,13 +143,13 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
           </div>
         </div>
 
-        {/* 2. キーワード追加ブロック */}
+        {/* 2. キーワード作成ブロック */}
         <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg shadow-sm">
           <div className="flex gap-2 items-end">
             <div className="flex-1">
               <InputField
                 id={ELEMENT_IDS.KEYWORD_INPUT}
-                label={FIELD_LABELS.ADD_KEYWORD_LABEL}
+                label={FIELD_LABELS.CREATE_KEYWORD_LABEL}
                 width="w-28"
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
@@ -159,7 +159,7 @@ export function BookmarkPage({ onBack }: BookmarkPageProps) {
             </div>
             <div className="pb-1">
               <Button
-                onClick={handleAddKeyword}
+                onClick={handleCreateKeyword}
                 disabled={!keywordInput.trim() || isKeywordProcessing}
                 variant="secondary"
               >
