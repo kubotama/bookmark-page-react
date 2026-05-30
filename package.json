@@ -28,7 +28,10 @@
     "extension:dev": "npm run version-sync && vite --config extension/vite.config.ts",
     "extension:build": "npm run version-sync && tsc -p extension/tsconfig.json && vite build --config extension/vite.config.ts",
     "type-check:extension": "tsc -p extension/tsconfig.json --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply bookmark-page-db --local",
+    "db:studio": "npx drizzle-kit studio"
   },
   "lint-staged": {
     "**/*.{ts,tsx}": [
