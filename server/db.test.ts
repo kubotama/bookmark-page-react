@@ -1,4 +1,7 @@
+// @vitest-environment node
+
 import { eq } from 'drizzle-orm'
+import { uuidv7 } from 'uuidv7'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
@@ -155,6 +158,7 @@ describe('db.ts', () => {
       const [b] = await db
         .insert(bookmarks)
         .values({
+          id: uuidv7(),
           title: 'C',
           url: VALID_URLS.HTTP,
         })
@@ -162,15 +166,17 @@ describe('db.ts', () => {
       const [k] = await db
         .insert(keywords)
         .values({
-          keywordName: 'K',
+          id: uuidv7(),
+          name: 'K',
         })
         .returning()
       await db.insert(bookmarkKeywords).values({
-        bookmarkId: b.bookmarkId,
-        keywordId: k.keywordId,
+        id: uuidv7(),
+        bookmarkId: b.id,
+        keywordId: k.id,
       })
 
-      await db.delete(bookmarks).where(eq(bookmarks.bookmarkId, b.bookmarkId))
+      await db.delete(bookmarks).where(eq(bookmarks.id, b.id))
 
       const count = z
         .object({ c: z.number() })

@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { and, eq, sql, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { uuidv7 } from 'uuidv7'
 import { z } from 'zod'
 
 import { ERROR_MESSAGES, LOG_MESSAGES, HTTP_STATUS } from '@shared/constants'
@@ -27,14 +28,14 @@ import { isUniqueConstraintError, API_ERROR_CODES } from '../utils/error'
  * データベースのクエリ結果（キーワード包含）の型定義
  */
 interface BookmarkQueryResult {
-  bookmarkId: number
+  id: string
   title: string
   url: string
   sortOrder: number
   bookmarkKeywords?: {
     keyword: {
-      keywordId: number
-      keywordName: string
+      id: string
+      name: string
     }
   }[]
 }
@@ -43,14 +44,14 @@ interface BookmarkQueryResult {
  * DB のクエリ結果から API レスポンス形式 (DTO) へ変換するヘルパー
  */
 const toBookmarkDto = (row: BookmarkQueryResult): Bookmark => ({
-  id: BookmarkIdSchema.parse(String(row.bookmarkId)),
+  id: BookmarkIdSchema.parse(row.id),
   title: row.title,
   url: row.url,
   sortOrder: row.sortOrder,
   keywords:
     row.bookmarkKeywords?.map((bk) => ({
-      id: KeywordIdSchema.parse(String(bk.keyword.keywordId)),
-      name: bk.keyword.keywordName,
+      id: KeywordIdSchema.parse(bk.keyword.id),
+      name: bk.keyword.name,
     })) ?? [],
 })
 
@@ -86,9 +87,9 @@ const bookmarksRoute = new Hono()
     try {
       const [row] = await db
         .insert(bookmarksTable)
-        .values({ title, url })
+        .values({ id: uuidv7(), title, url })
         .returning({
-          bookmarkId: bookmarksTable.bookmarkId,
+          id: bookmarksTable.id,
           title: bookmarksTable.title,
           url: bookmarksTable.url,
           sortOrder: bookmarksTable.sortOrder,
@@ -126,12 +127,12 @@ const bookmarksRoute = new Hono()
     zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
     async (c) => {
       const { id } = c.req.valid('param')
-      const bookmarkId = parseInt(id, 10)
+      // const bookmarkId = parseInt(id, 10)
 
       try {
         const result = await db
           .delete(bookmarksTable)
-          .where(eq(bookmarksTable.bookmarkId, bookmarkId))
+          .where(eq(bookmarksTable.id, id))
           .returning()
 
         if (result.length === 0) {
@@ -160,14 +161,14 @@ const bookmarksRoute = new Hono()
     zValidator('json', updateBookmarkInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
-      const bookmarkId = parseInt(id, 10)
+      // const bookmarkId = parseInt(id, 10)
       const updates = c.req.valid('json')
 
       try {
         const [row] = await db
           .update(bookmarksTable)
           .set(updates)
-          .where(eq(bookmarksTable.bookmarkId, bookmarkId))
+          .where(eq(bookmarksTable.id, id))
           .returning()
 
         if (!row) {
@@ -185,7 +186,7 @@ const bookmarksRoute = new Hono()
 
         // 最新のキーワード情報を含めて再取得
         const updatedRow = await db.query.bookmarks.findFirst({
-          where: eq(bookmarksTable.bookmarkId, bookmarkId),
+          where: eq(bookmarksTable.id, id),
           with: {
             bookmarkKeywords: {
               with: {
@@ -231,12 +232,11 @@ const bookmarksRoute = new Hono()
       }
 
       try {
-        const numericIds = ids.map((id) => parseInt(id, 10))
+        // const numericIds = ids.map((id) => parseInt(id, 10))
 
         // CASE WHEN 構文を組み立てて一括更新
-        const cases = numericIds.map(
-          (id, index) =>
-            sql`WHEN ${bookmarksTable.bookmarkId} = ${id} THEN ${index}`,
+        const cases = ids.map(
+          (id, index) => sql`WHEN ${bookmarksTable.id} = ${id} THEN ${index}`,
         )
 
         await db
@@ -244,7 +244,7 @@ const bookmarksRoute = new Hono()
           .set({
             sortOrder: sql`CASE ${sql.join(cases, sql` `)} END`,
           })
-          .where(inArray(bookmarksTable.bookmarkId, numericIds))
+          .where(inArray(bookmarksTable.id, ids))
 
         return c.json({
           success: true,
@@ -261,23 +261,21 @@ const bookmarksRoute = new Hono()
     zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
     zValidator('json', attachKeywordInputSchema),
     async (c) => {
-      const { id } = c.req.valid('param')
+      const { id: bookmarkId } = c.req.valid('param')
       const { keywordId } = c.req.valid('json')
-      const bookmarkIdNum = parseInt(id, 10)
-      const keywordIdNum = parseInt(keywordId, 10)
 
       try {
         // 1. ブックマークとキーワードの存在を並行して確認
         const [bookmark, keyword] = await Promise.all([
           db
-            .select({ id: bookmarksTable.bookmarkId })
+            .select({ id: bookmarksTable.id })
             .from(bookmarksTable)
-            .where(eq(bookmarksTable.bookmarkId, bookmarkIdNum))
+            .where(eq(bookmarksTable.id, bookmarkId))
             .get(),
           db
-            .select({ id: keywordsTable.keywordId })
+            .select({ id: keywordsTable.id })
             .from(keywordsTable)
-            .where(eq(keywordsTable.keywordId, keywordIdNum))
+            .where(eq(keywordsTable.id, keywordId))
             .get(),
         ])
 
@@ -309,8 +307,9 @@ const bookmarksRoute = new Hono()
 
         // 2. 紐付け (中間テーブルへの挿入)
         await db.insert(bookmarkKeywordsTable).values({
-          bookmarkId: bookmarkIdNum,
-          keywordId: keywordIdNum,
+          id: uuidv7(),
+          bookmarkId: bookmarkId,
+          keywordId: keywordId,
         })
 
         return c.json({ success: true, data: null }, HTTP_STATUS.CREATED)
@@ -342,17 +341,15 @@ const bookmarksRoute = new Hono()
       }),
     ),
     async (c) => {
-      const { id, keywordId } = c.req.valid('param')
-      const bookmarkIdNum = parseInt(id, 10)
-      const keywordIdNum = parseInt(keywordId, 10)
+      const { id: bookmarkId, keywordId } = c.req.valid('param')
 
       try {
         const result = await db
           .delete(bookmarkKeywordsTable)
           .where(
             and(
-              eq(bookmarkKeywordsTable.bookmarkId, bookmarkIdNum),
-              eq(bookmarkKeywordsTable.keywordId, keywordIdNum),
+              eq(bookmarkKeywordsTable.bookmarkId, bookmarkId),
+              eq(bookmarkKeywordsTable.keywordId, keywordId),
             ),
           )
           .returning()

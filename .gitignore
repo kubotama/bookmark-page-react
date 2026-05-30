@@ -39,3 +39,6 @@ coverage/
 .gemini/
 gha-creds-*.json
 dist-extension/
+
+# Database migrations backup
+server/db/migrations_backup/

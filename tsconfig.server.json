@@ -7,7 +7,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "types": ["node"],
+    "types": ["node", "chrome"],
     "strict": true,
     "skipLibCheck": true
   },

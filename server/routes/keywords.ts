@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { count, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { uuidv7 } from 'uuidv7'
 import { z } from 'zod'
 
 import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
@@ -23,17 +24,17 @@ const keywordsRoute = new Hono()
       // LEFT JOIN を使用して、ブックマークが 0 件のキーワードも取得する
       const rows = await db
         .select({
-          id: keywordsTable.keywordId,
-          name: keywordsTable.keywordName,
+          id: keywordsTable.id,
+          name: keywordsTable.name,
           bookmarkCount: count(bookmarkKeywords.bookmarkId),
         })
         .from(keywordsTable)
         .leftJoin(
           bookmarkKeywords,
-          eq(keywordsTable.keywordId, bookmarkKeywords.keywordId),
+          eq(keywordsTable.id, bookmarkKeywords.keywordId),
         )
-        .groupBy(keywordsTable.keywordId, keywordsTable.keywordName)
-        .orderBy(keywordsTable.keywordName)
+        .groupBy(keywordsTable.id, keywordsTable.name)
+        .orderBy(keywordsTable.name)
 
       const keywords = rows.map((row) => ({
         id: KeywordIdSchema.parse(String(row.id)),
@@ -59,7 +60,7 @@ const keywordsRoute = new Hono()
       const existing = await db
         .select()
         .from(keywordsTable)
-        .where(eq(keywordsTable.keywordName, name))
+        .where(eq(keywordsTable.name, name))
         .get()
 
       if (existing) {
@@ -78,7 +79,7 @@ const keywordsRoute = new Hono()
       // 新規作成
       const result = await db
         .insert(keywordsTable)
-        .values({ keywordName: name })
+        .values({ id: uuidv7(), name })
         .returning()
         .get()
 
@@ -87,8 +88,8 @@ const keywordsRoute = new Hono()
       }
 
       const keyword = {
-        id: KeywordIdSchema.parse(String(result.keywordId)),
-        name: result.keywordName,
+        id: KeywordIdSchema.parse(String(result.id)),
+        name: result.name,
       }
 
       return c.json(
@@ -116,7 +117,7 @@ const keywordsRoute = new Hono()
         const existing = await db
           .select()
           .from(keywordsTable)
-          .where(eq(keywordsTable.keywordId, Number(id as string)))
+          .where(eq(keywordsTable.id, id))
           .get()
 
         if (!existing) {
@@ -136,10 +137,10 @@ const keywordsRoute = new Hono()
         const duplicate = await db
           .select()
           .from(keywordsTable)
-          .where(eq(keywordsTable.keywordName, name))
+          .where(eq(keywordsTable.name, name))
           .get()
 
-        if (duplicate && duplicate.keywordId !== Number(id as string)) {
+        if (duplicate && duplicate.id !== id) {
           return c.json(
             {
               success: false,
@@ -155,8 +156,8 @@ const keywordsRoute = new Hono()
         // 更新
         const result = await db
           .update(keywordsTable)
-          .set({ keywordName: name })
-          .where(eq(keywordsTable.keywordId, Number(id as string)))
+          .set({ name })
+          .where(eq(keywordsTable.id, id))
           .returning()
           .get()
 
@@ -165,8 +166,8 @@ const keywordsRoute = new Hono()
         }
 
         const keyword = {
-          id: KeywordIdSchema.parse(String(result.keywordId)),
-          name: result.keywordName,
+          id: KeywordIdSchema.parse(id),
+          name: result.name,
         }
 
         return c.json({
@@ -189,7 +190,7 @@ const keywordsRoute = new Hono()
         // 削除実行と結果の取得を同時に行う
         const result = await db
           .delete(keywordsTable)
-          .where(eq(keywordsTable.keywordId, Number(id as string)))
+          .where(eq(keywordsTable.id, id))
           .returning()
           .get()
 

@@ -1,0 +1,10 @@
+name = "bookmark-page-api"
+main = "server/index.ts"
+compatibility_date = "2024-05-30"
+
+# D1 データベースのバインディング
+[[d1_databases]]
+binding = "DB" # コード内で参照する名前
+database_name = "bookmark-page-db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # ※ 実際の ID は作成後に付与
+migrations_dir = "server/db/migrations"
