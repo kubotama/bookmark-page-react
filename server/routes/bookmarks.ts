@@ -16,13 +16,17 @@ import {
 } from '@shared/schemas/bookmark'
 import { attachKeywordInputSchema } from '@shared/schemas/keyword'
 
-import { db } from '../db'
+import { getDb } from '../db'
 import {
   bookmarks as bookmarksTable,
   bookmarkKeywords as bookmarkKeywordsTable,
   keywords as keywordsTable,
 } from '../db/schema'
 import { isUniqueConstraintError, API_ERROR_CODES } from '../utils/error'
+
+type Bindings = {
+  DB: D1Database
+}
 
 /**
  * データベースのクエリ結果（キーワード包含）の型定義
@@ -55,9 +59,10 @@ const toBookmarkDto = (row: BookmarkQueryResult): Bookmark => ({
     })) ?? [],
 })
 
-const bookmarksRoute = new Hono()
+const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
   .get('/', async (c) => {
     try {
+      const db = getDb(c.env.DB)
       const rows = await db.query.bookmarks.findMany({
         with: {
           bookmarkKeywords: {
@@ -85,6 +90,7 @@ const bookmarksRoute = new Hono()
     const { title, url } = c.req.valid('json')
 
     try {
+      const db = getDb(c.env.DB)
       const [row] = await db
         .insert(bookmarksTable)
         .values({ id: uuidv7(), title, url })
@@ -130,6 +136,7 @@ const bookmarksRoute = new Hono()
       // const bookmarkId = parseInt(id, 10)
 
       try {
+        const db = getDb(c.env.DB)
         const result = await db
           .delete(bookmarksTable)
           .where(eq(bookmarksTable.id, id))
@@ -165,6 +172,7 @@ const bookmarksRoute = new Hono()
       const updates = c.req.valid('json')
 
       try {
+        const db = getDb(c.env.DB)
         const [row] = await db
           .update(bookmarksTable)
           .set(updates)
@@ -239,6 +247,7 @@ const bookmarksRoute = new Hono()
           (id, index) => sql`WHEN ${bookmarksTable.id} = ${id} THEN ${index}`,
         )
 
+        const db = getDb(c.env.DB)
         await db
           .update(bookmarksTable)
           .set({
@@ -265,6 +274,7 @@ const bookmarksRoute = new Hono()
       const { keywordId } = c.req.valid('json')
 
       try {
+        const db = getDb(c.env.DB)
         // 1. ブックマークとキーワードの存在を並行して確認
         const [bookmark, keyword] = await Promise.all([
           db
@@ -344,6 +354,7 @@ const bookmarksRoute = new Hono()
       const { id: bookmarkId, keywordId } = c.req.valid('param')
 
       try {
+        const db = getDb(c.env.DB)
         const result = await db
           .delete(bookmarkKeywordsTable)
           .where(
