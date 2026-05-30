@@ -30,7 +30,14 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts', './extension/test/setup.ts'],
-      exclude: ['node_modules', 'dist', 'dist-extension', '.git', '.cache'],
+      exclude: [
+        'node_modules',
+        'dist',
+        'dist-extension',
+        '.git',
+        '.cache',
+        'server/**',
+      ],
       coverage: {
         provider: 'v8',
         clean: true,
