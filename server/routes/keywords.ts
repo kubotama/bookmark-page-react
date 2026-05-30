@@ -156,7 +156,7 @@ const keywordsRoute = new Hono()
         // 更新
         const result = await db
           .update(keywordsTable)
-          .set({ id: uuidv7(), name })
+          .set({ name })
           .where(eq(keywordsTable.id, id))
           .returning()
           .get()
