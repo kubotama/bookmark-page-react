@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import './App.css'
 import { FIELD_LABELS, APP_PATHS } from '@shared/constants'
 
+import { SettingsPanel } from './components/SettingsPanel'
 import { useApp } from './hooks/useApp'
 import { BookmarkPage } from './pages/BookmarkPage'
 import { HomePage } from './pages/HomePage'
@@ -10,12 +11,30 @@ import { KeywordPage } from './pages/KeywordPage'
 
 function App() {
   const appState = useApp()
-  const { toggleSettings } = appState
+  const {
+    showSettings,
+    toggleSettings,
+    closeSettings,
+    connectionStatus,
+    currentApiUrl,
+    saveSettings,
+    testConnection,
+  } = appState
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden">
       {/* ヘッダー / 設定ボタン */}
       <header className="p-2 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+        {showSettings && (
+          <SettingsPanel
+            onClose={closeSettings}
+            onSave={saveSettings}
+            onTest={testConnection}
+            currentApiUrl={currentApiUrl}
+            connectionStatus={connectionStatus}
+          />
+        )}
+
         <div className="font-bold text-gray-700 mx-auto">Bookmark Page</div>
         <button
           onClick={toggleSettings}
