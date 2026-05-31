@@ -7,7 +7,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "types": ["node", "chrome"],
+    "types": ["node", "chrome", "@cloudflare/workers-types"],
     "strict": true,
     "skipLibCheck": true
   },

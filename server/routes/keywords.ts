@@ -13,15 +13,20 @@ import {
   updateKeywordInputSchema,
 } from '@shared/schemas/keyword'
 
-import { db } from '../db'
+import { getDb } from '../db'
 import { bookmarkKeywords, keywords as keywordsTable } from '../db/schema'
 import { API_ERROR_CODES } from '../utils/error'
 
-const keywordsRoute = new Hono()
+type Bindings = {
+  DB: D1Database
+}
+
+const keywordsRoute = new Hono<{ Bindings: Bindings }>()
   .get('/', async (c) => {
     try {
       // 全キーワードを取得し、各キーワードに紐付くブックマーク数をカウントする
       // LEFT JOIN を使用して、ブックマークが 0 件のキーワードも取得する
+      const db = getDb(c.env.DB)
       const rows = await db
         .select({
           id: keywordsTable.id,
@@ -57,6 +62,7 @@ const keywordsRoute = new Hono()
 
     try {
       // 重複チェック
+      const db = getDb(c.env.DB)
       const existing = await db
         .select()
         .from(keywordsTable)
@@ -114,6 +120,7 @@ const keywordsRoute = new Hono()
 
       try {
         // 存在確認
+        const db = getDb(c.env.DB)
         const existing = await db
           .select()
           .from(keywordsTable)
@@ -188,6 +195,7 @@ const keywordsRoute = new Hono()
 
       try {
         // 削除実行と結果の取得を同時に行う
+        const db = getDb(c.env.DB)
         const result = await db
           .delete(keywordsTable)
           .where(eq(keywordsTable.id, id))

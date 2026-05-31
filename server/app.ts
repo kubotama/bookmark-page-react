@@ -8,15 +8,21 @@ import keywordsRoute from './routes/keywords'
 import { API_ERROR_CODES } from './utils/error'
 
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-const app = new Hono()
 
-// フロントエンド(Vite:5173)および Chrome 拡張機能からのアクセスを許可
+type Bindings = {
+  BOOKMARK_PAGE_FRONTEND_URL?: string
+  DB: D1Database // wrangler.toml で設定した D1 バインディング
+}
+
+const app = new Hono<{ Bindings: Bindings }>()
+
 app.use(
   '/*',
   cors({
-    origin: (origin) => {
+    origin: (origin, c) => {
+      // c を引数に追加
       const allowedOrigin =
-        process.env.BOOKMARK_PAGE_FRONTEND_URL || 'http://localhost:5173'
+        c.env.BOOKMARK_PAGE_FRONTEND_URL || 'http://localhost:5173' // c.env を参照
       if (
         origin === allowedOrigin ||
         origin.startsWith('chrome-extension://')
