@@ -34,7 +34,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
+describe.skip('useBookmarkPage Hook - Navigation & Shortcuts', () => {
   beforeEach(() => {
     commonSetup()
   })

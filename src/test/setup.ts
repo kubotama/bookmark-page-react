@@ -1,15 +1,15 @@
 import '@testing-library/jest-dom'
-import { setupServer } from 'msw/node'
 import { beforeAll, afterEach, afterAll, vi } from 'vitest'
 
 import { createChromeMock } from '@shared/test/fixtures'
 
-export const server = setupServer()
+import { clearMswHistory, server } from './server'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
   vi.restoreAllMocks()
+  clearMswHistory()
 })
 afterAll(() => server.close())
 

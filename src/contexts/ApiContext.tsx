@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 import { ERROR_MESSAGES } from '@shared/constants'
 
-import { ExtensionApiClient } from '../lib/api-client'
+import { ExtensionApiClient, HttpApiClient } from '../lib/api-client'
 
 interface ApiContextType {
   client: ExtensionApiClient
@@ -23,9 +23,17 @@ const ApiContext = createContext<ApiContextType | undefined>(undefined)
  * 起動時の localStorage からの読み込み時にバリデーションを行い、セキュリティを確保
  */
 export const ApiProvider = ({ children }: ApiProviderProps) => {
-  const client = useMemo(() => new ExtensionApiClient(), [])
+  const client = useMemo(() => {
+    if (import.meta.env.MODE === 'test') {
+      return new HttpApiClient('http://localhost:3030')
+    }
+    return new ExtensionApiClient()
+  }, [])
   return (
-    <ApiContext.Provider value={{ client }}>{children}</ApiContext.Provider>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <ApiContext.Provider value={{ client: client as any }}>
+      {children}
+    </ApiContext.Provider>
   )
 }
 

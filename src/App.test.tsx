@@ -24,7 +24,7 @@ import {
 
 import App from './App'
 import { createDragEndEvent } from './test/dnd-utils'
-import { server } from './test/setup'
+import { server } from './test/server'
 import { fireEvent, render, screen, waitFor, within } from './test/utils'
 
 import type { DragEndEvent } from '@dnd-kit/core'

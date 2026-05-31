@@ -12,7 +12,7 @@ import {
 import { openUrlInNewTab } from '@shared/utils/url'
 
 import { useApp } from './useApp'
-import { server } from '../test/setup'
+import { server } from '../test/server'
 import { renderHook, waitFor, act } from '../test/utils'
 
 // openUrlInNewTab をモック化
@@ -24,7 +24,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe.skip('useApp Hook (Integration)', () => {
+describe('useApp Hook (Integration)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -83,7 +83,6 @@ describe.skip('useApp Hook (Integration)', () => {
 
     // useSettings 由来
     expect(result.current.showSettings).toBe(false)
-    // expect(result.current.currentApiUrl).toBe(VALID_URLS.HTTP)
 
     // useBookmarkListState 由来
     expect(result.current.selectedId).toBeNull()

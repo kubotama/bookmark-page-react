@@ -1,9 +1,10 @@
 import { expect, vi, type MockInstance } from 'vitest'
 
-import { APP_PATHS } from '@shared/constants'
+import { API_ACTIONS, APP_PATHS } from '@shared/constants'
 import { ApiRequestSchema } from '@shared/schemas/api'
 import type { Keyword } from '@shared/schemas/keyword'
 
+import { mswRequestHistory } from './server'
 import { waitFor } from './utils'
 import { BookmarkApiError } from '../lib/api-client'
 
@@ -68,6 +69,38 @@ export const verifyCalledMessage = ({
   payload?: unknown
   isNotCalled?: boolean
 }) => {
+  // --- HTTP モード (MSW) の場合の検証 ---
+  if (import.meta.env.MODE === 'test') {
+    // アクション名から期待されるパスへの変換ロジック（mockMessage と合わせる）
+    const actionToPath: Record<string, string> = {
+      [API_ACTIONS.READ_BOOKMARKS]: '/api/bookmarks',
+      [API_ACTIONS.CREATE_BOOKMARK]: '/api/bookmarks',
+      [API_ACTIONS.UPDATE_BOOKMARK]: '/api/bookmarks/:id',
+      [API_ACTIONS.DELETE_BOOKMARK]: '/api/bookmarks/:id',
+      [API_ACTIONS.REORDER_BOOKMARKS]: '/api/bookmarks/reorder',
+      [API_ACTIONS.READ_KEYWORDS]: '/api/keywords',
+      [API_ACTIONS.CREATE_KEYWORD]: '/api/keywords',
+      [API_ACTIONS.UPDATE_KEYWORD]: '/api/keywords/:id',
+      [API_ACTIONS.DELETE_KEYWORD]: '/api/keywords/:id',
+      [API_ACTIONS.ATTACH_KEYWORD]: '/api/bookmarks/:id/keywords',
+      [API_ACTIONS.DETACH_KEYWORD]: '/api/bookmarks/:id/keywords/:keywordId',
+    }
+
+    const expectedPath = actionToPath[action]
+    const found = mswRequestHistory.find(
+      (req) =>
+        req.url === expectedPath &&
+        (!payload || JSON.stringify(req.body) === JSON.stringify(payload)),
+    )
+
+    if (!found) {
+      throw new Error(
+        `Expected MSW request for "${action}" not found in history.`,
+      )
+    }
+    return
+  }
+
   let param: unknown
   if (payload) {
     param = { action, payload }
@@ -143,26 +176,31 @@ export const verifyError = async ({
   let error: unknown
 
   await waitFor(() => {
+    // 1. エラー状態の取得
     if (getHookState) {
-      error = getHookState().error
-      expect(getHookState().isError).toBe(true)
+      const state = getHookState()
+      expect(state.isError).toBe(true)
+      error = state.error
     } else if (consoleSpy && logMessage) {
       const call = consoleSpy.mock.calls.find(
         (args: unknown[]) => args[0] === logMessage,
       )
       expect(call).toBeDefined()
-      error = call![1] // 2番目の引数がエラーオブジェクト
+      error = call![1]
     }
 
+    // 2. 通信（メッセージングまたは MSW）の呼び出し検証
     verifyCalledMessage({ action, payload })
 
-    if (error instanceof BookmarkApiError) {
-      expect(error.message).toBe(expected.message)
-      expect(error.code).toBe(expected.code)
-    } else {
-      expect(error).toBeInstanceOf(BookmarkApiError)
-    }
+    // 3. エラー内容の検証
+    // HTTP 通信でもメッセージングでも BookmarkApiError が投げられるように
+    // ApiClient 側で統一されていることを前提とします
+    expect(error).toBeInstanceOf(BookmarkApiError)
+    const apiError = error as BookmarkApiError
+    expect(apiError.message).toBe(expected.message)
+    expect(apiError.code).toBe(expected.code)
 
+    // 4. その他の検証
     if (navigateToPath) verifyNavigateToPath(navigateToPath)
     if (extraAssertions) extraAssertions()
   })

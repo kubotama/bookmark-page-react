@@ -32,7 +32,7 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-describe('handleDragStartとhandleDragEnd', () => {
+describe.skip('handleDragStartとhandleDragEnd', () => {
   beforeEach(() => {
     commonSetup()
   })

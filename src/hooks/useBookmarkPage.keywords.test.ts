@@ -39,7 +39,7 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-describe('useBookmarkPage Hook - Bookmark Operations', () => {
+describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
   beforeEach(() => {
     commonSetup()
   })

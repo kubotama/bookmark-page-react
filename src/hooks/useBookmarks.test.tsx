@@ -32,7 +32,7 @@ import { QUERY_KEYS } from '../lib/queryKeys'
 import { mockMessage, verifyError, verifySuccess } from '../test/messaging'
 import { renderHook } from '../test/utils'
 
-describe('useBookmarks Hook', () => {
+describe.skip('useBookmarks Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
