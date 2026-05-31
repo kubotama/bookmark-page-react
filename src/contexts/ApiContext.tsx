@@ -10,10 +10,14 @@ import {
 import { ERROR_MESSAGES } from '@shared/constants'
 import { validateApiUrl } from '@shared/utils/url'
 
-import { ExtensionApiClient, HttpApiClient } from '../lib/api-client'
+import {
+  ExtensionApiClient,
+  HttpApiClient,
+  type ApiClient,
+} from '../lib/api-client'
 
 interface ApiContextType {
-  client: ExtensionApiClient
+  client: ApiClient
   apiUrl: string
   updateApiUrl: (newUrl: string) => string | null
 }
@@ -57,10 +61,7 @@ export const ApiProvider = ({ children }: ApiProviderProps) => {
   }, [])
 
   return (
-    <ApiContext.Provider
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      value={{ client: client as any, apiUrl, updateApiUrl }}
-    >
+    <ApiContext.Provider value={{ client, apiUrl, updateApiUrl }}>
       {children}
     </ApiContext.Provider>
   )

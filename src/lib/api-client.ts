@@ -10,7 +10,8 @@ import type {
   KeywordId,
 } from '@shared/schemas/api'
 
-// import { BookmarkApiError } from '../hooks/useBookmarks'
+import type { AppType } from '../../server/app'
+
 /**
  * API エラー情報を保持するカスタムエラークラス
  */
@@ -170,12 +171,11 @@ export class ExtensionApiClient implements ApiClient {
 }
 
 export class HttpApiClient implements ApiClient {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private hcClient: any
+  private hcClient: ReturnType<typeof hc<AppType>>
 
   constructor(baseUrl: string) {
     // Hono RPC クライアントを初期化
-    this.hcClient = hc(baseUrl)
+    this.hcClient = hc<AppType>(baseUrl)
   }
   async updateBookmark(
     id: BookmarkId,
@@ -272,8 +272,7 @@ export class HttpApiClient implements ApiClient {
    * RPC の Response を共通で処理する
    */
   private async handleResponse(res: Response) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let result: any
+    let result
     try {
       result = await res.json()
     } catch {
