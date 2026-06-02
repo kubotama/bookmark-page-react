@@ -6,13 +6,13 @@ import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 
 import { useBookmarkPage } from './useBookmarkPage'
 import {
-  mockMessage,
-  verifyCalledMessage,
-  verifyKeywordStatus,
-} from '../test/messaging'
+  mockHttpResponse,
+  verifyHttpCalled,
+  verifyHttpKeywordStatus,
+} from '../test/http-mock'
 import { renderHook, waitFor } from '../test/utils'
 
-export type MockParam = { action: string; params: unknown }
+export type MockParam = { action: string; params: Record<string, unknown> }
 export type CallMessagesParams = {
   action: string
   payload?: unknown
@@ -31,8 +31,8 @@ export const setupHook = async ({
   onBack?: () => void
   bookmark?: Bookmark
 } = {}) => {
-  if (mock) mockMessage(mock.action, mock.params)
-  else if (mocks) mocks.forEach((m) => mockMessage(m.action, m.params))
+  if (mock) mockHttpResponse(mock.action, mock.params)
+  else if (mocks) mocks.forEach((m) => mockHttpResponse(m.action, m.params))
 
   const { result } = renderHook(() => useBookmarkPage(onBack))
 
@@ -48,11 +48,11 @@ export const setupHook = async ({
 // 共通の beforeEach 処理
 export const commonSetup = () => {
   vi.clearAllMocks()
-  mockMessage(API_ACTIONS.READ_BOOKMARKS, {
+  mockHttpResponse(API_ACTIONS.READ_BOOKMARKS, {
     success: true,
     data: { bookmarks: [MOCK_BOOKMARK_1] },
   })
-  mockMessage(API_ACTIONS.READ_KEYWORDS, {
+  mockHttpResponse(API_ACTIONS.READ_KEYWORDS, {
     success: true,
     data: { keywords: MOCK_KEYWORDS },
   })
@@ -79,10 +79,12 @@ export const verifyActionFailure = async ({
 }) => {
   await waitFor(() => {
     // 1. 通信の検証
-    calledMessages.forEach((cm) => verifyCalledMessage(cm))
+    calledMessages.forEach((cm) => verifyHttpCalled(cm))
 
     // 2. キーワード状態の検証
-    verifyKeywordStatus(getHookState, { keywordInput: expectedKeywordInput })
+    verifyHttpKeywordStatus(getHookState, {
+      keywordInput: expectedKeywordInput,
+    })
 
     // 3. ログ出力の検証
     if (consoleSpy)

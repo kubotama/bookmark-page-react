@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { http, HttpResponse } from 'msw'
-import { expect, vi } from 'vitest'
+import { expect, vi, type MockInstance } from 'vitest'
 
 import { API_ACTIONS, APP_PATHS, HTTP_STATUS } from '@shared/constants'
+import type { Bookmark } from '@shared/schemas/bookmark'
 import type { Keyword } from '@shared/schemas/keyword'
 
 import { server, mswRequestHistory } from './server'
 import { waitFor } from './utils'
+import { BookmarkApiError } from '../lib/api-client'
 
 const BASE_URL = 'http://localhost:3030'
 
@@ -68,13 +70,7 @@ export const verifyNavigateToPath = ({
  * MSW を使用して HTTP API レスポンスをモックする。
  * 内部的に server.use を呼び出し、アクション名に基づいて適切なエンドポイントをインターセプトする。
  */
-type ResponseDataParams = {
-  success: boolean
-  data:
-    | { keyword: Keyword; name: string }
-    | { id: string }
-    | { keywords: Keyword[] }
-}
+type ResponseDataParams = Record<string, unknown>
 
 export const mockHttpResponse = (
   action: string,
@@ -106,7 +102,11 @@ export const mockHttpResponse = (
         })
 
         // レスポンスロジック (共通)
-        if (config.method === 'delete') {
+        if (responseData && responseData.success === false) {
+          return HttpResponse.json(responseData, {
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          })
+        } else if (config.method === 'delete') {
           return new HttpResponse(null, { status: HTTP_STATUS.NO_CONTENT })
         }
         return HttpResponse.json(responseData)
@@ -164,6 +164,9 @@ export const verifyHttpCalled = ({
 /**
  * 成功時の統合検証ヘルパー（HTTP版）
  */
+
+type TypeMessage = { type: string; message: string }
+
 export const verifyHttpSuccess = async ({
   getHookState,
   action,
@@ -171,10 +174,10 @@ export const verifyHttpSuccess = async ({
   expectedData,
   navigator,
 }: {
-  getHookState?: () => { status?: { type: string; message: string } }
+  getHookState?: () => { status?: Bookmark | TypeMessage }
   action: string
   payload?: unknown
-  expectedData?: { type: string; message: string }
+  expectedData?: Bookmark | TypeMessage | null
   navigator?: {
     path?: string
     navigation?: (url: string) => void
@@ -183,13 +186,79 @@ export const verifyHttpSuccess = async ({
 }) => {
   await waitFor(() => {
     if (getHookState) {
-      if (getHookState().status && expectedData) {
-        expect(getHookState().status?.type).toBe(expectedData.type)
-        expect(getHookState().status?.message).toBe(expectedData.message)
+      const status = getHookState().status
+      if (status && expectedData) {
+        if ('type' in status && 'type' in expectedData) {
+          expect(status.type).toBe(expectedData.type)
+          expect(status.message).toBe(expectedData.message)
+        } else if ('id' in status && 'id' in expectedData) {
+          expect(status).toBe(expectedData)
+        } else if (expectedData === null) {
+          expect(status).toBeNull()
+        }
       }
     }
     verifyHttpCalled({ action, payload })
     if (navigator) verifyNavigateToPath(navigator)
+  })
+}
+
+export const verifyHttpError = async ({
+  getHookState,
+  logMessage,
+  consoleSpy,
+  action,
+  payload,
+  expected,
+  navigateToPath,
+  extraAssertions,
+}: {
+  getHookState?: () => {
+    isError?: boolean
+    error: unknown
+  }
+  logMessage?: string
+  consoleSpy?: MockInstance
+  action: string
+  payload?: unknown
+  expected: { message: string; code: string }
+  navigateToPath?: {
+    path?: string
+    navigation?: (url: string) => void
+    isNotCalled?: boolean
+  }
+  extraAssertions?: () => void
+}) => {
+  let error: unknown
+
+  await waitFor(() => {
+    // 1. エラー状態の取得
+    if (getHookState) {
+      const state = getHookState()
+      expect(state.isError).toBe(true)
+      error = state.error
+    } else if (consoleSpy && logMessage) {
+      const call = consoleSpy.mock.calls.find(
+        (args: unknown[]) => args[0] === logMessage,
+      )
+      expect(call).toBeDefined()
+      error = call![1]
+    }
+
+    // 2. 通信（メッセージングまたは MSW）の呼び出し検証
+    verifyHttpCalled({ action, payload })
+
+    // 3. エラー内容の検証
+    // HTTP 通信でもメッセージングでも BookmarkApiError が投げられるように
+    // ApiClient 側で統一されていることを前提とします
+    expect(error).toBeInstanceOf(BookmarkApiError)
+    const apiError = error as BookmarkApiError
+    expect(apiError.message).toBe(expected.message)
+    expect(apiError.code).toBe(expected.code)
+
+    // 4. その他の検証
+    if (navigateToPath) verifyNavigateToPath(navigateToPath)
+    if (extraAssertions) extraAssertions()
   })
 }
 
