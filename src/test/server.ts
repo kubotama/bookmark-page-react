@@ -16,25 +16,6 @@ export const mswRequestHistory: {
   body: unknown
 }[] = []
 
-// リクエストが開始されたら履歴に追加する
-server.events.on('request:start', async ({ request }) => {
-  const url = new URL(request.url)
-  let body = null
-  try {
-    // body がある場合はクローンして読み取る
-    const cloned = request.clone()
-    body = await cloned.json()
-  } catch {
-    // body がない場合や JSON でない場合は無視
-  }
-
-  mswRequestHistory.push({
-    method: request.method,
-    url: url.pathname, // パス名のみを記録 (/api/bookmarks など)
-    body,
-  })
-})
-
 /**
  * 履歴をクリアするヘルパー
  */

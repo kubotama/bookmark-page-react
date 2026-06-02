@@ -102,6 +102,10 @@ export const useKeywordPage = (onBack?: () => void) => {
     setStatus({ type: UI_STATUS.LOADING, message: COMMON_MESSAGES.SAVING })
     try {
       await deleteKeyword(parsedId)
+      setStatus({
+        type: UI_STATUS.SUCCESS,
+        message: UI_MESSAGES.DELETE_CONFIRM,
+      })
       navigate(APP_PATHS.HOME)
     } catch (err) {
       console.error(LOG_MESSAGES.DELETE_KEYWORD_FAILED, err)
