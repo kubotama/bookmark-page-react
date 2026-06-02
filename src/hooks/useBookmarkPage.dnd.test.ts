@@ -12,14 +12,14 @@ import { MOCK_BOOKMARK_1, MOCK_KEYWORDS } from '@shared/test/fixtures'
 import {
   commonSetup,
   setupHook,
-  verifyActionFailure,
+  verifyHttpActionFailure,
 } from './useBookmarkPage.test-utils'
 import { createDragEndEvent, createDragStartEvent } from '../test/dnd-utils'
 import {
   mockNavigate,
-  verifyError,
-  verifyKeywordStatus,
-} from '../test/messaging'
+  verifyHttpError,
+  verifyHttpKeywordStatus,
+} from '../test/http-mock'
 import { act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -28,11 +28,10 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useParams: vi.fn(() => ({ id: MOCK_BOOKMARK_1.id })),
-    useNavigate: () => mockNavigate,
+    useNavigate: vi.fn(() => mockNavigate),
   }
 })
-
-describe.skip('handleDragStartとhandleDragEnd', () => {
+describe('handleDragStartとhandleDragEnd', () => {
   beforeEach(() => {
     commonSetup()
   })
@@ -47,7 +46,7 @@ describe.skip('handleDragStartとhandleDragEnd', () => {
 
     // 拡張したヘルパーで、activeKeyword が設定されていることを検証
     await waitFor(() => {
-      verifyKeywordStatus(() => result.current, { activeKeyword: keyword })
+      verifyHttpKeywordStatus(() => result.current, { activeKeyword: keyword })
     })
   })
 
@@ -63,7 +62,7 @@ describe.skip('handleDragStartとhandleDragEnd', () => {
 
     // 検証：通信が発生していないこと、および状態がリセットされていること
     await waitFor(() => {
-      verifyActionFailure({
+      verifyHttpActionFailure({
         getHookState: () => result.current,
         calledMessages: [
           {
@@ -106,9 +105,9 @@ describe.skip('handleDragStartとhandleDragEnd', () => {
         )
       })
 
-      await verifyError({
+      await verifyHttpError({
         action: API_ACTIONS.ATTACH_KEYWORD,
-        payload: { bookmarkId: MOCK_BOOKMARK_1.id, keywordId },
+        payload: { keywordId },
         expected: {
           message: UI_MESSAGES.ATTACH_KEYWORD_FAILED,
           code: ERROR_CODES.INTERNAL_SERVER_ERROR,
@@ -118,7 +117,7 @@ describe.skip('handleDragStartとhandleDragEnd', () => {
         navigateToPath: { isNotCalled: true },
         extraAssertions: () => {
           const state = result.current
-          verifyKeywordStatus(() => state)
+          verifyHttpKeywordStatus(() => state)
         },
       })
     })
@@ -159,9 +158,8 @@ describe.skip('handleDragStartとhandleDragEnd', () => {
         )
       })
 
-      await verifyError({
+      await verifyHttpError({
         action: API_ACTIONS.DETACH_KEYWORD,
-        payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
         expected: {
           message: UI_MESSAGES.DETACH_KEYWORD_FAILED,
           code: ERROR_CODES.INTERNAL_SERVER_ERROR,
@@ -171,7 +169,7 @@ describe.skip('handleDragStartとhandleDragEnd', () => {
         navigateToPath: { isNotCalled: true },
         extraAssertions: () => {
           const state = result.current
-          verifyKeywordStatus(() => state)
+          verifyHttpKeywordStatus(() => state)
         },
       })
     })

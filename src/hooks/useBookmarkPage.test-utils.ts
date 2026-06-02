@@ -60,7 +60,7 @@ export const commonSetup = () => {
 
 // アクション失敗時の通信、ログ出力、およびキーワード状態を一括検証する
 
-export const verifyActionFailure = async ({
+export const verifyHttpActionFailure = async ({
   getHookState,
   calledMessages,
   logMessage,

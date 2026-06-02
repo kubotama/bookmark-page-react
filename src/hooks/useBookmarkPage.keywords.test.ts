@@ -17,7 +17,7 @@ import {
 import {
   commonSetup,
   setupHook,
-  verifyActionFailure,
+  verifyHttpActionFailure,
   type CallMessagesParams,
   type MockParam,
 } from './useBookmarkPage.test-utils'
@@ -268,7 +268,7 @@ describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
           })
 
           await waitFor(() => {
-            verifyActionFailure({
+            verifyHttpActionFailure({
               getHookState: () => result.current,
               calledMessages,
               logMessage,
