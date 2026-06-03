@@ -10,9 +10,9 @@ import { openUrlInNewTab } from '@shared/utils/url'
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
 import {
   mockNavigate,
+  verifyHttpSuccess,
   verifyNavigateToPath,
-  verifySuccess,
-} from '../test/messaging'
+} from '../test/http-mock'
 import { fireEvent } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要
@@ -21,7 +21,7 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useParams: vi.fn(() => ({ id: MOCK_BOOKMARK_1.id })),
-    useNavigate: () => mockNavigate,
+    useNavigate: vi.fn(() => mockNavigate),
   }
 })
 
@@ -34,7 +34,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe.skip('useBookmarkPage Hook - Navigation & Shortcuts', () => {
+describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
   beforeEach(() => {
     commonSetup()
   })
@@ -91,15 +91,14 @@ describe.skip('useBookmarkPage Hook - Navigation & Shortcuts', () => {
       })
       fireEvent.keyDown(window, { key: KEY_VALUES.ENTER, ctrlKey: true })
 
-      await verifySuccess({
+      await verifyHttpSuccess({
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: {
-          id: MOCK_BOOKMARK_1.id,
           title: MOCK_BOOKMARK_1.title,
           url: MOCK_BOOKMARK_1.url,
         },
         expectedData: MOCK_BOOKMARK_1,
-        path: APP_PATHS.HOME,
+        navigator: { path: APP_PATHS.HOME },
       })
     })
   })
