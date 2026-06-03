@@ -28,7 +28,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe.skip('BookmarkPage Component', () => {
+describe('BookmarkPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
