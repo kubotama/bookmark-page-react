@@ -6,7 +6,11 @@ import * as urlUtils from '@shared/utils/url'
 
 import { useBookmarkPage } from './useBookmarkPage'
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
-import { mockNavigate, verifyCalledMessage } from '../test/messaging'
+import {
+  mockNavigate,
+  verifyHttpCalled,
+  verifyNavigateToPath,
+} from '../test/http-mock'
 import { renderHook, act, waitFor } from '../test/utils'
 
 // モックの設定
@@ -15,7 +19,7 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useParams: vi.fn(() => ({ id: MOCK_BOOKMARK_1.id })),
-    useNavigate: () => mockNavigate,
+    useNavigate: vi.fn(() => mockNavigate),
   }
 })
 
@@ -28,7 +32,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe.skip('useBookmarkPage Hook', () => {
+describe('useBookmarkPage Hook', () => {
   beforeEach(() => {
     commonSetup()
   })
@@ -62,15 +66,15 @@ describe.skip('useBookmarkPage Hook', () => {
       })
 
       await waitFor(() => {
-        verifyCalledMessage({
+        verifyHttpCalled({
           action: API_ACTIONS.UPDATE_BOOKMARK,
           isNotCalled: true,
         })
-        verifyCalledMessage({
+        verifyHttpCalled({
           action: API_ACTIONS.DELETE_BOOKMARK,
           isNotCalled: true,
         })
-        expect(mockNavigate).not.toHaveBeenCalled()
+        verifyNavigateToPath({ isNotCalled: true })
       })
     })
 
