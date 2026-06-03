@@ -140,11 +140,11 @@ export const verifyHttpCalled = ({
     const methodMatch = req.method === expectedMethod
     const pathMatch = req.url.startsWith(expectedPathBase)
 
-    let payloadMatch = true
+    // let payloadMatch = true
     if (payload !== undefined) {
-      payloadMatch = JSON.stringify(req.body) === JSON.stringify(payload)
+      return JSON.stringify(req.body) === JSON.stringify(payload)
     }
-    return methodMatch && pathMatch && payloadMatch
+    return methodMatch && pathMatch && req.body === null
   })
 
   if (isNotCalled) {
@@ -173,6 +173,7 @@ export const verifyHttpSuccess = async ({
   payload,
   expectedData,
   navigator,
+  keywordStatus,
 }: {
   getHookState?: () => { status?: Bookmark | TypeMessage }
   action: string
@@ -182,6 +183,18 @@ export const verifyHttpSuccess = async ({
     path?: string
     navigation?: (url: string) => void
     isNotCalled?: boolean
+  }
+  keywordStatus?: {
+    getHookState: () => {
+      keywordInput?: string
+      isKeywordProcessing?: boolean
+      activeKeyword?: Keyword | null
+    }
+    options?: {
+      keywordInput?: string
+      isKeywordProcessing?: boolean
+      activeKeyword?: Keyword | null
+    }
   }
 }) => {
   await waitFor(() => {
@@ -200,6 +213,8 @@ export const verifyHttpSuccess = async ({
     }
     verifyHttpCalled({ action, payload })
     if (navigator) verifyNavigateToPath(navigator)
+    if (keywordStatus)
+      verifyHttpKeywordStatus(keywordStatus.getHookState, keywordStatus.options)
   })
 }
 
@@ -211,6 +226,7 @@ export const verifyHttpError = async ({
   payload,
   expected,
   navigateToPath,
+  keywordStatus,
   extraAssertions,
 }: {
   getHookState?: () => {
@@ -226,6 +242,18 @@ export const verifyHttpError = async ({
     path?: string
     navigation?: (url: string) => void
     isNotCalled?: boolean
+  }
+  keywordStatus?: {
+    getHookState: () => {
+      keywordInput?: string
+      isKeywordProcessing?: boolean
+      activeKeyword?: Keyword | null
+    }
+    options?: {
+      keywordInput?: string
+      isKeywordProcessing?: boolean
+      activeKeyword?: Keyword | null
+    }
   }
   extraAssertions?: () => void
 }) => {
@@ -259,6 +287,8 @@ export const verifyHttpError = async ({
     // 4. その他の検証
     if (navigateToPath) verifyNavigateToPath(navigateToPath)
     if (extraAssertions) extraAssertions()
+    if (keywordStatus)
+      verifyHttpKeywordStatus(keywordStatus.getHookState, keywordStatus.options)
   })
 }
 

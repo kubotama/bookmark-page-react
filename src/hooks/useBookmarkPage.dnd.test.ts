@@ -115,10 +115,7 @@ describe('handleDragStartとhandleDragEnd', () => {
         logMessage: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
         consoleSpy,
         navigateToPath: { isNotCalled: true },
-        extraAssertions: () => {
-          const state = result.current
-          verifyHttpKeywordStatus(() => state)
-        },
+        keywordStatus: { getHookState: () => result.current },
       })
     })
 
@@ -167,10 +164,7 @@ describe('handleDragStartとhandleDragEnd', () => {
         logMessage: LOG_MESSAGES.DETACH_KEYWORD_FAILED,
         consoleSpy,
         navigateToPath: { isNotCalled: true },
-        extraAssertions: () => {
-          const state = result.current
-          verifyHttpKeywordStatus(() => state)
-        },
+        keywordStatus: { getHookState: () => result.current },
       })
     })
   })

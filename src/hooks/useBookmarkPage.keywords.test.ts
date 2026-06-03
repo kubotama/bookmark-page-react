@@ -23,10 +23,10 @@ import {
 } from './useBookmarkPage.test-utils'
 import {
   mockNavigate,
-  verifyCalledMessage,
-  verifyKeywordStatus,
-  verifySuccess,
-} from '../test/messaging'
+  verifyHttpCalled,
+  verifyHttpKeywordStatus,
+  verifyHttpSuccess,
+} from '../test/http-mock'
 import { act, waitFor } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要
@@ -35,11 +35,11 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useParams: vi.fn(() => ({ id: MOCK_BOOKMARK_1.id })),
-    useNavigate: () => mockNavigate,
+    useNavigate: vi.fn(() => mockNavigate),
   }
 })
 
-describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
+describe('useBookmarkPage Hook - Bookmark Operations', () => {
   beforeEach(() => {
     commonSetup()
   })
@@ -68,13 +68,13 @@ describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
 
   describe('handleAttachKeyword', () => {
     it('handleAttachKeyword が成功した際、正しくメッセージを送信すること', async () => {
-      const bookmarkId = MOCK_BOOKMARK_1.id
+      const bookmark = MOCK_BOOKMARK_1
       const keywordId = MOCK_KEYWORDS[0].id
 
       const result = await setupHook({
         mock: {
           action: API_ACTIONS.ATTACH_KEYWORD,
-          params: { success: true, data: MOCK_BOOKMARK_1 },
+          params: { success: true, data: bookmark },
         },
       })
 
@@ -82,11 +82,11 @@ describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleAttachKeyword(keywordId)
       })
 
-      await verifySuccess({
+      await verifyHttpSuccess({
         action: API_ACTIONS.ATTACH_KEYWORD,
-        payload: { bookmarkId, keywordId },
-        expectedData: MOCK_BOOKMARK_1,
-        extraAssertions: () => verifyKeywordStatus(() => result.current),
+        payload: { keywordId },
+        expectedData: bookmark,
+        keywordStatus: { getHookState: () => result.current },
       })
     })
   })
@@ -123,11 +123,10 @@ describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleDetachKeyword(keywordId)
       })
 
-      await verifySuccess({
+      await verifyHttpSuccess({
         action: API_ACTIONS.DETACH_KEYWORD,
-        payload: { bookmarkId: bookmarkWithKeyword.id, keywordId },
         expectedData: MOCK_BOOKMARK_1,
-        extraAssertions: () => verifyKeywordStatus(() => result.current),
+        keywordStatus: { getHookState: () => result.current },
       })
     })
   })
@@ -168,22 +167,21 @@ describe.skip('useBookmarkPage Hook - Bookmark Operations', () => {
 
       await waitFor(() => {
         // CREATE_KEYWORD の検証
-        verifyCalledMessage({
+        verifyHttpCalled({
           action: API_ACTIONS.CREATE_KEYWORD,
           payload: {
             name: newKeyword.name,
           },
         })
         // ATTACH_KEYWORD の検証
-        verifyCalledMessage({
+        verifyHttpCalled({
           action: API_ACTIONS.ATTACH_KEYWORD,
           payload: {
-            bookmarkId: bookmark.id,
             keywordId: newKeyword.id,
           },
         })
         // 副作用の検証
-        verifyKeywordStatus(() => result.current)
+        verifyHttpKeywordStatus(() => result.current)
       })
     })
 
