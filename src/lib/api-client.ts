@@ -289,7 +289,7 @@ export class HttpApiClient implements ApiClient {
     }
 
     // それ以外はすべてエラーとして扱う
-    const message = result?.error?.message || 'API Error'
+    const message = result?.error?.message || UI_MESSAGES.API_ERROR
     const code = result?.error?.code || ERROR_CODES.INTERNAL_SERVER_ERROR
 
     throw new BookmarkApiError(message, code)

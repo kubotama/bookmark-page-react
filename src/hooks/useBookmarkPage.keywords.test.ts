@@ -25,7 +25,7 @@ import {
   mockNavigate,
   verifyHttpCalled,
   verifyHttpKeywordStatus,
-  verifyHttpSuccess,
+  verifyHttpBookmarkPageSuccess,
 } from '../test/http-mock'
 import { act, waitFor } from '../test/utils'
 
@@ -82,11 +82,12 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleAttachKeyword(keywordId)
       })
 
-      await verifyHttpSuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.ATTACH_KEYWORD,
         payload: { keywordId },
-        expectedData: bookmark,
-        keywordStatus: { getHookState: () => result.current },
+        expectedBookmark: bookmark,
+        keywordOptions: {},
       })
     })
   })
@@ -123,10 +124,11 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleDetachKeyword(keywordId)
       })
 
-      await verifyHttpSuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.DETACH_KEYWORD,
-        expectedData: MOCK_BOOKMARK_1,
-        keywordStatus: { getHookState: () => result.current },
+        expectedBookmark: bookmarkWithKeyword,
+        keywordOptions: {},
       })
     })
   })

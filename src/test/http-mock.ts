@@ -70,7 +70,7 @@ export const verifyNavigateToPath = ({
  * MSW を使用して HTTP API レスポンスをモックする。
  * 内部的に server.use を呼び出し、アクション名に基づいて適切なエンドポイントをインターセプトする。
  */
-type ResponseDataParams = Record<string, unknown>
+type ResponseDataParams = Record<string, unknown> | null
 
 export const mockHttpResponse = (
   action: string,
@@ -165,130 +165,229 @@ export const verifyHttpCalled = ({
  * 成功時の統合検証ヘルパー（HTTP版）
  */
 
-type TypeMessage = { type: string; message: string }
+export interface TypeMessage {
+  type: string
+  message: string
+}
 
-export const verifyHttpSuccess = async ({
+export interface HookState {
+  isSuccess?: boolean
+  data?: unknown
+  status?: Bookmark | { keywords: Keyword[] } | TypeMessage | null
+}
+
+export interface KeywordOption {
+  keywordInput?: string
+  isKeywordProcessing?: boolean
+  activeKeyword?: Keyword | null
+}
+
+export interface NavigatorParam {
+  path?: string
+  navigation?: (url: string) => void
+  isNotCalled?: boolean
+}
+
+const verifyHttpCommon = ({
+  action,
+  payload,
+  navigator,
+  extraAssertions,
+}: {
+  action: string
+  payload: unknown
+  navigator?: NavigatorParam
+  extraAssertions?: () => void
+}) => {
+  verifyHttpCalled({ action, payload })
+  if (navigator) verifyNavigateToPath(navigator)
+  if (extraAssertions) extraAssertions()
+}
+
+export const verifyHttpQuerySuccess = async <T>({
   getHookState,
   action,
   payload,
   expectedData,
-  navigator,
-  keywordStatus,
+  extraAssertions,
 }: {
-  getHookState?: () => { status?: Bookmark | TypeMessage }
+  getHookState?: () => { isSuccess: boolean; data?: T }
   action: string
   payload?: unknown
-  expectedData?: Bookmark | TypeMessage | null
-  navigator?: {
-    path?: string
-    navigation?: (url: string) => void
-    isNotCalled?: boolean
-  }
-  keywordStatus?: {
-    getHookState: () => {
-      keywordInput?: string
-      isKeywordProcessing?: boolean
-      activeKeyword?: Keyword | null
-    }
-    options?: {
-      keywordInput?: string
-      isKeywordProcessing?: boolean
-      activeKeyword?: Keyword | null
-    }
-  }
+  expectedData?: T | Bookmark
+  extraAssertions?: () => void
 }) => {
   await waitFor(() => {
     if (getHookState) {
-      const status = getHookState().status
-      if (status && expectedData) {
-        if ('type' in status && 'type' in expectedData) {
-          expect(status.type).toBe(expectedData.type)
-          expect(status.message).toBe(expectedData.message)
-        } else if ('id' in status && 'id' in expectedData) {
-          expect(status).toBe(expectedData)
-        } else if (expectedData === null) {
-          expect(status).toBeNull()
-        }
+      const state = getHookState()
+      expect(state.isSuccess).toBe(true) // 成功していることを厳格に検証
+
+      if (expectedData !== undefined) {
+        expect(state.data).toEqual(expectedData)
       }
     }
-    verifyHttpCalled({ action, payload })
-    if (navigator) verifyNavigateToPath(navigator)
-    if (keywordStatus)
-      verifyHttpKeywordStatus(keywordStatus.getHookState, keywordStatus.options)
   })
+  verifyHttpCommon({ action, payload, extraAssertions })
 }
 
-export const verifyHttpError = async ({
+export interface ExpectedStatusData {
+  status?: TypeMessage
+  data?: unknown
+}
+
+export const verifyHttpStatusSuccess = async ({
   getHookState,
-  logMessage,
-  consoleSpy,
   action,
   payload,
   expected,
-  navigateToPath,
-  keywordStatus,
-  extraAssertions,
+  navigator,
+}: {
+  getHookState: () => { status?: TypeMessage | null; data?: unknown }
+  action: string
+  payload?: unknown
+  expected: ExpectedStatusData
+  navigator?: NavigatorParam
+}) => {
+  await waitFor(() => {
+    const state = getHookState()
+    if (state && expected) {
+      if (expected.status) expect(state.status).toEqual(expected.status)
+      if (expected.data) expect(state.data)
+    }
+  })
+  verifyHttpCommon({ action, payload, navigator })
+}
+
+/**
+ * useBookmarkPage 固有の検証ヘルパー。
+ */
+export const verifyHttpBookmarkPageSuccess = async ({
+  getHookState,
+  action,
+  payload,
+  expectedBookmark,
+  navigator,
+  keywordOptions,
 }: {
   getHookState?: () => {
-    isError?: boolean
-    error: unknown
+    bookmark: Bookmark | undefined
+    isKeywordProcessing: boolean
   }
-  logMessage?: string
-  consoleSpy?: MockInstance
+  action: string
+  payload?: unknown
+  expectedBookmark?: Bookmark | null
+  navigator?: NavigatorParam
+  keywordOptions?: KeywordOption
+}) => {
+  await waitFor(() => {
+    if (getHookState) {
+      const state = getHookState()
+
+      // データ（ブックマーク）の検証
+      if (expectedBookmark) {
+        expect(state.bookmark).toEqual(expectedBookmark)
+      }
+
+      // 処理中フラグが降りていることを検証
+      expect(state.isKeywordProcessing).toBe(false)
+
+      if (keywordOptions) verifyHttpKeywordStatus(getHookState, keywordOptions)
+    }
+  })
+  verifyHttpCommon({ action, payload, navigator })
+}
+
+export const verifyHttpQueryError = async ({
+  getHookState,
+  action,
+  payload,
+  expected,
+  extraAssertions,
+}: {
+  getHookState: () => { isError: boolean; error: unknown }
   action: string
   payload?: unknown
   expected: { message: string; code: string }
-  navigateToPath?: {
-    path?: string
-    navigation?: (url: string) => void
-    isNotCalled?: boolean
-  }
-  keywordStatus?: {
-    getHookState: () => {
-      keywordInput?: string
-      isKeywordProcessing?: boolean
-      activeKeyword?: Keyword | null
-    }
-    options?: {
-      keywordInput?: string
-      isKeywordProcessing?: boolean
-      activeKeyword?: Keyword | null
-    }
-  }
   extraAssertions?: () => void
 }) => {
-  let error: unknown
-
   await waitFor(() => {
-    // 1. エラー状態の取得
-    if (getHookState) {
-      const state = getHookState()
-      expect(state.isError).toBe(true)
-      error = state.error
-    } else if (consoleSpy && logMessage) {
-      const call = consoleSpy.mock.calls.find(
-        (args: unknown[]) => args[0] === logMessage,
-      )
-      expect(call).toBeDefined()
-      error = call![1]
-    }
+    const state = getHookState()
+    expect(state.isError).toBe(true)
 
-    // 2. 通信（メッセージングまたは MSW）の呼び出し検証
-    verifyHttpCalled({ action, payload })
-
-    // 3. エラー内容の検証
-    // HTTP 通信でもメッセージングでも BookmarkApiError が投げられるように
-    // ApiClient 側で統一されていることを前提とします
-    expect(error).toBeInstanceOf(BookmarkApiError)
-    const apiError = error as BookmarkApiError
+    expect(state.error).toBeInstanceOf(BookmarkApiError)
+    const apiError = state.error as BookmarkApiError
     expect(apiError.message).toBe(expected.message)
     expect(apiError.code).toBe(expected.code)
+  })
+  verifyHttpCommon({ action, payload, extraAssertions })
+}
 
-    // 4. その他の検証
-    if (navigateToPath) verifyNavigateToPath(navigateToPath)
-    if (extraAssertions) extraAssertions()
-    if (keywordStatus)
-      verifyHttpKeywordStatus(keywordStatus.getHookState, keywordStatus.options)
+export const verifyHttpStatusError = async ({
+  getHookState,
+  action,
+  payload,
+  expectedStatus,
+  consoleSpy,
+  logMessage,
+  navigator,
+}: {
+  getHookState?: () => { status: TypeMessage | null }
+  action: string
+  payload?: unknown
+  expectedStatus: TypeMessage
+  consoleSpy?: MockInstance
+  logMessage?: string
+  navigator?: NavigatorParam
+}) => {
+  await waitFor(() => {
+    if (getHookState) {
+      const state = getHookState()
+      if (expectedStatus) expect(state.status).toEqual(expectedStatus)
+    }
+
+    if (consoleSpy && logMessage) {
+      const call = consoleSpy.mock.calls.find((args) => args[0] === logMessage)
+      expect(call).toBeDefined()
+    }
+  })
+  verifyHttpCommon({ action, payload, navigator })
+}
+
+/**
+ * useBookmarkPage 固有のエラー検証ヘルパー。
+ * ログ出力を中心に検証します。
+ */
+export const verifyHttpBookmarkPageError = async ({
+  getHookState,
+  action,
+  payload,
+  logMessage,
+  consoleSpy,
+  navigator,
+  keywordOptions,
+}: {
+  getHookState: () => { isKeywordProcessing: boolean }
+  action: string
+  payload?: unknown
+  logMessage: string
+  consoleSpy: MockInstance
+  navigator?: NavigatorParam
+  keywordOptions?: KeywordOption
+}) => {
+  await waitFor(() => {
+    const call = consoleSpy.mock.calls.find(
+      (args) => typeof args[0] === 'string' && args[0].startsWith(logMessage),
+    )
+    expect(
+      call,
+      `Log message starting with "${logMessage}" not found`,
+    ).toBeDefined()
+
+    expect(getHookState().isKeywordProcessing).toBe(false)
+
+    verifyHttpCalled({ action, payload })
+    if (navigator) verifyNavigateToPath(navigator)
+    if (keywordOptions) verifyHttpKeywordStatus(getHookState, keywordOptions)
   })
 }
 

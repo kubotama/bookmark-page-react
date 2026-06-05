@@ -11,8 +11,8 @@ import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
 import {
   mockNavigate,
-  verifyHttpError,
-  verifyHttpSuccess,
+  verifyHttpBookmarkPageError,
+  verifyHttpBookmarkPageSuccess,
 } from '../test/http-mock'
 import { act } from '../test/utils'
 
@@ -48,13 +48,14 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleUpdate()
       })
 
-      await verifyHttpSuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: {
           title: MOCK_BOOKMARK_1.title,
           url: MOCK_BOOKMARK_1.url,
         },
-        expectedData: MOCK_BOOKMARK_1,
+        expectedBookmark: MOCK_BOOKMARK_1,
         navigator: {},
       })
     })
@@ -78,19 +79,16 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleUpdate()
       })
 
-      await verifyHttpError({
+      await verifyHttpBookmarkPageError({
+        getHookState: () => result.current,
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: {
           title: MOCK_BOOKMARK_1.title,
           url: MOCK_BOOKMARK_1.url,
         },
-        expected: {
-          message: UI_MESSAGES.UPDATE_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
         logMessage: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
         consoleSpy,
-        navigateToPath: { isNotCalled: true },
+        navigator: { isNotCalled: true },
       })
     })
   })
@@ -111,9 +109,10 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleDelete()
       })
 
-      await verifyHttpSuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.DELETE_BOOKMARK,
-        expectedData: null,
+        expectedBookmark: null,
         navigator: {},
       })
     })
@@ -137,15 +136,12 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleDelete()
       })
 
-      await verifyHttpError({
+      await verifyHttpBookmarkPageError({
+        getHookState: () => result.current,
         action: API_ACTIONS.DELETE_BOOKMARK,
-        expected: {
-          message: UI_MESSAGES.DELETE_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
         logMessage: LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
         consoleSpy,
-        navigateToPath: { isNotCalled: true },
+        navigator: { isNotCalled: true },
       })
     })
   })

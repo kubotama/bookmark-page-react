@@ -2,7 +2,7 @@ import { act } from 'react'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { API_ACTIONS, APP_PATHS, KEY_VALUES } from '@shared/constants'
+import { API_ACTIONS, KEY_VALUES } from '@shared/constants'
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 import { openUrlInNewTab } from '@shared/utils/url'
@@ -10,7 +10,7 @@ import { openUrlInNewTab } from '@shared/utils/url'
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
 import {
   mockNavigate,
-  verifyHttpSuccess,
+  verifyHttpBookmarkPageSuccess,
   verifyNavigateToPath,
 } from '../test/http-mock'
 import { fireEvent } from '../test/utils'
@@ -83,7 +83,7 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
     })
 
     it('Ctrl + Enter キーで handleUpdate が呼ばれること', async () => {
-      await setupHook({
+      const result = await setupHook({
         mock: {
           action: API_ACTIONS.UPDATE_BOOKMARK,
           params: { success: true, data: MOCK_BOOKMARK_1 },
@@ -91,14 +91,15 @@ describe('useBookmarkPage Hook - Navigation & Shortcuts', () => {
       })
       fireEvent.keyDown(window, { key: KEY_VALUES.ENTER, ctrlKey: true })
 
-      await verifyHttpSuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: {
           title: MOCK_BOOKMARK_1.title,
           url: MOCK_BOOKMARK_1.url,
         },
-        expectedData: MOCK_BOOKMARK_1,
-        navigator: { path: APP_PATHS.HOME },
+        expectedBookmark: MOCK_BOOKMARK_1,
+        navigator: {},
       })
     })
   })

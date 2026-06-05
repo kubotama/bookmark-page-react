@@ -16,7 +16,7 @@ import { useKeywordPage } from './useKeywordPage'
 import {
   mockHttpResponse,
   mockNavigate,
-  verifyHttpSuccess,
+  verifyHttpStatusSuccess,
 } from '../test/http-mock'
 import { server } from '../test/server'
 import { renderHook, waitFor, act } from '../test/utils'
@@ -92,13 +92,15 @@ describe('useKeywordPage Hook', () => {
       await result.current.handleUpdate()
     })
 
-    await verifyHttpSuccess({
+    await verifyHttpStatusSuccess({
       getHookState: () => result.current,
       action: API_ACTIONS.UPDATE_KEYWORD,
       payload: { name: updatedName },
-      expectedData: {
-        type: UI_STATUS.SUCCESS,
-        message: UI_MESSAGES.UPDATE_SUCCESS,
+      expected: {
+        status: {
+          type: UI_STATUS.SUCCESS,
+          message: UI_MESSAGES.UPDATE_SUCCESS,
+        },
       },
       navigator: { isNotCalled: true },
     })
@@ -118,12 +120,14 @@ describe('useKeywordPage Hook', () => {
       await result.current.handleDelete()
     })
 
-    await verifyHttpSuccess({
+    await verifyHttpStatusSuccess({
       getHookState: () => result.current,
       action: API_ACTIONS.DELETE_KEYWORD,
-      expectedData: {
-        type: UI_STATUS.SUCCESS,
-        message: UI_MESSAGES.DELETE_CONFIRM,
+      expected: {
+        status: {
+          type: UI_STATUS.SUCCESS,
+          message: UI_MESSAGES.DELETE_CONFIRM,
+        },
       },
       navigator: {},
     })

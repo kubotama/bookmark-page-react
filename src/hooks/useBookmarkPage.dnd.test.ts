@@ -17,7 +17,7 @@ import {
 import { createDragEndEvent, createDragStartEvent } from '../test/dnd-utils'
 import {
   mockNavigate,
-  verifyHttpError,
+  verifyHttpBookmarkPageError,
   verifyHttpKeywordStatus,
 } from '../test/http-mock'
 import { act, waitFor } from '../test/utils'
@@ -105,17 +105,14 @@ describe('handleDragStartとhandleDragEnd', () => {
         )
       })
 
-      await verifyHttpError({
+      await verifyHttpBookmarkPageError({
+        getHookState: () => result.current,
         action: API_ACTIONS.ATTACH_KEYWORD,
         payload: { keywordId },
-        expected: {
-          message: UI_MESSAGES.ATTACH_KEYWORD_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
         logMessage: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
         consoleSpy,
-        navigateToPath: { isNotCalled: true },
-        keywordStatus: { getHookState: () => result.current },
+        navigator: { isNotCalled: true },
+        keywordOptions: {},
       })
     })
 
@@ -155,16 +152,13 @@ describe('handleDragStartとhandleDragEnd', () => {
         )
       })
 
-      await verifyHttpError({
+      await verifyHttpBookmarkPageError({
+        getHookState: () => result.current,
         action: API_ACTIONS.DETACH_KEYWORD,
-        expected: {
-          message: UI_MESSAGES.DETACH_KEYWORD_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
         logMessage: LOG_MESSAGES.DETACH_KEYWORD_FAILED,
         consoleSpy,
-        navigateToPath: { isNotCalled: true },
-        keywordStatus: { getHookState: () => result.current },
+        navigator: { isNotCalled: true },
+        keywordOptions: {},
       })
     })
   })
