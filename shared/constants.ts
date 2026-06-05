@@ -189,6 +189,7 @@ export const UI_MESSAGES = {
   CHROME_EXTENSION_NOT_AVAILABLE: 'chromeの拡張機能が利用できません',
   INVALID_RESPONSE_FROM_EXTENSION: '拡張機能からの返り値の形式が不正です',
   UNKNOWN_EXTENSION_ERROR: '拡張機能での不明なエラーです',
+  API_ERROR: 'APIのエラーです',
 } as const
 
 /**

@@ -2,7 +2,6 @@ import { describe, it, vi, beforeEach } from 'vitest'
 
 import {
   API_ACTIONS,
-  APP_PATHS,
   ERROR_CODES,
   LOG_MESSAGES,
   UI_MESSAGES,
@@ -10,7 +9,11 @@ import {
 import { MOCK_BOOKMARK_1 } from '@shared/test/fixtures'
 
 import { commonSetup, setupHook } from './useBookmarkPage.test-utils'
-import { mockNavigate, verifyError, verifySuccess } from '../test/messaging'
+import {
+  mockNavigate,
+  verifyHttpBookmarkPageError,
+  verifyHttpBookmarkPageSuccess,
+} from '../test/http-mock'
 import { act } from '../test/utils'
 
 // react-router-dom のモックはファイルごとに必要
@@ -19,7 +22,7 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useParams: vi.fn(() => ({ id: MOCK_BOOKMARK_1.id })),
-    useNavigate: () => mockNavigate,
+    useNavigate: vi.fn(() => mockNavigate),
   }
 })
 
@@ -27,6 +30,7 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
   beforeEach(() => {
     commonSetup()
   })
+
   describe('handleUpdate', () => {
     it('成功して一覧へ戻ること', async () => {
       const result = await setupHook({
@@ -44,15 +48,15 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleUpdate()
       })
 
-      await verifySuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: {
-          id: MOCK_BOOKMARK_1.id,
           title: MOCK_BOOKMARK_1.title,
           url: MOCK_BOOKMARK_1.url,
         },
-        expectedData: MOCK_BOOKMARK_1,
-        path: APP_PATHS.HOME,
+        expectedBookmark: MOCK_BOOKMARK_1,
+        navigator: {},
       })
     })
 
@@ -75,20 +79,16 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleUpdate()
       })
 
-      await verifyError({
+      await verifyHttpBookmarkPageError({
+        getHookState: () => result.current,
         action: API_ACTIONS.UPDATE_BOOKMARK,
         payload: {
-          id: MOCK_BOOKMARK_1.id,
           title: MOCK_BOOKMARK_1.title,
           url: MOCK_BOOKMARK_1.url,
         },
-        expected: {
-          message: UI_MESSAGES.UPDATE_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
         logMessage: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
         consoleSpy,
-        navigateToPath: { isNotCalled: true },
+        navigator: { isNotCalled: true },
       })
     })
   })
@@ -109,11 +109,11 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleDelete()
       })
 
-      await verifySuccess({
+      await verifyHttpBookmarkPageSuccess({
+        getHookState: () => result.current,
         action: API_ACTIONS.DELETE_BOOKMARK,
-        payload: { id: MOCK_BOOKMARK_1.id },
-        expectedData: null,
-        path: APP_PATHS.HOME,
+        expectedBookmark: null,
+        navigator: {},
       })
     })
 
@@ -136,16 +136,12 @@ describe('useBookmarkPage Hook - Bookmark Operations', () => {
         await result.current.handleDelete()
       })
 
-      await verifyError({
+      await verifyHttpBookmarkPageError({
+        getHookState: () => result.current,
         action: API_ACTIONS.DELETE_BOOKMARK,
-        payload: { id: MOCK_BOOKMARK_1.id },
-        expected: {
-          message: UI_MESSAGES.DELETE_FAILED,
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        },
         logMessage: LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
         consoleSpy,
-        navigateToPath: { isNotCalled: true },
+        navigator: { isNotCalled: true },
       })
     })
   })

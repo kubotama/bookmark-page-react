@@ -10,6 +10,8 @@ import {
 import { bookmarksSchema } from '@shared/schemas/bookmark'
 import { validateApiUrl, getOrigin } from '@shared/utils/url'
 
+import { useApi } from '../contexts/ApiContext'
+
 /**
  * 設定画面の表示管理および API 設定の保存ロジックを担当するフック
  */
@@ -19,6 +21,7 @@ export const useSettings = () => {
     type: UI_STATUS.IDLE,
     message: '',
   })
+  const { apiUrl, updateApiUrl } = useApi()
 
   const toggleSettings = useCallback(() => {
     setShowSettings((prev) => !prev)
@@ -120,5 +123,7 @@ export const useSettings = () => {
     toggleSettings,
     closeSettings,
     testConnection,
+    saveSettings: updateApiUrl,
+    currentApiUrl: apiUrl,
   }
 }

@@ -27,7 +27,9 @@ export const useApp = () => {
     connectionStatus,
     toggleSettings,
     closeSettings,
+    saveSettings,
     testConnection,
+    currentApiUrl,
   } = useSettings()
 
   // 2. 一覧の状態管理
@@ -47,7 +49,7 @@ export const useApp = () => {
     error: keywordsError,
   } = useKeywords()
 
-  const bookmarks = useMemo(
+  const bookmarks: Bookmark[] = useMemo(
     () => bookmarksData?.bookmarks || [],
     [bookmarksData],
   )
@@ -216,6 +218,8 @@ export const useApp = () => {
     handleClose,
     toggleSettings,
     closeSettings,
+    saveSettings,
+    currentApiUrl,
     testConnection,
     handleReorder,
     toggleKeywordSelection,

@@ -11,6 +11,7 @@ import {
   LOG_MESSAGES,
   BOOKMARK_STATUS,
   EXTENSION_MESSAGE_TYPES,
+  DEFAULT_API_URL,
 } from '@shared/constants'
 import {
   INVALID_URLS,
@@ -36,7 +37,6 @@ vi.stubGlobal('chrome', mockChrome)
 vi.stubGlobal('window', { close: vi.fn() })
 
 describe('usePopup Hook', () => {
-  const mockApiUrl = 'http://localhost:3030'
   const mockFrontendUrl = 'http://localhost:5173'
 
   beforeEach(() => {
@@ -44,7 +44,7 @@ describe('usePopup Hook', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     // デフォルトの設定値をモック
     vi.spyOn(storage, 'get').mockResolvedValue({
-      [STORAGE_KEYS.API_URL]: mockApiUrl,
+      [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
       [STORAGE_KEYS.FRONTEND_URL]: mockFrontendUrl,
     })
   })
@@ -113,7 +113,7 @@ describe('usePopup Hook', () => {
     // バリデーションをパスするように localhost のカスタムポートをシミュレート
     const customFrontendUrl = 'http://localhost:8080'
     vi.spyOn(storage, 'get').mockResolvedValue({
-      [STORAGE_KEYS.API_URL]: mockApiUrl,
+      [STORAGE_KEYS.API_URL]: DEFAULT_API_URL,
       [STORAGE_KEYS.FRONTEND_URL]: customFrontendUrl,
     })
 

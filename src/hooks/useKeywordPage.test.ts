@@ -1,16 +1,28 @@
 import { fireEvent } from '@testing-library/react'
-import { http, HttpResponse } from 'msw'
+import { http } from 'msw'
 import { useParams, useNavigate } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { APP_PATHS, UI_MESSAGES, UI_STATUS } from '@shared/constants'
-import { MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
+import {
+  API_ACTIONS,
+  APP_PATHS,
+  KEY_VALUES,
+  UI_MESSAGES,
+  UI_STATUS,
+} from '@shared/constants'
+import { MOCK_KEYWORDS, MOCK_IDS, TEST_STRINGS } from '@shared/test/fixtures'
 
 import { useKeywordPage } from './useKeywordPage'
-import { server } from '../test/setup'
+import {
+  mockHttpResponse,
+  mockNavigate,
+  verifyHttpStatusSuccess,
+} from '../test/http-mock'
+import { server } from '../test/server'
 import { renderHook, waitFor, act } from '../test/utils'
 
 // モックの設定
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
@@ -20,23 +32,15 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-describe.skip('useKeywordPage Hook', () => {
-  const mockNavigate = vi.fn()
-
+describe('useKeywordPage Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useParams).mockReturnValue({ id: MOCK_KEYWORDS[0].id })
     vi.mocked(useNavigate).mockReturnValue(mockNavigate)
-    server.use(
-      http.get('*/api/keywords', () => {
-        return HttpResponse.json({
-          success: true,
-          data: {
-            keywords: MOCK_KEYWORDS,
-          },
-        })
-      }),
-    )
+    mockHttpResponse(API_ACTIONS.READ_KEYWORDS, {
+      success: true,
+      data: { keywords: MOCK_KEYWORDS },
+    })
   })
 
   it('初期化時にキーワードデータを取得し、ステートを更新すること', async () => {
@@ -71,45 +75,43 @@ describe.skip('useKeywordPage Hook', () => {
   })
 
   it('handleUpdate が正しく更新 API を呼び出し、遷移しないこと', async () => {
-    let patchCalled = false
-    server.use(
-      http.patch('*/api/keywords/:id', async ({ request }) => {
-        const body = (await request.json()) as { name: string }
-        if (body.name === 'Updated Name') {
-          patchCalled = true
-        }
-        return HttpResponse.json({
-          success: true,
-          data: { keyword: { id: MOCK_KEYWORDS[0].id, name: 'Updated Name' } },
-        })
-      }),
-    )
+    const updatedName = TEST_STRINGS.NEW_NAME
+    mockHttpResponse(API_ACTIONS.UPDATE_KEYWORD, {
+      success: true,
+      data: { keyword: MOCK_KEYWORDS[0], name: updatedName },
+    })
 
     const { result } = renderHook(() => useKeywordPage())
     await waitFor(() => expect(result.current.keyword).toBeDefined())
 
     await act(async () => {
-      result.current.setEditName('Updated Name')
+      result.current.setEditName(updatedName)
     })
 
     await act(async () => {
       await result.current.handleUpdate()
     })
 
-    expect(patchCalled).toBe(true)
-    expect(result.current.status.type).toBe(UI_STATUS.SUCCESS)
-    expect(result.current.status.message).toBe(UI_MESSAGES.UPDATE_SUCCESS)
-    expect(mockNavigate).not.toHaveBeenCalled()
+    await verifyHttpStatusSuccess({
+      getHookState: () => result.current,
+      action: API_ACTIONS.UPDATE_KEYWORD,
+      payload: { name: updatedName },
+      expected: {
+        status: {
+          type: UI_STATUS.SUCCESS,
+          message: UI_MESSAGES.UPDATE_SUCCESS,
+        },
+      },
+      navigator: { isNotCalled: true },
+    })
   })
 
   it('handleDelete が正しく削除 API を呼び出し、ホームページに遷移すること', async () => {
-    let deleteCalled = false
-    server.use(
-      http.delete('*/api/keywords/:id', () => {
-        deleteCalled = true
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
+    const data = { id: MOCK_KEYWORDS[0].id }
+    mockHttpResponse(API_ACTIONS.DELETE_KEYWORD, {
+      success: true,
+      data,
+    })
 
     const { result } = renderHook(() => useKeywordPage())
     await waitFor(() => expect(result.current.keyword).toBeDefined())
@@ -118,15 +120,24 @@ describe.skip('useKeywordPage Hook', () => {
       await result.current.handleDelete()
     })
 
-    expect(deleteCalled).toBe(true)
-    expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
+    await verifyHttpStatusSuccess({
+      getHookState: () => result.current,
+      action: API_ACTIONS.DELETE_KEYWORD,
+      expected: {
+        status: {
+          type: UI_STATUS.SUCCESS,
+          message: UI_MESSAGES.DELETE_CONFIRM,
+        },
+      },
+      navigator: {},
+    })
   })
 
   it('Escape キーが押されたときにホームページに遷移すること', async () => {
     renderHook(() => useKeywordPage())
 
     await act(async () => {
-      fireEvent.keyDown(window, { key: 'Escape' })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE })
     })
 
     expect(mockNavigate).toHaveBeenCalledWith(APP_PATHS.HOME)
@@ -136,7 +147,7 @@ describe.skip('useKeywordPage Hook', () => {
     renderHook(() => useKeywordPage())
 
     await act(async () => {
-      fireEvent.keyDown(window, { key: 'Escape', isComposing: true })
+      fireEvent.keyDown(window, { key: KEY_VALUES.ESCAPE, isComposing: true })
     })
 
     expect(mockNavigate).not.toHaveBeenCalled()

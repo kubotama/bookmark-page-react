@@ -26,6 +26,7 @@ export const useBookmarks = () => {
     queryFn: async () => {
       return await client.readBookmarks()
     },
+    retry: import.meta.env.MODE === 'test' ? false : 3,
   })
 }
 

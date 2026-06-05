@@ -5,6 +5,7 @@ import {
   COMMON_MESSAGES,
   ERROR_MESSAGES,
   UI_STATUS,
+  DEFAULT_API_URL,
 } from '@shared/constants'
 
 import { SettingsPanel } from './SettingsPanel'
@@ -15,7 +16,7 @@ describe('SettingsPanel', () => {
     onClose: vi.fn(),
     onSave: vi.fn(() => null),
     onTest: vi.fn(async () => {}),
-    currentApiUrl: 'http://localhost:3030',
+    currentApiUrl: DEFAULT_API_URL,
     connectionStatus: { type: UI_STATUS.IDLE, message: '' },
   }
 

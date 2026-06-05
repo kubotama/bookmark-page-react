@@ -16,7 +16,7 @@ import { MOCK_BOOKMARK_1, MOCK_KEYWORDS, MOCK_IDS } from '@shared/test/fixtures'
 import * as urlUtils from '@shared/utils/url'
 
 import { BookmarkPage } from './BookmarkPage'
-import { server } from '../test/setup'
+import { server } from '../test/server'
 import { fireEvent, render, screen, waitFor } from '../test/utils'
 
 // openUrlInNewTab をモック
@@ -28,7 +28,7 @@ vi.mock('@shared/utils/url', async () => {
   }
 })
 
-describe.skip('BookmarkPage Component', () => {
+describe('BookmarkPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
