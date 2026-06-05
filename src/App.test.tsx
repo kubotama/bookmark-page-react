@@ -120,11 +120,6 @@ describe('App Integration', () => {
     )
     setup()
     expect(await screen.findByRole(ARIA_ROLES.ALERT)).toBeInTheDocument()
-
-    // expect(console.error).toHaveBeenCalledWith(
-    //   LOG_MESSAGES.API_RESPONSE_PARSE_FAILED(500),
-    //   expect.any(Error),
-    // )
   })
 
   it('ブックマークをクリックすると詳細画面に遷移すること', async () => {

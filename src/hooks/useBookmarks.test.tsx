@@ -607,7 +607,7 @@ describe('useBookmarks Hook', () => {
       await verifyHttpQueryError({
         getHookState: () => result.current.hook,
         action: API_ACTIONS.UPDATE_KEYWORD,
-        payload: { name }, // API_ACTIONS.UPDATE_KEYWORD の送信ペイロードは { id, name } です
+        payload: { name },
         expected,
         extraAssertions: () => {
           // エラー時はキャッシュが元のままであることを検証
