@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "client:dev": "vite",
-    "server:dev": "tsx watch server/index.ts",
+    "server:dev": "wrangler dev",
     "build": "tsc && vite build",
     "type-check": "concurrently \"npm:type-check:client\" \"npm:type-check:extension\" \"npm:check:paths\" \"npm:type-check:server\"",
     "type-check:client": "tsc -p tsconfig.app.json --noEmit",
@@ -51,11 +51,9 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@hono/node-server": "^2.0.1",
     "@hono/zod-validator": "^0.7.6",
     "@tanstack/react-query": "^5.100.9",
     "@testing-library/jest-dom": "^6.9.1",
-    "better-sqlite3": "^12.9.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.16",
     "react": "^19.2.5",
@@ -71,7 +69,6 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/chrome": "^0.1.40",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
@@ -100,6 +97,7 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.59.1",
     "vite": "^8.0.10",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "wrangler": "^3.57.1"
   }
 }
