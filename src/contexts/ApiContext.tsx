@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 
-import { ERROR_MESSAGES } from '@shared/constants'
+import { DEFAULT_API_URL, ERROR_MESSAGES } from '@shared/constants'
 import { validateApiUrl } from '@shared/utils/url'
 
 import {
@@ -39,8 +39,7 @@ const ApiContext = createContext<ApiContextType | undefined>(undefined)
 // ApiContext.tsx の修正後イメージ
 export const ApiProvider = ({ children }: ApiProviderProps) => {
   const [apiUrl, setApiUrl] = useState(
-    () =>
-      localStorage.getItem('bookmark_page_api_url') || 'http://localhost:3030',
+    () => localStorage.getItem('bookmark_page_api_url') || DEFAULT_API_URL,
   )
 
   const client = useMemo(() => {

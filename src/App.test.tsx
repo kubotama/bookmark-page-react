@@ -86,7 +86,7 @@ describe('App Integration', () => {
 
   const setup = (bookmarks?: Bookmark[]) => {
     // localStorage に初期値を設定
-    localStorage.setItem('bookmark_page_api_url', 'http://localhost:3030') // STORAGE_KEYS.API_URL の実際の値
+    localStorage.setItem('bookmark_page_api_url', DEFAULT_API_URL) // STORAGE_KEYS.API_URL の実際の値
 
     if (bookmarks) {
       server.use(

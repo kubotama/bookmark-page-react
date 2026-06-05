@@ -17,7 +17,7 @@ import { useSettings } from './useSettings'
 // ApiContext のモック
 vi.mock('../contexts/ApiContext', () => ({
   useApi: vi.fn(() => ({
-    apiUrl: 'http://localhost:3030', // テスト用の初期値
+    apiUrl: DEFAULT_API_URL, // テスト用の初期値
     updateApiUrl: vi.fn(), // モック関数
   })),
 }))
@@ -185,7 +185,7 @@ describe('useSettings Hook', () => {
   describe('context values', () => {
     it('ApiContext から取得した URL と保存関数が正しく公開されていること', () => {
       const { result } = renderHook(() => useSettings(), { wrapper })
-      expect(result.current.currentApiUrl).toBe('http://localhost:3030')
+      expect(result.current.currentApiUrl).toBe(DEFAULT_API_URL)
       expect(typeof result.current.saveSettings).toBe('function')
     })
   })

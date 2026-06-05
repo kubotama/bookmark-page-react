@@ -1,8 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { http, HttpResponse } from 'msw'
 import { expect, vi, type MockInstance } from 'vitest'
 
-import { API_ACTIONS, APP_PATHS, HTTP_STATUS } from '@shared/constants'
+import {
+  API_ACTIONS,
+  APP_PATHS,
+  DEFAULT_API_URL,
+  HTTP_STATUS,
+} from '@shared/constants'
 import type { Bookmark } from '@shared/schemas/bookmark'
 import type { Keyword } from '@shared/schemas/keyword'
 
@@ -10,7 +14,7 @@ import { server, mswRequestHistory } from './server'
 import { waitFor } from './utils'
 import { BookmarkApiError } from '../lib/api-client'
 
-const BASE_URL = 'http://localhost:3030'
+const BASE_URL = DEFAULT_API_URL
 
 // UI遷移検証用の共通モック
 export const mockNavigate = vi.fn()
@@ -83,7 +87,7 @@ export const mockHttpResponse = (
 
     // 2. ここで一括して「記録 + レスポンス」のハンドラを生成して登録する
     server.use(
-      mswMethod(fullUrl, async ({ request }: any) => {
+      mswMethod(fullUrl, async ({ request }: { request: Request }) => {
         // 記録ロジック (共通)
         const url = new URL(request.url)
         let body = null

@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
 
+import { DEFAULT_API_URL } from '@shared/constants'
+
 import { BookmarkIdSchema } from '../schemas/bookmark'
 import { KeywordIdSchema } from '../schemas/keyword'
 
@@ -111,7 +113,7 @@ export const MOCK_BOOKMARK_ENTITIES = [
 ]
 
 export const VALID_URLS = {
-  HTTP: 'http://localhost:3030',
+  HTTP: DEFAULT_API_URL,
   HTTPS: 'https://example.com',
   GOOGLE: 'https://google.com',
   LOOPBACK: 'http://127.0.0.1:8080',
