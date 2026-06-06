@@ -4,8 +4,9 @@ import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url' // 追加
 
 import { uuidv7 } from 'uuidv7'
+import { z } from 'zod'
 
-import { DB_CONSTANTS } from '../shared/constants'
+import { DB_CONSTANTS, LOG_MESSAGES } from '../shared/constants'
 
 // デフォルトのパス設定
 const DEFAULT_DB_PATH = path.join(process.cwd(), DB_CONSTANTS.FILENAME)
@@ -22,17 +23,18 @@ export function generateMigrationSql(
     throw new Error(`Error: Old database file not found at ${dbPath}`)
   }
 
-  console.log(`Reading old database from ${dbPath}...`)
+  console.log(`LOG_MESSAGES.MIGRATION_READING_DB(${dbPath})`)
   const db = new DatabaseSync(dbPath)
 
   // 1. ブックマークの読み込みとマッピング
   const bookmarksQuery = db.prepare('SELECT * FROM bookmarks')
-  const oldBookmarks = bookmarksQuery.all() as {
-    bookmark_id: number
-    url: string
-    title: string
-    sort_order: number
-  }[]
+  const BookmarkSchema = z.object({
+    bookmark_id: z.number(),
+    url: z.string(),
+    title: z.string(),
+    sort_order: z.number(),
+  })
+  const oldBookmarks = z.array(BookmarkSchema).parse(bookmarksQuery.all())
 
   const bookmarkMap = new Map<number, string>()
   const bookmarkSqls: string[] = []
@@ -49,10 +51,11 @@ export function generateMigrationSql(
 
   // 2. キーワードの読み込みとマッピング
   const keywordsQuery = db.prepare('SELECT * FROM keywords')
-  const oldKeywords = keywordsQuery.all() as {
-    keyword_id: number
-    keyword_name: string
-  }[]
+  const KeywordSchema = z.object({
+    keyword_id: z.number(),
+    keyword_name: z.string(),
+  })
+  const oldKeywords = z.array(KeywordSchema).parse(keywordsQuery.all())
 
   const keywordMap = new Map<number, string>()
   const keywordSqls: string[] = []
@@ -68,11 +71,12 @@ export function generateMigrationSql(
 
   // 3. ブックマークとキーワードの関連付け
   const relationsQuery = db.prepare('SELECT * FROM bookmark_keywords')
-  const oldRelations = relationsQuery.all() as {
-    bookmark_keyword_id: number
-    bookmark_id: number
-    keyword_id: number
-  }[]
+  const RelationSchema = z.object({
+    bookmark_keyword_id: z.number(),
+    bookmark_id: z.number(),
+    keyword_id: z.number(),
+  })
+  const oldRelations = z.array(RelationSchema).parse(relationsQuery.all())
 
   const relationSqls: string[] = []
 
@@ -88,7 +92,7 @@ export function generateMigrationSql(
     } else {
       // 修正ポイント: テンプレートリテラルのタイポを修正
       console.warn(
-        `Warning: Broken relation found in old db: bookmark_id=${r.bookmark_id}, keyword_id=${r.keyword_id}`,
+        LOG_MESSAGES.MIGRATION_BROKEN_RELATION(r.bookmark_id, r.keyword_id),
       )
     }
   }
@@ -125,10 +129,10 @@ const isMain = process.argv[1] === path.resolve(__filename) // 変更
 if (isMain) {
   try {
     const stats = generateMigrationSql()
-    console.log(`\nMigration SQL generated successfully!`)
-    console.log(`Total Bookmarks: ${stats.bookmarksCount}`)
-    console.log(`Total Keywords: ${stats.keywordsCount}`)
-    console.log(`Total Relations: ${stats.relationsCount}`)
+    console.log(LOG_MESSAGES.MIGRATION_SUCCESS)
+    console.log(LOG_MESSAGES.MIGRATION_TOTAL_BOOKMARKS(stats.bookmarksCount))
+    console.log(LOG_MESSAGES.MIGRATION_TOTAL_KEYWORDS(stats.keywordsCount))
+    console.log(LOG_MESSAGES.MIGRATION_TOTAL_RELATIONS(stats.relationsCount))
   } catch (error) {
     if (error instanceof Error) {
       console.error(error.message)
