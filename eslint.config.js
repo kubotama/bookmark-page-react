@@ -8,7 +8,7 @@ import importX from 'eslint-plugin-import-x'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage']),
+  globalIgnores(['dist', 'coverage', '.wrangler', 'dist-extension']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

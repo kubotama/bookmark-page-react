@@ -130,7 +130,7 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
   })
   .delete(
     '/:id',
-    zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
+    zValidator('param', z.object({ id: BookmarkIdSchema })),
     async (c) => {
       const { id } = c.req.valid('param')
       // const bookmarkId = parseInt(id, 10)
@@ -164,7 +164,7 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
   )
   .patch(
     '/:id',
-    zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
+    zValidator('param', z.object({ id: BookmarkIdSchema })),
     zValidator('json', updateBookmarkInputSchema),
     async (c) => {
       const { id } = c.req.valid('param')
@@ -267,7 +267,7 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
   )
   .post(
     '/:id/keywords',
-    zValidator('param', z.object({ id: z.string().regex(/^[1-9]\d*$/) })),
+    zValidator('param', z.object({ id: BookmarkIdSchema })),
     zValidator('json', attachKeywordInputSchema),
     async (c) => {
       const { id: bookmarkId } = c.req.valid('param')
@@ -346,8 +346,8 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
     zValidator(
       'param',
       z.object({
-        id: z.string().regex(/^[1-9]\d*$/),
-        keywordId: z.string().regex(/^[1-9]\d*$/),
+        id: BookmarkIdSchema,
+        keywordId: KeywordIdSchema,
       }),
     ),
     async (c) => {

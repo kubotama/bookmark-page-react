@@ -45,8 +45,8 @@ export const PLACEHOLDERS = {
  * デフォルトのポート番号
  */
 export const DEFAULT_PORTS = {
-  FRONTEND: 5173,
-  BACKEND: 3030,
+  FRONTEND: 5180,
+  BACKEND: 8787,
 } as const
 
 /**

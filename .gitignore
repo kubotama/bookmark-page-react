@@ -44,3 +44,4 @@ dist-extension/
 server/db/migrations_backup/
 
 .wrangler/
+.dev.vars
