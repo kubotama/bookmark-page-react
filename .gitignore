@@ -45,3 +45,4 @@ server/db/migrations_backup/
 
 .wrangler/
 .dev.vars
+d1-import.sql
