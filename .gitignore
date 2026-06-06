@@ -42,3 +42,5 @@ dist-extension/
 
 # Database migrations backup
 server/db/migrations_backup/
+
+.wrangler/
