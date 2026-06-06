@@ -440,6 +440,14 @@ export const LOG_MESSAGES = {
     `Action ${action} is not yet implemented.`,
   UNKNOWN_ACTION: 'Unknown action received.',
   INVALID_PAYLOAD: (message: string) => `Invalid payload: ${message}`,
+  MIGRATION_READING_DB: (path: string) =>
+    `Reading old database from ${path}...`,
+  MIGRATION_BROKEN_RELATION: (bookmarkId: number, keywordId: number) =>
+    `Warning: Broken relation found in old db: bookmark_id=${bookmarkId}, keyword_id=${keywordId}`,
+  MIGRATION_SUCCESS: '\nMigration SQL generated successfully!',
+  MIGRATION_TOTAL_BOOKMARKS: (count: number) => `Total Bookmarks: ${count}`,
+  MIGRATION_TOTAL_KEYWORDS: (count: number) => `Total Keywords: ${count}`,
+  MIGRATION_TOTAL_RELATIONS: (count: number) => `Total Relations: ${count}`,
 } as const
 
 /**

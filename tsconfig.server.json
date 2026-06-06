@@ -7,10 +7,10 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "types": ["chrome", "@cloudflare/workers-types"],
+    "types": ["node", "chrome", "@cloudflare/workers-types"],
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["server", "shared"],
+  "include": ["server", "shared", "scripts"],
   "exclude": ["shared/components/ui"]
 }
