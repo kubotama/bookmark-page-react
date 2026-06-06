@@ -30,7 +30,7 @@
     "type-check:extension": "tsc -p extension/tsconfig.json --noEmit",
     "prepare": "husky",
     "db:generate": "npx drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply bookmark-page-db --local",
+    "db:migrate:local": "wrangler d1 migrations apply bookmark-page-db --local -y",
     "db:studio": "npx drizzle-kit studio"
   },
   "lint-staged": {
