@@ -29,11 +29,7 @@ export default defineConfig(({ mode }) => {
     test: {
       globals: true,
       environment: 'jsdom',
-      setupFiles: [
-        './src/test/setup.ts',
-        './extension/test/setup.ts',
-        './server/test/setup.ts',
-      ],
+      setupFiles: ['./src/test/setup.ts', './extension/test/setup.ts'],
       exclude: ['node_modules', 'dist', 'dist-extension', '.git', '.cache'],
       coverage: {
         provider: 'v8',
