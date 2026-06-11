@@ -37,12 +37,13 @@ export const createBookmark = async (
   title: string,
   url: string,
   sortOrder = 0,
+  id?: string,
 ) => {
   const db = getDb(d1)
   const [row] = await db
     .insert(bookmarks)
     .values({
-      id: uuidv7(),
+      id: id ?? uuidv7(),
       title,
       url,
       sortOrder,
@@ -54,12 +55,16 @@ export const createBookmark = async (
 /**
  * テスト用のキーワードを作成する
  */
-export const createKeyword = async (d1: D1Database, name: string) => {
+export const createKeyword = async (
+  d1: D1Database,
+  name: string,
+  id?: string,
+) => {
   const db = getDb(d1)
   const [row] = await db
     .insert(keywords)
     .values({
-      id: uuidv7(),
+      id: id ?? uuidv7(),
       name,
     })
     .returning()
@@ -73,10 +78,11 @@ export const attachKeyword = async (
   d1: D1Database,
   bookmarkId: string,
   keywordId: string,
+  id?: string,
 ) => {
   const db = getDb(d1)
   await db.insert(bookmarkKeywords).values({
-    id: uuidv7(),
+    id: id ?? uuidv7(),
     bookmarkId,
     keywordId,
   })
