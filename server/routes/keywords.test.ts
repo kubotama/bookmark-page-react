@@ -12,7 +12,7 @@ import { VALID_URLS } from '@shared/test/fixtures'
 
 import app from '../app'
 import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
-import { attachKeyword, createBookmark, createKeyword } from '../test/seedUtils'
+import { attachKeyword, createBookmark, createKeyword } from '../test/testUtils'
 import { API_ERROR_CODES } from '../utils/error'
 
 describe.skip(`GET ${API_PATHS.KEYWORDS}`, () => {

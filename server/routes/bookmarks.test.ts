@@ -12,7 +12,7 @@ import { VALID_URLS } from '@shared/test/fixtures'
 
 import app from '../app'
 import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
-import { createBookmark, createKeyword, attachKeyword } from '../test/seedUtils'
+import { createBookmark, createKeyword, attachKeyword } from '../test/testUtils'
 import { API_ERROR_CODES } from '../utils/error'
 
 describe.skip('Bookmarks API', () => {
