@@ -111,6 +111,13 @@ export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
 }
 
 /**
+   2  * 204 No Content レスポンスであることを検証します
+     */
+export const validateNoContentResponse = async (res: Response) => {
+  expect(res.status).toBe(HTTP_STATUS.NO_CONTENT)
+}
+
+/**
  * 失敗レスポンスを検証します
  */
 

@@ -26,6 +26,7 @@ import {
   createD1Mock,
   validateBasicErrorResponse,
   validateErrorResponse,
+  validateNoContentResponse,
   validateSuccessResponse,
 } from '../test/testUtils'
 import { API_ERROR_CODES } from '../utils/error'
@@ -302,35 +303,61 @@ describe('Bookmarks API', () => {
       expect(resBody.error).toBeDefined()
     })
   })
+
+  describe(`DELETE ${API_PATHS.BOOKMARKS}/:id`, () => {
+    it('指定したブックマークを削除できること', async () => {
+      const targetId = MOCK_IDS.BOOKMARK_1
+
+      const dbMock = {
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([{ id: targetId }]), // 削除されたデータを返す
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${targetId}`,
+        { method: 'DELETE' },
+        { DB: mockD1 },
+      )
+
+      // ステータス 204 を期待
+      await validateNoContentResponse(res)
+    })
+
+    it('存在しない ID の削除時に 404 を返すこと', async () => {
+      const unknownId = MOCK_IDS.UNKNOWN_ID
+
+      const dbMock = {
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]), // 削除されたデータを返す
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${unknownId}`,
+        { method: 'DELETE' },
+        { DB: mockD1 },
+      )
+
+      // validateErrorResponse を使用して検証
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+        API_ERROR_CODES.NOT_FOUND,
+      )
+    })
+  })
 })
 
 /*
 describe.skip('Bookmarks API', () => {
-  describe(`DELETE ${API_PATHS.BOOKMARKS}/:id`, () => {
-    it('指定したブックマークを削除できること', async () => {
-      seed()
-      const listRes = await app.request(API_PATHS.BOOKMARKS)
-      const listBody = await listRes.json()
-      const targetId = listBody.data.bookmarks[0].id
-
-      const delRes = await app.request(`${API_PATHS.BOOKMARKS}/${targetId}`, {
-        method: 'DELETE',
-      })
-      expect(delRes.status).toBe(HTTP_STATUS.NO_CONTENT)
-
-      const afterRes = await app.request(API_PATHS.BOOKMARKS)
-      const afterBody = await afterRes.json()
-      expect(afterBody.data.bookmarks).toHaveLength(1)
-    })
-
-    it('存在しない ID の削除時に 404 を返すこと', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999`, {
-        method: 'DELETE',
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-    })
-  })
-
   describe(`PATCH ${API_PATHS.BOOKMARKS}/:id`, () => {
     const INITIAL_DATA = { title: 'Initial', url: VALID_URLS.HTTP }
 
