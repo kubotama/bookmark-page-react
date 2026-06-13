@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { API_PATHS, HTTP_STATUS } from '@shared/constants'
+import {
+  API_PATHS,
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  HTTP_STATUS,
+} from '@shared/constants'
 import {
   bookmarkSchema,
   bookmarksSchema,
@@ -17,7 +22,13 @@ import {
 
 import app from '../app'
 import { getDb } from '../db'
-import { createD1Mock, validateSuccessResponse } from '../test/testUtils'
+import {
+  createD1Mock,
+  validateBasicErrorResponse,
+  validateErrorResponse,
+  validateSuccessResponse,
+} from '../test/testUtils'
+import { API_ERROR_CODES } from '../utils/error'
 
 // getDb をモック化
 vi.mock('../db', async (importOriginal) => {
@@ -27,6 +38,20 @@ vi.mock('../db', async (importOriginal) => {
     getDb: vi.fn(),
   }
 })
+
+/**
+ * テスト用の SQLite エラークラス
+ * code プロパティを持つことで server/utils/error.ts の isSqliteError をパスします
+ */
+class MockSqliteError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'MockSqliteError'
+    this.code = code
+  }
+}
 
 describe('Bookmarks API', () => {
   let mockD1: D1Database
@@ -81,12 +106,18 @@ describe('Bookmarks API', () => {
       const dbMock = {
         query: {
           bookmarks: {
-            findMany: vi
-              .fn()
-              .mockResolvedValue([
-                createMockedBookmark({ title: MOCK_BOOKMARK_1.title }),
-                createMockedBookmark({ title: MOCK_BOOKMARK_2.title }),
-              ]),
+            findMany: vi.fn().mockResolvedValue([
+              createMockedBookmark({
+                id: MOCK_BOOKMARK_1.id,
+                title: MOCK_BOOKMARK_1.title,
+                url: MOCK_BOOKMARK_1.url,
+              }),
+              createMockedBookmark({
+                id: MOCK_BOOKMARK_2.id,
+                title: MOCK_BOOKMARK_2.title,
+                url: MOCK_BOOKMARK_2.url,
+              }),
+            ]),
           },
         },
       } as unknown as ReturnType<typeof getDb>
@@ -100,16 +131,23 @@ describe('Bookmarks API', () => {
       expect(data.bookmarks).toHaveLength(2)
       expect(data.bookmarks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ title: MOCK_BOOKMARK_1.title }),
-          expect.objectContaining({ title: MOCK_BOOKMARK_2.title }),
+          expect.objectContaining({
+            id: MOCK_BOOKMARK_1.id,
+            title: MOCK_BOOKMARK_1.title,
+            url: MOCK_BOOKMARK_1.url,
+          }),
+          expect.objectContaining({
+            id: MOCK_BOOKMARK_2.id,
+            title: MOCK_BOOKMARK_2.title,
+            url: MOCK_BOOKMARK_2.url,
+          }),
         ]),
       )
     })
-  })
 
-  describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
     it('関連付けられたキーワードを含めて返却されること', async () => {
       const bookmarkWithKeywords = {
+        id: MOCK_BOOKMARK_1.id,
         title: MOCK_BOOKMARK_1.title,
         url: MOCK_BOOKMARK_1.url,
         keywords: [MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]],
@@ -133,7 +171,9 @@ describe('Bookmarks API', () => {
       expect(data.bookmarks).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
+            id: MOCK_BOOKMARK_1.id,
             title: MOCK_BOOKMARK_1.title,
+            url: MOCK_BOOKMARK_1.url,
             keywords: expect.arrayContaining([
               expect.objectContaining({ name: MOCK_KEYWORDS[0].name }),
               expect.objectContaining({ name: MOCK_KEYWORDS[1].name }),
@@ -184,54 +224,88 @@ describe('Bookmarks API', () => {
       expect(data.title).toBe(newData.title)
       expect(data.url).toBe(newData.url)
     })
+
+    it('URLの重複登録時に 409 を返すこと', async () => {
+      const newData = {
+        title: TEST_STRINGS.NEW_NAME,
+        url: VALID_URLS.HTTPS,
+      }
+
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.UNIQUE_CONSTRAING_FAILED,
+        ERROR_CODES.UNIQUE_CONSTRAINT,
+      )
+      const dbMock = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockRejectedValue(dbError), // 型安全なエラーを投げる
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      // 実行
+      const res = await app.request(
+        API_PATHS.BOOKMARKS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newData),
+        },
+        { DB: mockD1 },
+      )
+
+      // 検証
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.CONFLICT,
+        ERROR_MESSAGES.DUPLICATE_URL,
+      )
+    })
+
+    it.each([
+      {
+        name: 'タイトルが空',
+        body: { title: '', url: 'https://new-example.com' },
+      },
+      { name: 'URLが不正', body: { title: 'Test', url: 'not-a-url' } },
+      { name: 'タイトルが欠落', body: { url: 'https://new-example.com' } },
+    ])('無効なデータ ($name) を拒否すること', async ({ body }) => {
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      )
+      const dbMock = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockRejectedValue(dbError), // 型安全なエラーを投げる
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        API_PATHS.BOOKMARKS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+        { DB: mockD1 },
+      )
+
+      const resBody = await validateBasicErrorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+      )
+
+      expect(resBody.error).toBeDefined()
+    })
   })
 })
 
 /*
 describe.skip('Bookmarks API', () => {
-
-    it('URLの重複登録時に 409 を返すこと', async () => {
-      seed()
-      const newData = {
-        title: 'Duplicate URL',
-        url: SEED_DATA_1.url,
-      }
-      const res = await app.request(API_PATHS.BOOKMARKS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData),
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-      const body = await res.json()
-      expect(body.success).toBe(false)
-      expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_URL)
-      expect(body.error.code).toBe(API_ERROR_CODES.CONFLICT)
-    })
-
-    it('無効なデータ（バリデーションエラー）を拒否すること', async () => {
-      const invalidDataList = [
-        {
-          name: 'タイトルが空',
-          body: { title: '', url: 'https://new-example.com' },
-        },
-        { name: 'URLが不正', body: { title: 'Test', url: 'not-a-url' } },
-        { name: 'タイトルが欠落', body: { url: 'https://new-example.com' } },
-      ]
-
-      for (const { body } of invalidDataList) {
-        const res = await app.request(API_PATHS.BOOKMARKS, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-        const resBody = await res.json()
-        expect(resBody.success).toBe(false)
-      }
-    })
-  })
-
   describe(`DELETE ${API_PATHS.BOOKMARKS}/:id`, () => {
     it('指定したブックマークを削除できること', async () => {
       seed()

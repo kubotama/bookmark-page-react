@@ -3,7 +3,7 @@ import { expect, vi } from 'vitest'
 import z from 'zod'
 
 import { type HttpStatus, HTTP_STATUS } from '@shared/constants'
-import { createApiSuccessSchema } from '@shared/schemas/api'
+import { ApiErrorSchema, createApiSuccessSchema } from '@shared/schemas/api'
 
 import { getDb } from '../db'
 import { bookmarks, keywords, bookmarkKeywords } from '../db/schema'
@@ -108,4 +108,57 @@ export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
   const successSchema = createApiSuccessSchema(dataSchema)
 
   return (successSchema.parse(body) as { success: true; data: z.infer<T> }).data
+}
+
+/**
+ * 失敗レスポンスを検証します
+ */
+
+export const validateErrorResponse = async (
+  res: Response,
+  expectedStatus: HttpStatus,
+  expectedMessage?: string,
+  expectedCode?: string,
+) => {
+  expect(res.status).toBe(expectedStatus)
+  const body = await res.json()
+
+  // 1. 基本構造の検証 (success: false であること等)
+  const result = ApiErrorSchema.parse(body)
+  expect(result.success).toBe(false)
+
+  // 2. メッセージとコードの検証（指定がある場合）
+  if (expectedMessage) expect(result.error.message).toBe(expectedMessage)
+  if (expectedCode) expect(result.error.code).toBe(expectedCode)
+
+  return result.error
+}
+
+/**
+ * 失敗レスポンス (success: false) であることを網羅的に検証します。
+ * ステータスコードの検証も同時に行い、型付けされたボディを返します。
+ */
+export const validateBasicErrorResponse = async (
+  res: Response,
+  expectedStatus: HttpStatus,
+): Promise<{ success: false; [key: string]: unknown }> => {
+  // 1. ステータスコードの検証
+  expect(res.status).toBe(expectedStatus)
+
+  const body = await res.json()
+
+  // 2. success: false であることを Zod で検証
+  // .passthrough() を使うことで、error プロパティなどの詳細が
+  // どんな形式（Hono形式 or 自前形式）であっても許容します
+  const basicErrorSchema = z
+    .object({
+      success: z.literal(false),
+    })
+    .passthrough()
+
+  // 失敗時は ZodError が投げられテストが止まります
+  return basicErrorSchema.parse(body) as {
+    success: false
+    [key: string]: unknown
+  }
 }
