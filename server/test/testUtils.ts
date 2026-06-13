@@ -1,5 +1,9 @@
 import { uuidv7 } from 'uuidv7'
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
+import z from 'zod'
+
+import { type HttpStatus, HTTP_STATUS } from '@shared/constants'
+import { createApiSuccessSchema } from '@shared/schemas/api'
 
 import { getDb } from '../db'
 import { bookmarks, keywords, bookmarkKeywords } from '../db/schema'
@@ -86,4 +90,22 @@ export const attachKeyword = async (
     bookmarkId,
     keywordId,
   })
+}
+
+/**
+ * 成功レスポンスを検証し、中身のデータを返します
+ */
+export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
+  res: Response,
+  dataSchema: T,
+  expectedStatus: HttpStatus = HTTP_STATUS.OK,
+): Promise<z.infer<T>> => {
+  expect(res.status).toBe(expectedStatus)
+
+  const body = await res.json()
+
+  // 既存のスキーマ生成関数を利用
+  const successSchema = createApiSuccessSchema(dataSchema)
+
+  return (successSchema.parse(body) as { success: true; data: z.infer<T> }).data
 }

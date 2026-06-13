@@ -1,76 +1,144 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { API_PATHS, HTTP_STATUS } from '@shared/constants'
 import {
-  API_PATHS,
-  ERROR_MESSAGES,
-  HTTP_STATUS,
-  LOG_MESSAGES,
-} from '@shared/constants'
-import { VALID_URLS } from '@shared/test/fixtures'
+  bookmarkSchema,
+  bookmarksSchema,
+  type Keyword,
+} from '@shared/schemas/bookmark'
+import {
+  MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
+  MOCK_IDS,
+  MOCK_KEYWORDS,
+  TEST_STRINGS,
+  VALID_URLS,
+} from '@shared/test/fixtures'
 
 import app from '../app'
-import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
-import { createBookmark, createKeyword, attachKeyword } from '../test/testUtils'
-import { API_ERROR_CODES } from '../utils/error'
+import { getDb } from '../db'
+import { createD1Mock, validateSuccessResponse } from '../test/testUtils'
 
-describe.skip('Bookmarks API', () => {
+// getDb をモック化
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db')>()
+  return {
+    ...actual,
+    getDb: vi.fn(),
+  }
+})
+
+describe('Bookmarks API', () => {
+  let mockD1: D1Database
+
   beforeEach(() => {
-    initializeDatabase()
-    resetDatabase()
+    mockD1 = createD1Mock()
     vi.restoreAllMocks()
   })
 
-  const SEED_DATA_1 = { title: 'Example Domain', url: VALID_URLS.HTTPS }
-  const SEED_DATA_2 = { title: 'Google', url: VALID_URLS.GOOGLE }
-
-  const seed = () => {
-    createBookmark(SEED_DATA_1.title, SEED_DATA_1.url, 0)
-    createBookmark(SEED_DATA_2.title, SEED_DATA_2.url, 1)
-  }
-
-  const seedWithKeywords = () => {
-    const b1 = createBookmark(SEED_DATA_1.title, SEED_DATA_1.url, 0)
-    const k1 = createKeyword('Tag1')
-    const k2 = createKeyword('Tag2')
-
-    attachKeyword(b1.bookmark_id, k1.keyword_id)
-    attachKeyword(b1.bookmark_id, k2.keyword_id)
+  const createMockedBookmark = ({
+    id = MOCK_IDS.NEW_KEYWORD,
+    title = TEST_STRINGS.NEW_NAME,
+    url = VALID_URLS.HTTPS,
+    sortOrder = 0,
+    keywords = [],
+  }: {
+    id?: string
+    title?: string
+    url?: string
+    sortOrder?: number
+    keywords?: Keyword[]
+  }) => {
+    return {
+      id,
+      title,
+      url,
+      sortOrder,
+      bookmarkKeywords: keywords.map((k) => ({
+        keyword: {
+          id: k.id,
+          name: k.name,
+        },
+      })),
+    }
   }
 
   describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
     it('空のリストを返すこと', async () => {
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-      expect(body.data.bookmarks).toEqual([])
+      const dbMock = {
+        query: {
+          bookmarks: { findMany: vi.fn().mockResolvedValue([]) },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(API_PATHS.BOOKMARKS, {}, { DB: mockD1 })
+      const data = await validateSuccessResponse(res, bookmarksSchema)
+      expect(data.bookmarks).toHaveLength(0)
     })
 
     it('登録済みのブックマークを返すこと', async () => {
-      seed()
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.data.bookmarks).toHaveLength(2)
-      expect(body.data.bookmarks[0].title).toBe(SEED_DATA_1.title)
-      expect(body.data.bookmarks[1].title).toBe(SEED_DATA_2.title)
-    })
+      const dbMock = {
+        query: {
+          bookmarks: {
+            findMany: vi
+              .fn()
+              .mockResolvedValue([
+                createMockedBookmark({ title: MOCK_BOOKMARK_1.title }),
+                createMockedBookmark({ title: MOCK_BOOKMARK_2.title }),
+              ]),
+          },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-    it('関連付けられたキーワードを含めて返却されること', async () => {
-      seedWithKeywords()
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
+      // 3. 実行 (mockD1 は型合わせのために渡しますが、内部では getDb モックが優先されます)
+      const res = await app.request(API_PATHS.BOOKMARKS, {}, { DB: mockD1 })
 
-      const bookmark = body.data.bookmarks[0]
-      expect(bookmark.keywords).toBeDefined()
-      expect(bookmark.keywords).toHaveLength(2)
-      expect(bookmark.keywords).toEqual(
+      // 4. 検証
+      const data = await validateSuccessResponse(res, bookmarksSchema)
+      expect(data.bookmarks).toHaveLength(2)
+      expect(data.bookmarks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ name: 'Tag1' }),
-          expect.objectContaining({ name: 'Tag2' }),
+          expect.objectContaining({ title: MOCK_BOOKMARK_1.title }),
+          expect.objectContaining({ title: MOCK_BOOKMARK_2.title }),
+        ]),
+      )
+    })
+  })
+
+  describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
+    it('関連付けられたキーワードを含めて返却されること', async () => {
+      const bookmarkWithKeywords = {
+        title: MOCK_BOOKMARK_1.title,
+        url: MOCK_BOOKMARK_1.url,
+        keywords: [MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]],
+      }
+
+      const dbMock = {
+        query: {
+          bookmarks: {
+            findMany: vi
+              .fn()
+              .mockResolvedValue([createMockedBookmark(bookmarkWithKeywords)]),
+          },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(API_PATHS.BOOKMARKS, {}, { DB: mockD1 })
+
+      const data = await validateSuccessResponse(res, bookmarksSchema)
+      expect(data.bookmarks).toHaveLength(1)
+      expect(data.bookmarks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: MOCK_BOOKMARK_1.title,
+            keywords: expect.arrayContaining([
+              expect.objectContaining({ name: MOCK_KEYWORDS[0].name }),
+              expect.objectContaining({ name: MOCK_KEYWORDS[1].name }),
+            ]),
+          }),
         ]),
       )
     })
@@ -79,22 +147,48 @@ describe.skip('Bookmarks API', () => {
   describe(`POST ${API_PATHS.BOOKMARKS}`, () => {
     it('新しいブックマークを登録できること', async () => {
       const newData = {
-        title: 'New Example',
-        url: 'https://new-example.com',
+        title: TEST_STRINGS.NEW_NAME,
+        url: VALID_URLS.HTTPS,
       }
-      const res = await app.request(API_PATHS.BOOKMARKS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData),
-      })
 
-      expect(res.status).toBe(HTTP_STATUS.CREATED)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-      expect(body.data.title).toBe(newData.title)
-      expect(body.data.url).toBe(newData.url)
-      expect(body.data.id).toBeDefined()
+      const dbMock = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([
+              createMockedBookmark({
+                id: MOCK_IDS.BOOKMARK_1,
+                title: newData.title,
+                url: newData.url,
+              }),
+            ]),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        API_PATHS.BOOKMARKS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newData),
+        },
+        { DB: mockD1 },
+      )
+
+      const data = await validateSuccessResponse(
+        res,
+        bookmarkSchema,
+        HTTP_STATUS.CREATED,
+      )
+      expect(data.title).toBe(newData.title)
+      expect(data.url).toBe(newData.url)
     })
+  })
+})
+
+/*
+describe.skip('Bookmarks API', () => {
 
     it('URLの重複登録時に 409 を返すこと', async () => {
       seed()
@@ -522,3 +616,4 @@ describe.skip('Bookmarks API', () => {
     })
   })
 })
+*/
