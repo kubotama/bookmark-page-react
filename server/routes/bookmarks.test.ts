@@ -354,75 +354,138 @@ describe('Bookmarks API', () => {
       )
     })
   })
+
+  describe(`PATCH ${API_PATHS.BOOKMARKS}/:id`, () => {
+    it.each([
+      {
+        name: 'タイトルのみ更新',
+        updates: { title: TEST_STRINGS.NEW_NAME },
+        expected: { title: TEST_STRINGS.NEW_NAME, url: MOCK_BOOKMARK_1.url },
+      },
+      {
+        name: 'URLのみ更新',
+        updates: { url: VALID_URLS.HTTPS },
+        expected: { title: MOCK_BOOKMARK_1.title, url: VALID_URLS.HTTPS },
+      },
+      {
+        name: '両方更新',
+        updates: { title: TEST_STRINGS.NEW_NAME, url: VALID_URLS.HTTPS },
+        expected: { title: TEST_STRINGS.NEW_NAME, url: VALID_URLS.HTTPS },
+      },
+    ])('$name が成功すること', async ({ updates, expected }) => {
+      const targetId = MOCK_BOOKMARK_1.id
+
+      // 更新後の期待されるデータ構造
+      const updatedMockBookmark = createMockedBookmark({
+        ...MOCK_BOOKMARK_1,
+        ...updates,
+      })
+
+      const dbMock = {
+        // 1. update メソッドのチェーンをモック
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([updatedMockBookmark]),
+            }),
+          }),
+        }),
+        // 2. findFirst メソッドをモック（再取得用）
+        query: {
+          bookmarks: {
+            findFirst: vi.fn().mockResolvedValue(updatedMockBookmark),
+          },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      // 実行
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        },
+        { DB: mockD1 },
+      )
+
+      // 検証
+      const data = await validateSuccessResponse(res, bookmarkSchema)
+      expect(data.title).toBe(expected.title)
+      expect(data.url).toBe(expected.url) // URLは変わっていないこと
+    })
+
+    it('存在しない ID の更新時に 404 を返すこと', async () => {
+      const targetId = MOCK_IDS.UNKNOWN_ID
+
+      const dbMock = {
+        // 1. update メソッドのチェーンをモック
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      // 実行
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: TEST_STRINGS.NEW_NAME }),
+        },
+        { DB: mockD1 },
+      )
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+      )
+    })
+
+    it('URL重複時に 409 を返すこと', async () => {
+      const dbError = new MockSqliteError(
+        'UNIQUE constraint failed',
+        ERROR_CODES.UNIQUE_CONSTRAINT,
+      )
+
+      const dbMock = {
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockRejectedValue(dbError), // 重複エラーを投げる
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: MOCK_BOOKMARK_2.url }), // 重複するURL
+        },
+        { DB: mockD1 },
+      )
+
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.CONFLICT,
+        ERROR_MESSAGES.DUPLICATE_URL,
+      )
+    })
+  })
 })
 
 /*
 describe.skip('Bookmarks API', () => {
-  describe(`PATCH ${API_PATHS.BOOKMARKS}/:id`, () => {
-    const INITIAL_DATA = { title: 'Initial', url: VALID_URLS.HTTP }
-
-    const seedOne = () => {
-      const result = sqlite
-        .prepare(
-          'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?)',
-        )
-        .run(INITIAL_DATA.title, INITIAL_DATA.url, 0)
-      return result.lastInsertRowid
-    }
-
-    it.each([
-      {
-        name: 'タイトルのみ更新',
-        updates: { title: 'Updated Title' },
-        expected: { title: 'Updated Title', url: INITIAL_DATA.url },
-      },
-      {
-        name: 'URLのみ更新',
-        updates: { url: 'https://updated.com' },
-        expected: { title: INITIAL_DATA.title, url: 'https://updated.com' },
-      },
-      {
-        name: '両方更新',
-        updates: { title: 'Both Updated', url: 'https://both.com' },
-        expected: { title: 'Both Updated', url: 'https://both.com' },
-      },
-    ])('$name が成功すること', async ({ updates, expected }) => {
-      const id = seedOne()
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.data.title).toBe(expected.title)
-      expect(body.data.url).toBe(expected.url)
-    })
-
-    it('URL重複時に 409 を返すこと', async () => {
-      seed() // SEED_DATA_1.url が登録される
-      const id = seedOne() // 新しいレコードを登録 (INITIAL_DATA.url)
-
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: SEED_DATA_1.url }), // 重複するURL
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-    })
-
-    it('存在しない ID の更新時に 404 を返すこと', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Fail' }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-    })
-  })
-
   describe(`PUT ${API_PATHS.BOOKMARKS}/reorder`, () => {
     it('ブックマークの順序を正常に変更できること', async () => {
       seed() // ID 1(sort 0), ID 2(sort 1)
