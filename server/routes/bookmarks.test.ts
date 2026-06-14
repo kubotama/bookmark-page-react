@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import z from 'zod'
 
 import {
   API_PATHS,
@@ -482,47 +483,53 @@ describe('Bookmarks API', () => {
       )
     })
   })
+
+  describe(`PUT ${API_PATHS.BOOKMARKS}/reorder`, () => {
+    it('ブックマークの順序を正常に変更できること', async () => {
+      const ids = [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id]
+
+      const dbMock = {
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue({ success: true }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/reorder`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        },
+        { DB: mockD1 },
+      )
+
+      // data: null であることを検証
+      await validateSuccessResponse(res, z.null())
+    })
+
+    it('不正な ID リストを拒否すること', async () => {
+      // UUID 形式でない ID を送信
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/reorder`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [TEST_STRINGS.INVALID_ID] }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateBasicErrorResponse(res, HTTP_STATUS.BAD_REQUEST)
+    })
+  })
 })
 
 /*
 describe.skip('Bookmarks API', () => {
-  describe(`PUT ${API_PATHS.BOOKMARKS}/reorder`, () => {
-    it('ブックマークの順序を正常に変更できること', async () => {
-      seed() // ID 1(sort 0), ID 2(sort 1)
-      const listRes = await app.request(API_PATHS.BOOKMARKS)
-      const listBody = await listRes.json()
-      const id1 = listBody.data.bookmarks[0].id
-      const id2 = listBody.data.bookmarks[1].id
-
-      // 順序を入れ替えて送信
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: [id2, id1] }),
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-
-      // 再取得して順序を確認
-      const afterRes = await app.request(API_PATHS.BOOKMARKS)
-      const afterBody = await afterRes.json()
-      expect(afterBody.data.bookmarks[0].id).toBe(id2)
-      expect(afterBody.data.bookmarks[1].id).toBe(id1)
-    })
-
-    it('不正な ID リストを拒否すること', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: ['invalid', 'id'] }),
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-    })
-  })
-
   describe(`POST ${API_PATHS.BOOKMARKS}/:id/keywords`, () => {
     it('キーワードをブックマークに紐付けられること', async () => {
       const b1 = createBookmark('B1', VALID_URLS.HTTP)
