@@ -6,6 +6,7 @@ import {
   ERROR_CODES,
   ERROR_MESSAGES,
   HTTP_STATUS,
+  LOG_MESSAGES,
 } from '@shared/constants'
 import {
   bookmarkSchema,
@@ -64,7 +65,7 @@ describe('Bookmarks API', () => {
   })
 
   const createMockedBookmark = ({
-    id = MOCK_IDS.NEW_KEYWORD,
+    id = MOCK_IDS.BOOKMARK_1,
     title = TEST_STRINGS.NEW_NAME,
     url = VALID_URLS.HTTPS,
     sortOrder = 0,
@@ -234,7 +235,7 @@ describe('Bookmarks API', () => {
       }
 
       const dbError = new MockSqliteError(
-        API_ERROR_CODES.UNIQUE_CONSTRAING_FAILED,
+        API_ERROR_CODES.UNIQUE_CONSTRAINT_FAILED,
         ERROR_CODES.UNIQUE_CONSTRAINT,
       )
       const dbMock = {
@@ -451,7 +452,7 @@ describe('Bookmarks API', () => {
 
     it('URL重複時に 409 を返すこと', async () => {
       const dbError = new MockSqliteError(
-        API_ERROR_CODES.UNIQUE_CONSTRAING_FAILED,
+        API_ERROR_CODES.UNIQUE_CONSTRAINT_FAILED,
         ERROR_CODES.UNIQUE_CONSTRAINT,
       )
 
@@ -621,7 +622,7 @@ describe('Bookmarks API', () => {
 
     it('既に紐付いているキーワードを再度紐付けようとした場合に 409 を返すこと', async () => {
       const dbError = new MockSqliteError(
-        API_ERROR_CODES.UNIQUE_CONSTRAING_FAILED,
+        API_ERROR_CODES.UNIQUE_CONSTRAINT_FAILED,
         ERROR_CODES.UNIQUE_CONSTRAINT,
       )
 
@@ -649,7 +650,7 @@ describe('Bookmarks API', () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: MOCK_IDS.UNKNOWN_ID }),
+          body: JSON.stringify({ keywordId: MOCK_KEYWORDS[0].id }),
         },
         { DB: mockD1 },
       )
@@ -708,165 +709,177 @@ describe('Bookmarks API', () => {
       await validateErrorResponse(res, HTTP_STATUS.NOT_FOUND)
     })
   })
-})
 
-/*
-describe.skip('Bookmarks API', () => {
   describe('Database Error Handling (500)', () => {
     const dbError = new Error('Database connection failed')
+    const targetId = MOCK_BOOKMARK_1.id
 
-    it('GET: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db.query.bookmarks, 'findMany').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      const body = await res.json()
-      expect(body.success).toBe(false)
-      expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
-      expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.FETCH_BOOKMARKS_FAILED,
-        dbError,
-      )
-    })
-
-    it('POST: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'insert').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(API_PATHS.BOOKMARKS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Error', url: 'http://error.com' }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
-        dbError,
-      )
-    })
-
-    it('PATCH: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'update').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/1`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Error' }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
-        dbError,
-      )
-    })
-
-    it('DELETE: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'delete').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/1`, {
-        method: 'DELETE',
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
-        dbError,
-      )
-    })
-
-    it('PUT (reorder): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'update').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: ['1'] }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.REORDER_FAILED_CONSOLE,
-        dbError,
-      )
-    })
-
-    it('POST (keywords): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      // 最初の select (bookmark/keyword存在確認) は通し、insert でエラーを発生させる
-      vi.spyOn(db, 'insert').mockImplementation(() => {
-        throw dbError
-      })
-
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
+    it.each([
+      {
+        name: 'GET: ',
+        dbMock: {
+          query: {
+            bookmarks: {
+              findMany: vi.fn().mockRejectedValue(dbError), // 500エラーをシミュレート
+            },
+          },
+        } as unknown as ReturnType<typeof getDb>,
+        path: API_PATHS.BOOKMARKS,
+        payload: {},
+        expectedLog: LOG_MESSAGES.FETCH_BOOKMARKS_FAILED,
+      },
+      {
+        name: 'POST: ',
+        dbMock: {
+          insert: vi.fn().mockReturnValue({
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockRejectedValue(dbError), // 500エラーをシミュレート
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: API_PATHS.BOOKMARKS,
+        payload: {
+          method: 'POST', // POSTのテスト
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Error', url: 'https://error.com' }),
+        },
+        expectedLog: LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
+      },
+      {
+        name: 'PATCH: ',
+        dbMock: {
+          // 1. update メソッドのチェーンをモック
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                returning: vi.fn().mockRejectedValue(dbError), // 500エラーをシミュレート
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${targetId}`,
+        payload: {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: TEST_STRINGS.NEW_NAME,
+            url: VALID_URLS.HTTPS,
+          }),
+        },
+        expectedLog: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
+      },
+      {
+        name: 'DELETE: ',
+        dbMock: {
+          delete: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${targetId}`,
+        payload: { method: 'DELETE' },
+        expectedLog: LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
+      },
+      {
+        name: 'PUT (reorder) ',
+        dbMock: {
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/reorder`,
+        payload: {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id],
+          }),
+        },
+        expectedLog: LOG_MESSAGES.REORDER_FAILED_CONSOLE,
+      },
+      {
+        name: 'POST (keywords/insert): ',
+        dbMock: {
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi
+                  .fn()
+                  .mockResolvedValueOnce({ id: MOCK_BOOKMARK_1.id }) // ブックマーク存在確認
+                  .mockResolvedValueOnce({ id: MOCK_KEYWORDS[0].id }), // キーワード存在確認
+              }),
+            }),
+          }),
+          // 2. insert().values() のモック
+          insert: vi.fn().mockReturnValue({
+            values: vi.fn().mockRejectedValue(dbError),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}/keywords`,
+        payload: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+          body: JSON.stringify({ keywordId: MOCK_KEYWORDS[0].id }),
         },
-      )
-
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
-        dbError,
-      )
-    })
-
-    it('POST (keywords): 存在確認のDBエラー時に 500 を返すこと', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const dbError = new Error('DB select failed')
-
-      // select でエラーを発生させる
-      vi.spyOn(db, 'select').mockImplementation(() => {
-        throw dbError
-      })
-
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
+        expectedLog: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+      },
+      {
+        name: 'POST (keywords/select): ',
+        dbMock: {
+          // 1. select().from().where().get() のチェーンをモック
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi.fn().mockRejectedValue(dbError),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}/keywords`,
+        payload: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+          body: JSON.stringify({ keywordId: MOCK_KEYWORDS[0].id }),
         },
-      )
+        expectedLog: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+      },
+      {
+        name: 'DELETE (keywords): ',
+        dbMock: {
+          delete: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              // 削除された（ことにする）データを返す
+              returning: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}/keywords/${MOCK_KEYWORDS[0].id}`,
+        payload: { method: 'DELETE' },
+        expectedLog: LOG_MESSAGES.DETACH_KEYWORD_FAILED,
+      },
+    ])(
+      '$name データベースエラー時に 500 を返し、適切なログを出力すること',
+      async ({ dbMock, path, payload, expectedLog }) => {
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
 
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
-        dbError,
-      )
-    })
+        vi.mocked(getDb).mockReturnValue(dbMock)
 
-    it('DELETE (keywords): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'delete').mockImplementation(() => {
-        throw dbError
-      })
+        const res = await app.request(path, payload, { DB: mockD1 })
 
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/1/keywords/1`, {
-        method: 'DELETE',
-      })
+        // 検証: 500エラーとエラーメッセージを確認
+        await validateErrorResponse(
+          res,
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        )
 
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.DETACH_KEYWORD_FAILED,
-        dbError,
-      )
-    })
+        expect(consoleSpy).toHaveBeenCalledWith(expectedLog, dbError)
+      },
+    )
   })
 })
-*/

@@ -111,8 +111,8 @@ export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
 }
 
 /**
-   2  * 204 No Content レスポンスであることを検証します
-     */
+ * 204 No Content レスポンスであることを検証します
+ */
 export const validateNoContentResponse = async (res: Response) => {
   expect(res.status).toBe(HTTP_STATUS.NO_CONTENT)
 }
@@ -154,7 +154,7 @@ export const validateBasicErrorResponse = async (
 
   const body = await res.json()
 
-  // 2. success: false であることを Zod で検証
+  // success: false であることを Zod で検証
   // .passthrough() を使うことで、error プロパティなどの詳細が
   // どんな形式（Hono形式 or 自前形式）であっても許容します
   const basicErrorSchema = z
