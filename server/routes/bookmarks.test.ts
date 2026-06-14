@@ -451,7 +451,7 @@ describe('Bookmarks API', () => {
 
     it('URL重複時に 409 を返すこと', async () => {
       const dbError = new MockSqliteError(
-        'UNIQUE constraint failed',
+        API_ERROR_CODES.UNIQUE_CONSTRAING_FAILED,
         ERROR_CODES.UNIQUE_CONSTRAINT,
       )
 
@@ -526,81 +526,141 @@ describe('Bookmarks API', () => {
       await validateBasicErrorResponse(res, HTTP_STATUS.BAD_REQUEST)
     })
   })
+
+  describe(`POST ${API_PATHS.BOOKMARKS}/:id/keywords`, () => {
+    const b1 = MOCK_BOOKMARK_1
+    const k1 = MOCK_KEYWORDS[0]
+
+    it('キーワードをブックマークに紐付けられること', async () => {
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({ id: b1.id }) // ブックマーク存在確認
+                .mockResolvedValueOnce({ id: k1.id }), // キーワード存在確認
+            }),
+          }),
+        }),
+        // 2. insert().values() のモック
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockResolvedValue({ success: true }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: k1.id }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateSuccessResponse(res, z.null(), HTTP_STATUS.CREATED)
+    })
+
+    it('存在しないブックマークへの紐付け時に 404 を返すこと', async () => {
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue(null),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${MOCK_IDS.UNKNOWN_ID}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: k1.id }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateBasicErrorResponse(res, HTTP_STATUS.NOT_FOUND)
+    })
+
+    it('存在しないキーワードの紐付け時に 404 を返すこと', async () => {
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({ id: b1.id }) // ブックマーク存在確認
+                .mockResolvedValueOnce(null), // キーワード存在確認
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: MOCK_IDS.UNKNOWN_ID }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateBasicErrorResponse(res, HTTP_STATUS.NOT_FOUND)
+    })
+
+    it('既に紐付いているキーワードを再度紐付けようとした場合に 409 を返すこと', async () => {
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.UNIQUE_CONSTRAING_FAILED,
+        ERROR_CODES.UNIQUE_CONSTRAINT,
+      )
+
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({ id: b1.id }) // ブックマーク存在確認
+                .mockResolvedValueOnce({ id: k1.id }), // キーワード存在確認
+            }),
+          }),
+        }),
+        // 2. insert().values() のモック
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockRejectedValue(dbError),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: MOCK_IDS.UNKNOWN_ID }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateBasicErrorResponse(res, HTTP_STATUS.CONFLICT)
+    })
+  })
 })
 
 /*
 describe.skip('Bookmarks API', () => {
-  describe(`POST ${API_PATHS.BOOKMARKS}/:id/keywords`, () => {
-    it('キーワードをブックマークに紐付けられること', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
-        },
-      )
-
-      expect(res.status).toBe(HTTP_STATUS.CREATED)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-
-      // ブックマーク一覧で紐付けを確認
-      const getRes = await app.request(API_PATHS.BOOKMARKS)
-      const getBody = await getRes.json()
-      expect(getBody.data.bookmarks[0].keywords).toContainEqual(
-        expect.objectContaining({ name: 'Tag1' }),
-      )
-    })
-
-    it('存在しないブックマークへの紐付け時に 404 を返すこと', async () => {
-      const k1 = createKeyword('Tag1')
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999/keywords`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-    })
-
-    it('存在しないキーワードの紐付け時に 404 を返すこと', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: '999' }),
-        },
-      )
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-      const body = await res.json()
-      expect(body.error.message).toBe(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
-    })
-
-    it('既に紐付いているキーワードを再度紐付けようとした場合に 409 を返すこと', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      attachKeyword(b1.bookmark_id, k1.keyword_id)
-
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
-        },
-      )
-
-      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-      const body = await res.json()
-      expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
-    })
-  })
-
   describe(`DELETE ${API_PATHS.BOOKMARKS}/:id/keywords/:keywordId`, () => {
     it('キーワードの紐付けを解除できること', async () => {
       const b1 = createBookmark('B1', VALID_URLS.HTTP)
