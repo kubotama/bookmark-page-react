@@ -1,76 +1,187 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import z from 'zod'
 
 import {
   API_PATHS,
+  ERROR_CODES,
   ERROR_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
 } from '@shared/constants'
-import { VALID_URLS } from '@shared/test/fixtures'
+import {
+  bookmarkSchema,
+  bookmarksSchema,
+  type Keyword,
+} from '@shared/schemas/bookmark'
+import {
+  MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
+  MOCK_IDS,
+  MOCK_KEYWORDS,
+  TEST_STRINGS,
+  VALID_URLS,
+} from '@shared/test/fixtures'
 
 import app from '../app'
-import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
-import { createBookmark, createKeyword, attachKeyword } from '../test/testUtils'
+import { getDb } from '../db'
+import {
+  createD1Mock,
+  validateBasicErrorResponse,
+  validateErrorResponse,
+  validateNoContentResponse,
+  validateSuccessResponse,
+} from '../test/testUtils'
 import { API_ERROR_CODES } from '../utils/error'
 
-describe.skip('Bookmarks API', () => {
+// getDb をモック化
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db')>()
+  return {
+    ...actual,
+    getDb: vi.fn(),
+  }
+})
+
+/**
+ * テスト用の SQLite エラークラス
+ * code プロパティを持つことで server/utils/error.ts の isSqliteError をパスします
+ */
+class MockSqliteError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'MockSqliteError'
+    this.code = code
+  }
+}
+
+describe('Bookmarks API', () => {
+  let mockD1: D1Database
+
   beforeEach(() => {
-    initializeDatabase()
-    resetDatabase()
+    mockD1 = createD1Mock()
     vi.restoreAllMocks()
   })
 
-  const SEED_DATA_1 = { title: 'Example Domain', url: VALID_URLS.HTTPS }
-  const SEED_DATA_2 = { title: 'Google', url: VALID_URLS.GOOGLE }
-
-  const seed = () => {
-    createBookmark(SEED_DATA_1.title, SEED_DATA_1.url, 0)
-    createBookmark(SEED_DATA_2.title, SEED_DATA_2.url, 1)
-  }
-
-  const seedWithKeywords = () => {
-    const b1 = createBookmark(SEED_DATA_1.title, SEED_DATA_1.url, 0)
-    const k1 = createKeyword('Tag1')
-    const k2 = createKeyword('Tag2')
-
-    attachKeyword(b1.bookmark_id, k1.keyword_id)
-    attachKeyword(b1.bookmark_id, k2.keyword_id)
+  const createMockedBookmark = ({
+    id = MOCK_IDS.BOOKMARK_1,
+    title = TEST_STRINGS.NEW_NAME,
+    url = VALID_URLS.HTTPS,
+    sortOrder = 0,
+    keywords = [],
+  }: {
+    id?: string
+    title?: string
+    url?: string
+    sortOrder?: number
+    keywords?: Keyword[]
+  }) => {
+    return {
+      id,
+      title,
+      url,
+      sortOrder,
+      bookmarkKeywords: keywords.map((k) => ({
+        keyword: {
+          id: k.id,
+          name: k.name,
+        },
+      })),
+    }
   }
 
   describe(`GET ${API_PATHS.BOOKMARKS}`, () => {
     it('空のリストを返すこと', async () => {
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-      expect(body.data.bookmarks).toEqual([])
+      const dbMock = {
+        query: {
+          bookmarks: { findMany: vi.fn().mockResolvedValue([]) },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(API_PATHS.BOOKMARKS, {}, { DB: mockD1 })
+      const data = await validateSuccessResponse(res, bookmarksSchema)
+      expect(data.bookmarks).toHaveLength(0)
     })
 
     it('登録済みのブックマークを返すこと', async () => {
-      seed()
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.data.bookmarks).toHaveLength(2)
-      expect(body.data.bookmarks[0].title).toBe(SEED_DATA_1.title)
-      expect(body.data.bookmarks[1].title).toBe(SEED_DATA_2.title)
+      const dbMock = {
+        query: {
+          bookmarks: {
+            findMany: vi.fn().mockResolvedValue([
+              createMockedBookmark({
+                id: MOCK_BOOKMARK_1.id,
+                title: MOCK_BOOKMARK_1.title,
+                url: MOCK_BOOKMARK_1.url,
+              }),
+              createMockedBookmark({
+                id: MOCK_BOOKMARK_2.id,
+                title: MOCK_BOOKMARK_2.title,
+                url: MOCK_BOOKMARK_2.url,
+              }),
+            ]),
+          },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      // 3. 実行 (mockD1 は型合わせのために渡しますが、内部では getDb モックが優先されます)
+      const res = await app.request(API_PATHS.BOOKMARKS, {}, { DB: mockD1 })
+
+      // 4. 検証
+      const data = await validateSuccessResponse(res, bookmarksSchema)
+      expect(data.bookmarks).toHaveLength(2)
+      expect(data.bookmarks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: MOCK_BOOKMARK_1.id,
+            title: MOCK_BOOKMARK_1.title,
+            url: MOCK_BOOKMARK_1.url,
+          }),
+          expect.objectContaining({
+            id: MOCK_BOOKMARK_2.id,
+            title: MOCK_BOOKMARK_2.title,
+            url: MOCK_BOOKMARK_2.url,
+          }),
+        ]),
+      )
     })
 
     it('関連付けられたキーワードを含めて返却されること', async () => {
-      seedWithKeywords()
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
+      const bookmarkWithKeywords = {
+        id: MOCK_BOOKMARK_1.id,
+        title: MOCK_BOOKMARK_1.title,
+        url: MOCK_BOOKMARK_1.url,
+        keywords: [MOCK_KEYWORDS[0], MOCK_KEYWORDS[1]],
+      }
 
-      const bookmark = body.data.bookmarks[0]
-      expect(bookmark.keywords).toBeDefined()
-      expect(bookmark.keywords).toHaveLength(2)
-      expect(bookmark.keywords).toEqual(
+      const dbMock = {
+        query: {
+          bookmarks: {
+            findMany: vi
+              .fn()
+              .mockResolvedValue([createMockedBookmark(bookmarkWithKeywords)]),
+          },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(API_PATHS.BOOKMARKS, {}, { DB: mockD1 })
+
+      const data = await validateSuccessResponse(res, bookmarksSchema)
+      expect(data.bookmarks).toHaveLength(1)
+      expect(data.bookmarks).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ name: 'Tag1' }),
-          expect.objectContaining({ name: 'Tag2' }),
+          expect.objectContaining({
+            id: MOCK_BOOKMARK_1.id,
+            title: MOCK_BOOKMARK_1.title,
+            url: MOCK_BOOKMARK_1.url,
+            keywords: expect.arrayContaining([
+              expect.objectContaining({ name: MOCK_KEYWORDS[0].name }),
+              expect.objectContaining({ name: MOCK_KEYWORDS[1].name }),
+            ]),
+          }),
         ]),
       )
     })
@@ -79,446 +190,689 @@ describe.skip('Bookmarks API', () => {
   describe(`POST ${API_PATHS.BOOKMARKS}`, () => {
     it('新しいブックマークを登録できること', async () => {
       const newData = {
-        title: 'New Example',
-        url: 'https://new-example.com',
+        title: TEST_STRINGS.NEW_NAME,
+        url: VALID_URLS.HTTPS,
       }
-      const res = await app.request(API_PATHS.BOOKMARKS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData),
-      })
 
-      expect(res.status).toBe(HTTP_STATUS.CREATED)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-      expect(body.data.title).toBe(newData.title)
-      expect(body.data.url).toBe(newData.url)
-      expect(body.data.id).toBeDefined()
+      const dbMock = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([
+              createMockedBookmark({
+                id: MOCK_IDS.BOOKMARK_1,
+                title: newData.title,
+                url: newData.url,
+              }),
+            ]),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        API_PATHS.BOOKMARKS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newData),
+        },
+        { DB: mockD1 },
+      )
+
+      const data = await validateSuccessResponse(
+        res,
+        bookmarkSchema,
+        HTTP_STATUS.CREATED,
+      )
+      expect(data.title).toBe(newData.title)
+      expect(data.url).toBe(newData.url)
     })
 
     it('URLの重複登録時に 409 を返すこと', async () => {
-      seed()
       const newData = {
-        title: 'Duplicate URL',
-        url: SEED_DATA_1.url,
+        title: TEST_STRINGS.NEW_NAME,
+        url: VALID_URLS.HTTPS,
       }
-      const res = await app.request(API_PATHS.BOOKMARKS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData),
-      })
 
-      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-      const body = await res.json()
-      expect(body.success).toBe(false)
-      expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_URL)
-      expect(body.error.code).toBe(API_ERROR_CODES.CONFLICT)
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.UNIQUE_CONSTRAINT_FAILED,
+        ERROR_CODES.UNIQUE_CONSTRAINT,
+      )
+      const dbMock = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockRejectedValue(dbError), // 型安全なエラーを投げる
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      // 実行
+      const res = await app.request(
+        API_PATHS.BOOKMARKS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newData),
+        },
+        { DB: mockD1 },
+      )
+
+      // 検証
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.CONFLICT,
+        ERROR_MESSAGES.DUPLICATE_URL,
+      )
     })
 
-    it('無効なデータ（バリデーションエラー）を拒否すること', async () => {
-      const invalidDataList = [
-        {
-          name: 'タイトルが空',
-          body: { title: '', url: 'https://new-example.com' },
-        },
-        { name: 'URLが不正', body: { title: 'Test', url: 'not-a-url' } },
-        { name: 'タイトルが欠落', body: { url: 'https://new-example.com' } },
-      ]
+    it.each([
+      {
+        name: 'タイトルが空',
+        body: { title: '', url: 'https://new-example.com' },
+      },
+      { name: 'URLが不正', body: { title: 'Test', url: 'not-a-url' } },
+      { name: 'タイトルが欠落', body: { url: 'https://new-example.com' } },
+    ])('無効なデータ ($name) を拒否すること', async ({ body }) => {
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      )
+      const dbMock = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockRejectedValue(dbError), // 型安全なエラーを投げる
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-      for (const { body } of invalidDataList) {
-        const res = await app.request(API_PATHS.BOOKMARKS, {
+      const res = await app.request(
+        API_PATHS.BOOKMARKS,
+        {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
-        })
-        expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-        const resBody = await res.json()
-        expect(resBody.success).toBe(false)
-      }
+        },
+        { DB: mockD1 },
+      )
+
+      const resBody = await validateBasicErrorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+      )
+
+      expect(resBody.error).toBeDefined()
     })
   })
 
   describe(`DELETE ${API_PATHS.BOOKMARKS}/:id`, () => {
     it('指定したブックマークを削除できること', async () => {
-      seed()
-      const listRes = await app.request(API_PATHS.BOOKMARKS)
-      const listBody = await listRes.json()
-      const targetId = listBody.data.bookmarks[0].id
+      const targetId = MOCK_IDS.BOOKMARK_1
 
-      const delRes = await app.request(`${API_PATHS.BOOKMARKS}/${targetId}`, {
-        method: 'DELETE',
-      })
-      expect(delRes.status).toBe(HTTP_STATUS.NO_CONTENT)
+      const dbMock = {
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([{ id: targetId }]), // 削除されたデータを返す
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-      const afterRes = await app.request(API_PATHS.BOOKMARKS)
-      const afterBody = await afterRes.json()
-      expect(afterBody.data.bookmarks).toHaveLength(1)
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${targetId}`,
+        { method: 'DELETE' },
+        { DB: mockD1 },
+      )
+
+      // ステータス 204 を期待
+      await validateNoContentResponse(res)
     })
 
-    it('存在しない ID の削除時に 404 を返すこと', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999`, {
-        method: 'DELETE',
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+    it('存在しない ID の削除時も 204 を返すこと (べき等性)', async () => {
+      const unknownId = MOCK_IDS.UNKNOWN_ID
+
+      const dbMock = {
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]), // 削除されたデータを返す
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${unknownId}`,
+        { method: 'DELETE' },
+        { DB: mockD1 },
+      )
+      await validateNoContentResponse(res)
     })
   })
 
   describe(`PATCH ${API_PATHS.BOOKMARKS}/:id`, () => {
-    const INITIAL_DATA = { title: 'Initial', url: VALID_URLS.HTTP }
-
-    const seedOne = () => {
-      const result = sqlite
-        .prepare(
-          'INSERT INTO bookmarks (title, url, sort_order) VALUES (?, ?, ?)',
-        )
-        .run(INITIAL_DATA.title, INITIAL_DATA.url, 0)
-      return result.lastInsertRowid
-    }
-
     it.each([
       {
         name: 'タイトルのみ更新',
-        updates: { title: 'Updated Title' },
-        expected: { title: 'Updated Title', url: INITIAL_DATA.url },
+        updates: { title: TEST_STRINGS.NEW_NAME },
+        expected: { title: TEST_STRINGS.NEW_NAME, url: MOCK_BOOKMARK_1.url },
       },
       {
         name: 'URLのみ更新',
-        updates: { url: 'https://updated.com' },
-        expected: { title: INITIAL_DATA.title, url: 'https://updated.com' },
+        updates: { url: VALID_URLS.HTTPS },
+        expected: { title: MOCK_BOOKMARK_1.title, url: VALID_URLS.HTTPS },
       },
       {
         name: '両方更新',
-        updates: { title: 'Both Updated', url: 'https://both.com' },
-        expected: { title: 'Both Updated', url: 'https://both.com' },
+        updates: { title: TEST_STRINGS.NEW_NAME, url: VALID_URLS.HTTPS },
+        expected: { title: TEST_STRINGS.NEW_NAME, url: VALID_URLS.HTTPS },
       },
     ])('$name が成功すること', async ({ updates, expected }) => {
-      const id = seedOne()
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
+      const targetId = MOCK_BOOKMARK_1.id
+
+      // 更新後の期待されるデータ構造
+      const updatedMockBookmark = createMockedBookmark({
+        ...MOCK_BOOKMARK_1,
+        ...updates,
       })
 
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.data.title).toBe(expected.title)
-      expect(body.data.url).toBe(expected.url)
-    })
+      const dbMock = {
+        // 1. update メソッドのチェーンをモック
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([updatedMockBookmark]),
+            }),
+          }),
+        }),
+        // 2. findFirst メソッドをモック（再取得用）
+        query: {
+          bookmarks: {
+            findFirst: vi.fn().mockResolvedValue(updatedMockBookmark),
+          },
+        },
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-    it('URL重複時に 409 を返すこと', async () => {
-      seed() // SEED_DATA_1.url が登録される
-      const id = seedOne() // 新しいレコードを登録 (INITIAL_DATA.url)
+      // 実行
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        },
+        { DB: mockD1 },
+      )
 
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: SEED_DATA_1.url }), // 重複するURL
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
+      // 検証
+      const data = await validateSuccessResponse(res, bookmarkSchema)
+      expect(data.title).toBe(expected.title)
+      expect(data.url).toBe(expected.url) // URLは変わっていないこと
     })
 
     it('存在しない ID の更新時に 404 を返すこと', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Fail' }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+      const targetId = MOCK_IDS.UNKNOWN_ID
+
+      const dbMock = {
+        // 1. update メソッドのチェーンをモック
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      // 実行
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: TEST_STRINGS.NEW_NAME }),
+        },
+        { DB: mockD1 },
+      )
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
+      )
+    })
+
+    it('URL重複時に 409 を返すこと', async () => {
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.UNIQUE_CONSTRAINT_FAILED,
+        ERROR_CODES.UNIQUE_CONSTRAINT,
+      )
+
+      const dbMock = {
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockRejectedValue(dbError), // 重複エラーを投げる
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: MOCK_BOOKMARK_2.url }), // 重複するURL
+        },
+        { DB: mockD1 },
+      )
+
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.CONFLICT,
+        ERROR_MESSAGES.DUPLICATE_URL,
+      )
     })
   })
 
   describe(`PUT ${API_PATHS.BOOKMARKS}/reorder`, () => {
     it('ブックマークの順序を正常に変更できること', async () => {
-      seed() // ID 1(sort 0), ID 2(sort 1)
-      const listRes = await app.request(API_PATHS.BOOKMARKS)
-      const listBody = await listRes.json()
-      const id1 = listBody.data.bookmarks[0].id
-      const id2 = listBody.data.bookmarks[1].id
+      const ids = [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id]
 
-      // 順序を入れ替えて送信
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: [id2, id1] }),
-      })
+      const dbMock = {
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue({ success: true }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-      expect(res.status).toBe(HTTP_STATUS.OK)
-      const body = await res.json()
-      expect(body.success).toBe(true)
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/reorder`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+        },
+        { DB: mockD1 },
+      )
 
-      // 再取得して順序を確認
-      const afterRes = await app.request(API_PATHS.BOOKMARKS)
-      const afterBody = await afterRes.json()
-      expect(afterBody.data.bookmarks[0].id).toBe(id2)
-      expect(afterBody.data.bookmarks[1].id).toBe(id1)
+      // data: null であることを検証
+      await validateSuccessResponse(res, z.null())
     })
 
     it('不正な ID リストを拒否すること', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: ['invalid', 'id'] }),
-      })
+      // UUID 形式でない ID を送信
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/reorder`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [TEST_STRINGS.INVALID_ID] }),
+        },
+        { DB: mockD1 },
+      )
 
-      expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
+      await validateBasicErrorResponse(res, HTTP_STATUS.BAD_REQUEST)
     })
   })
 
   describe(`POST ${API_PATHS.BOOKMARKS}/:id/keywords`, () => {
+    const b1 = MOCK_BOOKMARK_1
+    const k1 = MOCK_KEYWORDS[0]
+
     it('キーワードをブックマークに紐付けられること', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({ id: b1.id }) // ブックマーク存在確認
+                .mockResolvedValueOnce({ id: k1.id }), // キーワード存在確認
+            }),
+          }),
+        }),
+        // 2. insert().values() のモック
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockResolvedValue({ success: true }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
       const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+          body: JSON.stringify({ keywordId: k1.id }),
         },
+        { DB: mockD1 },
       )
 
-      expect(res.status).toBe(HTTP_STATUS.CREATED)
-      const body = await res.json()
-      expect(body.success).toBe(true)
-
-      // ブックマーク一覧で紐付けを確認
-      const getRes = await app.request(API_PATHS.BOOKMARKS)
-      const getBody = await getRes.json()
-      expect(getBody.data.bookmarks[0].keywords).toContainEqual(
-        expect.objectContaining({ name: 'Tag1' }),
-      )
+      await validateSuccessResponse(res, z.null(), HTTP_STATUS.CREATED)
     })
 
     it('存在しないブックマークへの紐付け時に 404 を返すこと', async () => {
-      const k1 = createKeyword('Tag1')
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999/keywords`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue(null),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${MOCK_IDS.UNKNOWN_ID}/keywords`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywordId: k1.id }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateBasicErrorResponse(res, HTTP_STATUS.NOT_FOUND)
     })
 
     it('存在しないキーワードの紐付け時に 404 を返すこと', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({ id: b1.id }) // ブックマーク存在確認
+                .mockResolvedValueOnce(null), // キーワード存在確認
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
       const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: '999' }),
+          body: JSON.stringify({ keywordId: MOCK_IDS.UNKNOWN_ID }),
         },
+        { DB: mockD1 },
       )
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-      const body = await res.json()
-      expect(body.error.message).toBe(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
+
+      await validateBasicErrorResponse(res, HTTP_STATUS.NOT_FOUND)
     })
 
     it('既に紐付いているキーワードを再度紐付けようとした場合に 409 を返すこと', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      attachKeyword(b1.bookmark_id, k1.keyword_id)
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.UNIQUE_CONSTRAINT_FAILED,
+        ERROR_CODES.UNIQUE_CONSTRAINT,
+      )
+
+      const dbMock = {
+        // 1. select().from().where().get() のチェーンをモック
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({ id: b1.id }) // ブックマーク存在確認
+                .mockResolvedValueOnce({ id: k1.id }), // キーワード存在確認
+            }),
+          }),
+        }),
+        // 2. insert().values() のモック
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockRejectedValue(dbError),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
       const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+          body: JSON.stringify({ keywordId: MOCK_KEYWORDS[0].id }),
         },
+        { DB: mockD1 },
       )
 
-      expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-      const body = await res.json()
-      expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
+      await validateBasicErrorResponse(res, HTTP_STATUS.CONFLICT)
     })
   })
 
   describe(`DELETE ${API_PATHS.BOOKMARKS}/:id/keywords/:keywordId`, () => {
     it('キーワードの紐付けを解除できること', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      attachKeyword(b1.bookmark_id, k1.keyword_id)
+      const b1 = MOCK_BOOKMARK_1
+      const k1 = MOCK_KEYWORDS[0]
+
+      const dbMock = {
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            // 削除された（ことにする）データを返す
+            returning: vi
+              .fn()
+              .mockResolvedValue([{ bookmarkId: b1.id, keywordId: k1.id }]),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
       const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords/${k1.keyword_id}`,
-        {
-          method: 'DELETE',
-        },
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords/${k1.id}`,
+        { method: 'DELETE' },
+        { DB: mockD1 },
       )
 
-      expect(res.status).toBe(HTTP_STATUS.NO_CONTENT)
-
-      // ブックマーク一覧で紐付けが消えていることを確認
-      const getRes = await app.request(API_PATHS.BOOKMARKS)
-      const getBody = await getRes.json()
-      expect(getBody.data.bookmarks[0].keywords).toHaveLength(0)
+      // 204 No Content を検証
+      await validateNoContentResponse(res)
     })
 
-    it('存在しない紐付けの解除時に 404 を返すこと', async () => {
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/999/keywords/999`, {
-        method: 'DELETE',
-      })
-      expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
+    it('存在しない紐付けの解除時に 204 を返すこと (べき等性)', async () => {
+      const b1 = MOCK_BOOKMARK_1
+      const k1 = MOCK_KEYWORDS[0]
+
+      const dbMock = {
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            // 削除された（ことにする）データを返す
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.BOOKMARKS}/${b1.id}/keywords/${k1.id}`,
+        { method: 'DELETE' },
+        { DB: mockD1 },
+      )
+
+      await validateNoContentResponse(res)
     })
   })
 
   describe('Database Error Handling (500)', () => {
     const dbError = new Error('Database connection failed')
+    const targetId = MOCK_BOOKMARK_1.id
 
-    it('GET: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db.query.bookmarks, 'findMany').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(API_PATHS.BOOKMARKS)
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      const body = await res.json()
-      expect(body.success).toBe(false)
-      expect(body.error.message).toBe(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
-      expect(body.error.code).toBe(API_ERROR_CODES.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.FETCH_BOOKMARKS_FAILED,
-        dbError,
-      )
-    })
-
-    it('POST: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'insert').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(API_PATHS.BOOKMARKS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Error', url: 'http://error.com' }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
-        dbError,
-      )
-    })
-
-    it('PATCH: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'update').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/1`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Error' }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
-        dbError,
-      )
-    })
-
-    it('DELETE: データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'delete').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/1`, {
-        method: 'DELETE',
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
-        dbError,
-      )
-    })
-
-    it('PUT (reorder): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'update').mockImplementation(() => {
-        throw dbError
-      })
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/reorder`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: ['1'] }),
-      })
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.REORDER_FAILED_CONSOLE,
-        dbError,
-      )
-    })
-
-    it('POST (keywords): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      // 最初の select (bookmark/keyword存在確認) は通し、insert でエラーを発生させる
-      vi.spyOn(db, 'insert').mockImplementation(() => {
-        throw dbError
-      })
-
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
+    it.each([
+      {
+        name: 'GET: ',
+        dbMock: {
+          query: {
+            bookmarks: {
+              findMany: vi.fn().mockRejectedValue(dbError), // 500エラーをシミュレート
+            },
+          },
+        } as unknown as ReturnType<typeof getDb>,
+        path: API_PATHS.BOOKMARKS,
+        payload: {},
+        expectedLog: LOG_MESSAGES.FETCH_BOOKMARKS_FAILED,
+      },
+      {
+        name: 'POST: ',
+        dbMock: {
+          insert: vi.fn().mockReturnValue({
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockRejectedValue(dbError), // 500エラーをシミュレート
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: API_PATHS.BOOKMARKS,
+        payload: {
+          method: 'POST', // POSTのテスト
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Error', url: 'https://error.com' }),
+        },
+        expectedLog: LOG_MESSAGES.CREATE_BOOKMARK_FAILED,
+      },
+      {
+        name: 'PATCH: ',
+        dbMock: {
+          // 1. update メソッドのチェーンをモック
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                returning: vi.fn().mockRejectedValue(dbError), // 500エラーをシミュレート
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${targetId}`,
+        payload: {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: TEST_STRINGS.NEW_NAME,
+            url: VALID_URLS.HTTPS,
+          }),
+        },
+        expectedLog: LOG_MESSAGES.UPDATE_BOOKMARK_FAILED,
+      },
+      {
+        name: 'DELETE: ',
+        dbMock: {
+          delete: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${targetId}`,
+        payload: { method: 'DELETE' },
+        expectedLog: LOG_MESSAGES.DELETE_BOOKMARK_FAILED,
+      },
+      {
+        name: 'PUT (reorder) ',
+        dbMock: {
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/reorder`,
+        payload: {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ids: [MOCK_BOOKMARK_2.id, MOCK_BOOKMARK_1.id],
+          }),
+        },
+        expectedLog: LOG_MESSAGES.REORDER_FAILED_CONSOLE,
+      },
+      {
+        name: 'POST (keywords/insert): ',
+        dbMock: {
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi
+                  .fn()
+                  .mockResolvedValueOnce({ id: MOCK_BOOKMARK_1.id }) // ブックマーク存在確認
+                  .mockResolvedValueOnce({ id: MOCK_KEYWORDS[0].id }), // キーワード存在確認
+              }),
+            }),
+          }),
+          // 2. insert().values() のモック
+          insert: vi.fn().mockReturnValue({
+            values: vi.fn().mockRejectedValue(dbError),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}/keywords`,
+        payload: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+          body: JSON.stringify({ keywordId: MOCK_KEYWORDS[0].id }),
         },
-      )
-
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
-        dbError,
-      )
-    })
-
-    it('POST (keywords): 存在確認のDBエラー時に 500 を返すこと', async () => {
-      const b1 = createBookmark('B1', VALID_URLS.HTTP)
-      const k1 = createKeyword('Tag1')
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const dbError = new Error('DB select failed')
-
-      // select でエラーを発生させる
-      vi.spyOn(db, 'select').mockImplementation(() => {
-        throw dbError
-      })
-
-      const res = await app.request(
-        `${API_PATHS.BOOKMARKS}/${b1.bookmark_id}/keywords`,
-        {
+        expectedLog: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+      },
+      {
+        name: 'POST (keywords/select): ',
+        dbMock: {
+          // 1. select().from().where().get() のチェーンをモック
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi.fn().mockRejectedValue(dbError),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}/keywords`,
+        payload: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywordId: String(k1.keyword_id) }),
+          body: JSON.stringify({ keywordId: MOCK_KEYWORDS[0].id }),
         },
-      )
+        expectedLog: LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
+      },
+      {
+        name: 'DELETE (keywords): ',
+        dbMock: {
+          delete: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              // 削除された（ことにする）データを返す
+              returning: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        path: `${API_PATHS.BOOKMARKS}/${MOCK_BOOKMARK_1.id}/keywords/${MOCK_KEYWORDS[0].id}`,
+        payload: { method: 'DELETE' },
+        expectedLog: LOG_MESSAGES.DETACH_KEYWORD_FAILED,
+      },
+    ])(
+      '$name データベースエラー時に 500 を返し、適切なログを出力すること',
+      async ({ dbMock, path, payload, expectedLog }) => {
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
 
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.ATTACH_KEYWORD_FAILED,
-        dbError,
-      )
-    })
+        vi.mocked(getDb).mockReturnValue(dbMock)
 
-    it('DELETE (keywords): データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(db, 'delete').mockImplementation(() => {
-        throw dbError
-      })
+        const res = await app.request(path, payload, { DB: mockD1 })
 
-      const res = await app.request(`${API_PATHS.BOOKMARKS}/1/keywords/1`, {
-        method: 'DELETE',
-      })
+        // 検証: 500エラーとエラーメッセージを確認
+        await validateErrorResponse(
+          res,
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        )
 
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.DETACH_KEYWORD_FAILED,
-        dbError,
-      )
-    })
+        expect(consoleSpy).toHaveBeenCalledWith(expectedLog, dbError)
+      },
+    )
   })
 })

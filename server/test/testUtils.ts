@@ -1,5 +1,9 @@
 import { uuidv7 } from 'uuidv7'
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
+import z from 'zod'
+
+import { type HttpStatus, HTTP_STATUS } from '@shared/constants'
+import { ApiErrorSchema, createApiSuccessSchema } from '@shared/schemas/api'
 
 import { getDb } from '../db'
 import { bookmarks, keywords, bookmarkKeywords } from '../db/schema'
@@ -86,4 +90,76 @@ export const attachKeyword = async (
     bookmarkId,
     keywordId,
   })
+}
+
+/**
+ * 成功レスポンスを検証し、中身のデータを返します
+ */
+export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
+  res: Response,
+  dataSchema: T,
+  expectedStatus: HttpStatus = HTTP_STATUS.OK,
+): Promise<z.infer<T>> => {
+  expect(res.status).toBe(expectedStatus)
+
+  const body = await res.json()
+
+  // 既存のスキーマ生成関数を利用
+  const successSchema = createApiSuccessSchema(dataSchema)
+
+  return (successSchema.parse(body) as { success: true; data: z.infer<T> }).data
+}
+
+/**
+ * 204 No Content レスポンスであることを検証します
+ */
+export const validateNoContentResponse = async (res: Response) => {
+  expect(res.status).toBe(HTTP_STATUS.NO_CONTENT)
+}
+
+/**
+ * 失敗レスポンスを検証します
+ */
+
+export const validateErrorResponse = async (
+  res: Response,
+  expectedStatus: HttpStatus,
+  expectedMessage?: string,
+  expectedCode?: string,
+) => {
+  expect(res.status).toBe(expectedStatus)
+  const body = await res.json()
+
+  // 1. 基本構造の検証 (success: false であること等)
+  const result = ApiErrorSchema.parse(body)
+  expect(result.success).toBe(false)
+
+  // 2. メッセージとコードの検証（指定がある場合）
+  if (expectedMessage) expect(result.error.message).toBe(expectedMessage)
+  if (expectedCode) expect(result.error.code).toBe(expectedCode)
+
+  return result.error
+}
+
+/**
+ * 失敗レスポンス (success: false) であることを網羅的に検証します。
+ * ステータスコードの検証も同時に行い、型付けされたボディを返します。
+ */
+export const validateBasicErrorResponse = async (
+  res: Response,
+  expectedStatus: HttpStatus,
+): Promise<{ success: false; [key: string]: unknown }> => {
+  // 1. ステータスコードの検証
+  expect(res.status).toBe(expectedStatus)
+
+  const body = await res.json()
+
+  // success: false であることを Zod で検証
+  // .looseObject() を使うことで、error プロパティなどの詳細が
+  // どんな形式（Hono形式 or 自前形式）であっても許容します
+  const basicErrorSchema = z.looseObject({
+    success: z.literal(false),
+  })
+
+  return basicErrorSchema.parse(body)
 }

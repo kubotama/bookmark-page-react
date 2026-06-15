@@ -136,6 +136,7 @@ export const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   CONFLICT: 'CONFLICT',
   BAD_REQUEST: 'BAD_REQUEST',
+  UNIQUE_CONSTRAINT: 'SQLITE_CONSTRAINT_UNIQUE',
 } as const
 
 /**
@@ -313,6 +314,8 @@ export const HTTP_STATUS = {
   CONFLICT: 409,
   INTERNAL_SERVER_ERROR: 500,
 } as const
+
+export type HttpStatus = (typeof HTTP_STATUS)[keyof typeof HTTP_STATUS]
 
 /**
  * ストレージキー
