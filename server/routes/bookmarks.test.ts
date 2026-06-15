@@ -329,7 +329,7 @@ describe('Bookmarks API', () => {
       await validateNoContentResponse(res)
     })
 
-    it('存在しない ID の削除時に 404 を返すこと', async () => {
+    it('存在しない ID の削除時も 204 を返すこと (べき等性)', async () => {
       const unknownId = MOCK_IDS.UNKNOWN_ID
 
       const dbMock = {
@@ -346,14 +346,7 @@ describe('Bookmarks API', () => {
         { method: 'DELETE' },
         { DB: mockD1 },
       )
-
-      // validateErrorResponse を使用して検証
-      await validateErrorResponse(
-        res,
-        HTTP_STATUS.NOT_FOUND,
-        ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
-        API_ERROR_CODES.NOT_FOUND,
-      )
+      await validateNoContentResponse(res)
     })
   })
 
@@ -686,7 +679,7 @@ describe('Bookmarks API', () => {
       await validateNoContentResponse(res)
     })
 
-    it('存在しない紐付けの解除時に 404 を返すこと', async () => {
+    it('存在しない紐付けの解除時に 204 を返すこと (べき等性)', async () => {
       const b1 = MOCK_BOOKMARK_1
       const k1 = MOCK_KEYWORDS[0]
 
@@ -706,7 +699,7 @@ describe('Bookmarks API', () => {
         { DB: mockD1 },
       )
 
-      await validateErrorResponse(res, HTTP_STATUS.NOT_FOUND)
+      await validateNoContentResponse(res)
     })
   })
 

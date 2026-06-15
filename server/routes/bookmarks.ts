@@ -137,23 +137,10 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
 
       try {
         const db = getDb(c.env.DB)
-        const result = await db
+        await db
           .delete(bookmarksTable)
           .where(eq(bookmarksTable.id, id))
           .returning()
-
-        if (result.length === 0) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                message: ERROR_MESSAGES.BOOKMARK_NOT_FOUND,
-                code: API_ERROR_CODES.NOT_FOUND,
-              },
-            },
-            HTTP_STATUS.NOT_FOUND,
-          )
-        }
 
         return c.body(null, HTTP_STATUS.NO_CONTENT)
       } catch (error) {
@@ -355,7 +342,7 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
 
       try {
         const db = getDb(c.env.DB)
-        const result = await db
+        await db
           .delete(bookmarkKeywordsTable)
           .where(
             and(
@@ -364,19 +351,6 @@ const bookmarksRoute = new Hono<{ Bindings: Bindings }>()
             ),
           )
           .returning()
-
-        if (result.length === 0) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                message: ERROR_MESSAGES.NOT_FOUND,
-                code: API_ERROR_CODES.NOT_FOUND,
-              },
-            },
-            HTTP_STATUS.NOT_FOUND,
-          )
-        }
 
         return c.body(null, HTTP_STATUS.NO_CONTENT)
       } catch (error) {

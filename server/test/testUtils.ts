@@ -155,17 +155,13 @@ export const validateBasicErrorResponse = async (
   const body = await res.json()
 
   // success: false であることを Zod で検証
-  // .passthrough() を使うことで、error プロパティなどの詳細が
+  // .loose() を使うことで、error プロパティなどの詳細が
   // どんな形式（Hono形式 or 自前形式）であっても許容します
   const basicErrorSchema = z
     .object({
       success: z.literal(false),
     })
-    .passthrough()
+    .loose()
 
-  // 失敗時は ZodError が投げられテストが止まります
-  return basicErrorSchema.parse(body) as {
-    success: false
-    [key: string]: unknown
-  }
+  return basicErrorSchema.parse(body)
 }
