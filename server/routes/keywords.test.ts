@@ -1,20 +1,53 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  API_PATHS,
-  ERROR_MESSAGES,
-  HTTP_STATUS,
-  LOG_MESSAGES,
-} from '@shared/constants'
-import { VALID_URLS } from '@shared/test/fixtures'
+import { API_PATHS } from '@shared/constants'
+import { keywordsSchema } from '@shared/schemas/keyword'
 
 import app from '../app'
-import { db, initializeDatabase, resetDatabase, sqlite } from '../db'
-import { attachKeyword, createBookmark, createKeyword } from '../test/testUtils'
-import { API_ERROR_CODES } from '../utils/error'
+import { getDb } from '../db'
+import { createD1Mock, validateSuccessResponse } from '../test/testUtils'
 
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db')>()
+  return {
+    ...actual,
+    getDb: vi.fn(),
+  }
+})
+
+describe(`GET ${API_PATHS.KEYWORDS}`, () => {
+  let mockD1: D1Database
+
+  beforeEach(() => {
+    mockD1 = createD1Mock()
+    vi.restoreAllMocks()
+  })
+
+  it('空のリストを返すこと', async () => {
+    // 1. getDb をモック化
+    const dbMock = {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          leftJoin: vi.fn().mockReturnValue({
+            groupBy: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue([]), // 空のリスト
+            }),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<typeof getDb>
+    vi.mocked(getDb).mockReturnValue(dbMock)
+
+    // 2. 実行 (第3引数に { DB: mockD1 } を忘れないように)
+    const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
+
+    // 3. 検証 (validateSuccessResponse を活用)
+    const data = await validateSuccessResponse(res, keywordsSchema)
+    expect(data.keywords).toEqual([])
+  })
+})
+
+/*
 describe.skip(`GET ${API_PATHS.KEYWORDS}`, () => {
   beforeEach(() => {
     initializeDatabase()
@@ -398,3 +431,4 @@ describe.skip(`DELETE ${API_PATHS.KEYWORDS}/:id`, () => {
     })
   })
 })
+*/
