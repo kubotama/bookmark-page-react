@@ -155,13 +155,11 @@ export const validateBasicErrorResponse = async (
   const body = await res.json()
 
   // success: false であることを Zod で検証
-  // .loose() を使うことで、error プロパティなどの詳細が
+  // .looseObject() を使うことで、error プロパティなどの詳細が
   // どんな形式（Hono形式 or 自前形式）であっても許容します
-  const basicErrorSchema = z
-    .object({
-      success: z.literal(false),
-    })
-    .loose()
+  const basicErrorSchema = z.looseObject({
+    success: z.literal(false),
+  })
 
   return basicErrorSchema.parse(body)
 }
