@@ -26,6 +26,7 @@ import app from '../app'
 import { getDb } from '../db'
 import {
   createD1Mock,
+  MockSqliteError,
   validateBasicErrorResponse,
   validateErrorResponse,
   validateNoContentResponse,
@@ -41,20 +42,6 @@ vi.mock('../db', async (importOriginal) => {
     getDb: vi.fn(),
   }
 })
-
-/**
- * テスト用の SQLite エラークラス
- * code プロパティを持つことで server/utils/error.ts の isSqliteError をパスします
- */
-class MockSqliteError extends Error {
-  code: string
-
-  constructor(message: string, code: string) {
-    super(message)
-    this.name = 'MockSqliteError'
-    this.code = code
-  }
-}
 
 describe('Bookmarks API', () => {
   let mockD1: D1Database

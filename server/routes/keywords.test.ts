@@ -2,20 +2,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   API_PATHS,
+  ERROR_CODES,
   ERROR_MESSAGES,
   HTTP_STATUS,
   LOG_MESSAGES,
+  VALIDATION_LIMITS,
 } from '@shared/constants'
-import { keywordsSchema } from '@shared/schemas/keyword'
-import { MOCK_KEYWORDS } from '@shared/test/fixtures'
+import { keywordResponseSchema, keywordsSchema } from '@shared/schemas/keyword'
+import {
+  MOCK_BOOKMARK_ENTITY_1,
+  MOCK_IDS,
+  MOCK_KEYWORDS,
+  TEST_STRINGS,
+} from '@shared/test/fixtures'
 
 import app from '../app'
 import { getDb } from '../db'
 import {
   createD1Mock,
+  MockSqliteError,
+  validateBasicErrorResponse,
   validateErrorResponse,
   validateSuccessResponse,
 } from '../test/testUtils'
+import { API_ERROR_CODES } from '../utils/error'
 
 vi.mock('../db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../db')>()
@@ -120,127 +130,215 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
       dbError,
     )
   })
+
+  describe(`POST ${API_PATHS.KEYWORDS}`, () => {
+    const NEW_TAG = TEST_STRINGS.NEW_NAME
+
+    it('新しいキーワードを正常に作成できること', async () => {
+      const mockResult = { id: MOCK_IDS.NEW_KEYWORD, name: NEW_TAG }
+
+      const dbMock = {
+        // 1. 重複チェック用
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue(null),
+            }),
+          }),
+        }),
+        // 2. 新規作成用
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue(mockResult),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        API_PATHS.KEYWORDS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: NEW_TAG }),
+        },
+        { DB: mockD1 },
+      )
+
+      // 検証: data.keyword.name が期待通りか確認
+      // keywordResponseSchema が @shared/schemas/keyword から必要です
+      const data = await validateSuccessResponse(
+        res,
+        keywordResponseSchema,
+        HTTP_STATUS.CREATED,
+      )
+      expect(data.keyword.name).toBe(NEW_TAG)
+    })
+
+    it.each([
+      { name: '空の場合', bodyName: '' },
+      {
+        name: `${VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH} 文字を超える場合`,
+        bodyName: 'a'.repeat(VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH + 1),
+      },
+    ])(`名前が$nameは 400 Bad Request を返すこと`, async ({ bodyName }) => {
+      const dbError = new MockSqliteError(
+        API_ERROR_CODES.BAD_REQUEST,
+        ERROR_CODES.BAD_REQUEST,
+      )
+      const dbMock = {
+        // 1. 重複チェック用
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi.fn().mockRejectedValue(dbError),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        API_PATHS.KEYWORDS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: bodyName }),
+        },
+        { DB: mockD1 },
+      )
+      const resBody = await validateBasicErrorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+      )
+      expect(resBody.error).toBeDefined()
+    })
+
+    it('既に存在する名前の場合は 409 Conflict を返し、エラーオブジェクトを含むこと', async () => {
+      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      const dbMock = {
+        // 1. 重複チェック用
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue(bookmark),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        API_PATHS.KEYWORDS,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: NEW_TAG }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateErrorResponse(
+        res,
+        HTTP_STATUS.CONFLICT,
+        ERROR_MESSAGES.DUPLICATE_KEYWORD,
+        ERROR_CODES.CONFLICT,
+      )
+    })
+
+    describe('Error Handling', () => {
+      it('キーワードの作成結果が取得できなかった場合に 500 を返すこと', async () => {
+        const expectedError = new Error(
+          ERROR_MESSAGES.KEYWORD_INSERT_RETURN_VALUE_MISSING,
+        )
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+        const dbMock = {
+          // 1. 重複チェック用
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi.fn().mockReturnValue(null),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockReturnValue({
+                get: vi.fn().mockResolvedValue(undefined),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>
+        vi.mocked(getDb).mockReturnValue(dbMock)
+
+        const res = await app.request(
+          API_PATHS.KEYWORDS,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: NEW_TAG }),
+          },
+          { DB: mockD1 },
+        )
+        await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        expect(consoleSpy).toHaveBeenCalledWith(
+          LOG_MESSAGES.UNHANDLED_ERROR_LOG(expectedError.message),
+          expectedError,
+        )
+      })
+
+      it('作成失敗（例外発生）時に 500 を返し、ログを出力すること', async () => {
+        const expectedError = new Error(
+          ERROR_MESSAGES.DATABASE_CONNECTION_FAILED,
+        )
+        const dbError = new Error(ERROR_MESSAGES.DATABASE_CONNECTION_FAILED)
+
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+        const dbMock = {
+          // 1. 重複チェック用
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi.fn().mockReturnValue(null),
+              }),
+            }),
+          }),
+          insert: vi.fn().mockReturnValue({
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockReturnValue({
+                get: vi.fn().mockRejectedValue(dbError),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>
+        vi.mocked(getDb).mockReturnValue(dbMock)
+
+        const res = await app.request(
+          API_PATHS.KEYWORDS,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: NEW_TAG }),
+          },
+          { DB: mockD1 },
+        )
+        await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        expect(consoleSpy).toHaveBeenCalledWith(
+          LOG_MESSAGES.CREATE_KEYWORD_FAILED,
+          expectedError,
+        )
+      })
+    })
+  })
 })
 
 /*
-describe.skip(`POST ${API_PATHS.KEYWORDS}`, () => {
-  beforeEach(() => {
-    initializeDatabase()
-    resetDatabase()
-  })
-
-  it('新しいキーワードを正常に作成できること', async () => {
-    const NEW_TAG = 'NewTag'
-    const res = await app.request(API_PATHS.KEYWORDS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: NEW_TAG }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.CREATED)
-    const body = await res.json()
-    expect(body.success).toBe(true)
-    expect(body.data.keyword).toEqual({
-      id: expect.any(String),
-      name: NEW_TAG,
-    })
-
-    // 実際に保存されているか確認
-    const getRes = await app.request(API_PATHS.KEYWORDS)
-    const getBody = await getRes.json()
-    expect(getBody.data.keywords).toContainEqual(
-      expect.objectContaining({ name: NEW_TAG }),
-    )
-  })
-
-  it('名前が空の場合は 400 Bad Request を返すこと', async () => {
-    const res = await app.request(API_PATHS.KEYWORDS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: '' }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-  })
-
-  it('名前が50文字を超える場合は 400 Bad Request を返すこと', async () => {
-    const res = await app.request(API_PATHS.KEYWORDS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'a'.repeat(51) }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-  })
-
-  it('既に存在する名前の場合は 409 Conflict を返し、エラーオブジェクトを含むこと', async () => {
-    const DUPLICATE_KEYWORD = 'Duplicate'
-    createKeyword(DUPLICATE_KEYWORD)
-
-    const res = await app.request(API_PATHS.KEYWORDS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: DUPLICATE_KEYWORD }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-    const body = await res.json()
-    expect(body.success).toBe(false)
-    expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
-    expect(body.error.code).toBe(API_ERROR_CODES.CONFLICT)
-  })
-
-  describe('Error Handling', () => {
-    it('キーワードの作成結果が取得できなかった場合に 500 を返すこと', async () => {
-      const NEW_TAG = 'FailureTag'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      // db.insert()...get() が undefined を返すようにモックして if (!result) を通す
-      vi.spyOn(db, 'insert').mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockReturnValue({
-            get: vi.fn().mockReturnValue(undefined),
-          }),
-        }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
-
-      const res = await app.request(API_PATHS.KEYWORDS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: NEW_TAG }),
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
-        new Error(ERROR_MESSAGES.KEYWORD_INSERT_RETURN_VALUE_MISSING),
-      )
-    })
-
-    it('作成失敗（例外発生）時に 500 を返し、ログを出力すること', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const dbError = new Error('Insert failed')
-
-      vi.spyOn(sqlite, 'prepare').mockImplementation(() => {
-        throw dbError
-      })
-
-      const res = await app.request(API_PATHS.KEYWORDS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'ErrorTag' }),
-      })
-
-      expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      expect(consoleSpy).toHaveBeenCalledWith(
-        LOG_MESSAGES.CREATE_KEYWORD_FAILED,
-        dbError,
-      )
-    })
-  })
-})
-
 describe.skip(`PATCH ${API_PATHS.KEYWORDS}/:id`, () => {
   beforeEach(() => {
     initializeDatabase()

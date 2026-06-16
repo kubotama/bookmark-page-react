@@ -93,6 +93,20 @@ export const attachKeyword = async (
 }
 
 /**
+ * テスト用の SQLite エラークラス
+ * code プロパティを持つことで server/utils/error.ts の isSqliteError をパスします
+ */
+export class MockSqliteError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'MockSqliteError'
+    this.code = code
+  }
+}
+
+/**
  * 成功レスポンスを検証し、中身のデータを返します
  */
 export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
