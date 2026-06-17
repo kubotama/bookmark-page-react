@@ -7,6 +7,7 @@ import {
   HTTP_STATUS,
   LOG_MESSAGES,
   VALIDATION_LIMITS,
+  VALIDATION_MESSAGES,
 } from '@shared/constants'
 import { keywordResponseSchema, keywordsSchema } from '@shared/schemas/keyword'
 import {
@@ -325,6 +326,145 @@ describe('Keyword API', () => {
       })
     })
   })
+
+  describe(`PATCH ${API_PATHS.KEYWORDS}/:id`, () => {
+    const targetId = MOCK_IDS.KEYWORD_1
+    const NEW_NAME = TEST_STRINGS.NEW_NAME
+    const mockResult = { id: targetId, name: NEW_NAME }
+
+    it('キーワード名を正常に更新できること', async () => {
+      const dbMock = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              get: vi
+                .fn()
+                .mockResolvedValueOnce({
+                  id: targetId,
+                  name: MOCK_KEYWORDS[0].name,
+                }) // 存在確認
+                .mockResolvedValueOnce(null), // 重複なし
+            }),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockReturnValue({
+                get: vi.fn().mockResolvedValue(mockResult),
+              }),
+            }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.KEYWORDS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: NEW_NAME }),
+        },
+        { DB: mockD1 },
+      )
+
+      const data = await validateSuccessResponse(res, keywordResponseSchema)
+      expect(data.keyword.name).toBe(NEW_NAME)
+    })
+
+    it.each([
+      {
+        name: '存在しない ID の場合',
+        dbMock: {
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi.fn().mockResolvedValueOnce(null), // 重複なし
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        expected: {
+          status: HTTP_STATUS.NOT_FOUND,
+          message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
+          code: ERROR_CODES.NOT_FOUND,
+        },
+      },
+      {
+        name: '名前が重複する場合',
+        dbMock: {
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi
+                  .fn()
+                  .mockResolvedValueOnce({
+                    id: targetId,
+                    name: MOCK_KEYWORDS[0].name,
+                  }) // 存在確認
+                  .mockResolvedValueOnce({
+                    id: MOCK_IDS.NEW_KEYWORD,
+                    name: NEW_NAME,
+                  }),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        expected: {
+          status: HTTP_STATUS.CONFLICT,
+          message: ERROR_MESSAGES.DUPLICATE_KEYWORD,
+          code: ERROR_CODES.CONFLICT,
+        },
+      },
+    ])('$name は $expected.status を返すこと', async ({ dbMock, expected }) => {
+      const targetId = MOCK_IDS.KEYWORD_1
+      const NEW_NAME = TEST_STRINGS.NEW_NAME
+
+      vi.mocked(getDb).mockReturnValue(dbMock)
+
+      const res = await app.request(
+        `${API_PATHS.KEYWORDS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: NEW_NAME }),
+        },
+        { DB: mockD1 },
+      )
+
+      await validateErrorResponse(
+        res,
+        expected.status,
+        expected.message,
+        expected.code,
+      )
+    })
+
+    it('不正なデータ（名前が空）の場合は 400 Bad Request を返すこと', async () => {
+      const targetId = MOCK_IDS.KEYWORD_1
+
+      const res = await app.request(
+        `${API_PATHS.KEYWORDS}/${targetId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: '' }), // 名前を空にする
+        },
+        { DB: mockD1 },
+      )
+
+      const body = await validateBasicErrorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        [{ path: ['name'], code: 'too_small' }],
+      )
+      expect(body.error?.issues?.length).toBe(1)
+      expect(body.error?.issues?.[0].message).toEqual(
+        VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH,
+      )
+    })
+  })
 })
 
 /*
@@ -334,57 +474,7 @@ describe.skip(`PATCH ${API_PATHS.KEYWORDS}/:id`, () => {
     resetDatabase()
   })
 
-  it('キーワード名を正常に更新できること', async () => {
-    const k1 = createKeyword('OldName')
-    const NEW_NAME = 'NewName'
 
-    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: NEW_NAME }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.OK)
-    const body = await res.json()
-    expect(body.success).toBe(true)
-    expect(body.data.keyword.name).toBe(NEW_NAME)
-
-    // 実際にデータベースが更新されているか確認
-    const getRes = await app.request(API_PATHS.KEYWORDS)
-    const getBody = await getRes.json()
-    expect(getBody.data.keywords).toContainEqual(
-      expect.objectContaining({ id: String(k1.keyword_id), name: NEW_NAME }),
-    )
-  })
-
-  it('存在しない ID の場合は 404 Not Found を返すこと', async () => {
-    const res = await app.request(`${API_PATHS.KEYWORDS}/999`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'ValidName' }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-    const body = await res.json()
-    expect(body.success).toBe(false)
-    expect(body.error.message).toBe(ERROR_MESSAGES.KEYWORD_NOT_FOUND)
-  })
-
-  it('名前が重複する場合は 409 Conflict を返すこと', async () => {
-    createKeyword('Existing')
-    const k2 = createKeyword('ToUpdate')
-
-    const res = await app.request(`${API_PATHS.KEYWORDS}/${k2.keyword_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Existing' }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.CONFLICT)
-    const body = await res.json()
-    expect(body.success).toBe(false)
-    expect(body.error.message).toBe(ERROR_MESSAGES.DUPLICATE_KEYWORD)
-  })
 
   it('不正なデータ（名前が空）の場合は 400 Bad Request を返すこと', async () => {
     const k1 = createKeyword('Tag')
