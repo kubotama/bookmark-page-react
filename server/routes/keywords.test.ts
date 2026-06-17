@@ -480,81 +480,103 @@ describe('Keyword API', () => {
         VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH,
       )
     })
+
+    it.each([
+      {
+        name: 'キーワードの更新に失敗',
+        dbMock: {
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi
+                  .fn()
+                  .mockResolvedValueOnce({
+                    id: targetId,
+                    name: MOCK_KEYWORDS[0].name,
+                  }) // 存在確認
+                  .mockResolvedValueOnce(null), // 重複なし
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                returning: vi.fn().mockReturnValue({
+                  get: vi
+                    .fn()
+                    .mockRejectedValue(
+                      new Error(ERROR_MESSAGES.DATABASE_CONNECTION_FAILED),
+                    ),
+                }),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        expectedMessage: ERROR_MESSAGES.DATABASE_CONNECTION_FAILED,
+      },
+      {
+        name: 'キーワードの更新結果が取得できなかった',
+        dbMock: {
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi
+                  .fn()
+                  .mockResolvedValueOnce({
+                    id: targetId,
+                    name: MOCK_KEYWORDS[0].name,
+                  }) // 存在確認
+                  .mockResolvedValueOnce(null), // 重複なし
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                returning: vi.fn().mockReturnValue({
+                  get: vi.fn().mockReturnValue(undefined),
+                }),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof getDb>,
+        expectedMessage: ERROR_MESSAGES.KEYWORD_UPDATE_RETURN_VALUE_MISSING,
+      },
+    ])(
+      '$name した場合に HTTP_STATUS.INTERNAL_SERVER_ERROR を返すこと',
+      async ({ dbMock, expectedMessage }) => {
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+        vi.mocked(getDb).mockReturnValue(dbMock)
+
+        const res = await app.request(
+          `${API_PATHS.KEYWORDS}/${targetId}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: NEW_NAME }),
+          },
+          { DB: mockD1 },
+        )
+
+        await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        expect(consoleSpy).toHaveBeenNthCalledWith(
+          1,
+          LOG_MESSAGES.UPDATE_KEYWORD_FAILED,
+          expect.objectContaining({ message: expectedMessage }),
+        )
+        expect(consoleSpy).toHaveBeenNthCalledWith(
+          2,
+          LOG_MESSAGES.UNHANDLED_ERROR_LOG(expectedMessage),
+          expect.objectContaining({ message: expectedMessage }),
+        )
+      },
+    )
   })
 })
 
 /*
-describe.skip(`PATCH ${API_PATHS.KEYWORDS}/:id`, () => {
-  beforeEach(() => {
-    initializeDatabase()
-    resetDatabase()
-  })
-
-
-
-  it('不正なデータ（名前が空）の場合は 400 Bad Request を返すこと', async () => {
-    const k1 = createKeyword('Tag')
-    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: '' }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST)
-  })
-
-  it('データベースエラー時に 500 を返し、ログを出力すること', async () => {
-    const k1 = createKeyword('Tag')
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const dbError = new Error('Update failed')
-
-    vi.spyOn(sqlite, 'prepare').mockImplementation(() => {
-      throw dbError
-    })
-
-    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'NewName' }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-    expect(consoleSpy).toHaveBeenCalledWith(
-      LOG_MESSAGES.UPDATE_KEYWORD_FAILED,
-      dbError,
-    )
-  })
-
-  it('キーワードの更新結果が取得できなかった場合に 500 を返すこと', async () => {
-    const k1 = createKeyword('Tag')
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-    // db.update()...get() が undefined を返すようにモックして if (!result) を通す
-    vi.spyOn(db, 'update').mockReturnValue({
-      set: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          returning: vi.fn().mockReturnValue({
-            get: vi.fn().mockReturnValue(undefined),
-          }),
-        }),
-      }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
-
-    const res = await app.request(`${API_PATHS.KEYWORDS}/${k1.keyword_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'FailureTag' }),
-    })
-
-    expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-    expect(consoleSpy).toHaveBeenCalledWith(
-      LOG_MESSAGES.UPDATE_KEYWORD_FAILED,
-      new Error(ERROR_MESSAGES.KEYWORD_UPDATE_RETURN_VALUE_MISSING),
-    )
-  })
-})
-
 describe.skip(`DELETE ${API_PATHS.KEYWORDS}/:id`, () => {
   beforeEach(() => {
     initializeDatabase()
