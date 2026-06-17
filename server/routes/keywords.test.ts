@@ -35,7 +35,7 @@ vi.mock('../db', async (importOriginal) => {
   }
 })
 
-describe(`GET ${API_PATHS.KEYWORDS}`, () => {
+describe('Keyword API', () => {
   let mockD1: D1Database
 
   beforeEach(() => {
@@ -43,92 +43,94 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
     vi.restoreAllMocks()
   })
 
-  it('空のリストを返すこと', async () => {
-    // 1. getDb をモック化
-    const dbMock = {
-      select: vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            groupBy: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockResolvedValue([]), // 空のリスト
+  describe(`GET ${API_PATHS.KEYWORDS}`, () => {
+    it('空のリストを返すこと', async () => {
+      // 1. getDb をモック化
+      const dbMock = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            leftJoin: vi.fn().mockReturnValue({
+              groupBy: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockResolvedValue([]), // 空のリスト
+              }),
             }),
           }),
         }),
-      }),
-    } as unknown as ReturnType<typeof getDb>
-    vi.mocked(getDb).mockReturnValue(dbMock)
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-    // 2. 実行 (第3引数に { DB: mockD1 } を忘れないように)
-    const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
+      // 2. 実行 (第3引数に { DB: mockD1 } を忘れないように)
+      const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
 
-    // 3. 検証 (validateSuccessResponse を活用)
-    const data = await validateSuccessResponse(res, keywordsSchema)
-    expect(data.keywords).toEqual([])
-  })
+      // 3. 検証 (validateSuccessResponse を活用)
+      const data = await validateSuccessResponse(res, keywordsSchema)
+      expect(data.keywords).toEqual([])
+    })
 
-  it('登録済みのキーワードとブックマーク数を返すこと', async () => {
-    // API (keywords.ts) が期待する「DBからの生データ」の形式
-    const mockRows = [
-      {
-        id: MOCK_KEYWORDS[0].id,
-        name: MOCK_KEYWORDS[0].name,
-        bookmarkCount: 2,
-      },
-      {
-        id: MOCK_KEYWORDS[1].id,
-        name: MOCK_KEYWORDS[1].name,
-        bookmarkCount: 1,
-      },
-      {
-        id: MOCK_KEYWORDS[2].id,
-        name: MOCK_KEYWORDS[2].name,
-        bookmarkCount: 0,
-      },
-    ]
+    it('登録済みのキーワードとブックマーク数を返すこと', async () => {
+      // API (keywords.ts) が期待する「DBからの生データ」の形式
+      const mockRows = [
+        {
+          id: MOCK_KEYWORDS[0].id,
+          name: MOCK_KEYWORDS[0].name,
+          bookmarkCount: 2,
+        },
+        {
+          id: MOCK_KEYWORDS[1].id,
+          name: MOCK_KEYWORDS[1].name,
+          bookmarkCount: 1,
+        },
+        {
+          id: MOCK_KEYWORDS[2].id,
+          name: MOCK_KEYWORDS[2].name,
+          bookmarkCount: 0,
+        },
+      ]
 
-    const dbMock = {
-      select: vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            groupBy: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockResolvedValue(mockRows),
+      const dbMock = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            leftJoin: vi.fn().mockReturnValue({
+              groupBy: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockResolvedValue(mockRows),
+              }),
             }),
           }),
         }),
-      }),
-    } as unknown as ReturnType<typeof getDb>
-    vi.mocked(getDb).mockReturnValue(dbMock)
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-    const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
+      const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
 
-    // 検証
-    const data = await validateSuccessResponse(res, keywordsSchema)
-    expect(data.keywords).toEqual(mockRows)
-  })
+      // 検証
+      const data = await validateSuccessResponse(res, keywordsSchema)
+      expect(data.keywords).toEqual(mockRows)
+    })
 
-  it('データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
-    const dbError = new Error(ERROR_MESSAGES.DATABASE_CONNECTION_FAILED)
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    it('データベースエラー時に 500 を返し、適切なログを出力すること', async () => {
+      const dbError = new Error(ERROR_MESSAGES.DATABASE_CONNECTION_FAILED)
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const dbMock = {
-      select: vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            groupBy: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockRejectedValue(dbError),
+      const dbMock = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            leftJoin: vi.fn().mockReturnValue({
+              groupBy: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockRejectedValue(dbError),
+              }),
             }),
           }),
         }),
-      }),
-    } as unknown as ReturnType<typeof getDb>
-    vi.mocked(getDb).mockReturnValue(dbMock)
+      } as unknown as ReturnType<typeof getDb>
+      vi.mocked(getDb).mockReturnValue(dbMock)
 
-    const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
-    await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
-    expect(consoleSpy).toHaveBeenCalledWith(
-      LOG_MESSAGES.FETCH_KEYWORDS_FAILED,
-      dbError,
-    )
+      const res = await app.request(API_PATHS.KEYWORDS, {}, { DB: mockD1 })
+      await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        LOG_MESSAGES.FETCH_KEYWORDS_FAILED,
+        dbError,
+      )
+    })
   })
 
   describe(`POST ${API_PATHS.KEYWORDS}`, () => {
