@@ -249,30 +249,55 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
     })
 
     describe('Error Handling', () => {
-      it('キーワードの作成結果が取得できなかった場合に 500 を返すこと', async () => {
-        const expectedError = new Error(
-          ERROR_MESSAGES.KEYWORD_INSERT_RETURN_VALUE_MISSING,
-        )
+      it.each([
+        {
+          name: 'キーワードの作成結果が取得できなかった',
+          dbMock: {
+            select: vi.fn().mockReturnValue({
+              from: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  get: vi.fn().mockReturnValue(null),
+                }),
+              }),
+            }),
+            insert: vi.fn().mockReturnValue({
+              values: vi.fn().mockReturnValue({
+                returning: vi.fn().mockReturnValue({
+                  get: vi.fn().mockResolvedValue(undefined),
+                }),
+              }),
+            }),
+          } as unknown as ReturnType<typeof getDb>,
+          expectedMessage: ERROR_MESSAGES.KEYWORD_INSERT_RETURN_VALUE_MISSING,
+        },
+        {
+          name: '作成失敗（例外発生）した',
+          dbMock: {
+            select: vi.fn().mockReturnValue({
+              from: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  get: vi.fn().mockReturnValue(null),
+                }),
+              }),
+            }),
+            insert: vi.fn().mockReturnValue({
+              values: vi.fn().mockReturnValue({
+                returning: vi.fn().mockReturnValue({
+                  get: vi
+                    .fn()
+                    .mockRejectedValue(
+                      new Error(ERROR_MESSAGES.DATABASE_CONNECTION_FAILED),
+                    ),
+                }),
+              }),
+            }),
+          } as unknown as ReturnType<typeof getDb>,
+          expectedMessage: ERROR_MESSAGES.DATABASE_CONNECTION_FAILED,
+        },
+      ])('$name 場合に 500 を返すこと', async ({ dbMock, expectedMessage }) => {
         const consoleSpy = vi
           .spyOn(console, 'error')
           .mockImplementation(() => {})
-        const dbMock = {
-          // 1. 重複チェック用
-          select: vi.fn().mockReturnValue({
-            from: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                get: vi.fn().mockReturnValue(null),
-              }),
-            }),
-          }),
-          insert: vi.fn().mockReturnValue({
-            values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockReturnValue({
-                get: vi.fn().mockResolvedValue(undefined),
-              }),
-            }),
-          }),
-        } as unknown as ReturnType<typeof getDb>
         vi.mocked(getDb).mockReturnValue(dbMock)
 
         const res = await app.request(
@@ -285,53 +310,15 @@ describe(`GET ${API_PATHS.KEYWORDS}`, () => {
           { DB: mockD1 },
         )
         await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        expect(consoleSpy).toHaveBeenCalledWith(
-          LOG_MESSAGES.UNHANDLED_ERROR_LOG(expectedError.message),
-          expectedError,
-        )
-      })
-
-      it('作成失敗（例外発生）時に 500 を返し、ログを出力すること', async () => {
-        const expectedError = new Error(
-          ERROR_MESSAGES.DATABASE_CONNECTION_FAILED,
-        )
-        const dbError = new Error(ERROR_MESSAGES.DATABASE_CONNECTION_FAILED)
-
-        const consoleSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
-        const dbMock = {
-          // 1. 重複チェック用
-          select: vi.fn().mockReturnValue({
-            from: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                get: vi.fn().mockReturnValue(null),
-              }),
-            }),
-          }),
-          insert: vi.fn().mockReturnValue({
-            values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockReturnValue({
-                get: vi.fn().mockRejectedValue(dbError),
-              }),
-            }),
-          }),
-        } as unknown as ReturnType<typeof getDb>
-        vi.mocked(getDb).mockReturnValue(dbMock)
-
-        const res = await app.request(
-          API_PATHS.KEYWORDS,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: NEW_TAG }),
-          },
-          { DB: mockD1 },
-        )
-        await validateErrorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        expect(consoleSpy).toHaveBeenCalledWith(
+        expect(consoleSpy).toHaveBeenNthCalledWith(
+          1,
           LOG_MESSAGES.CREATE_KEYWORD_FAILED,
-          expectedError,
+          expect.objectContaining({ message: expectedMessage }),
+        )
+        expect(consoleSpy).toHaveBeenNthCalledWith(
+          2,
+          LOG_MESSAGES.UNHANDLED_ERROR_LOG(expectedMessage),
+          expect.objectContaining({ message: expectedMessage }),
         )
       })
     })
