@@ -181,43 +181,59 @@ describe('Keyword API', () => {
     })
 
     it.each([
-      { name: '空の場合', bodyName: '' },
+      {
+        name: '空の場合',
+        bodyName: '',
+        expected: {
+          code: 'too_small',
+          message: VALIDATION_MESSAGES.KEYWORD_MIN_LENGTH,
+        },
+      },
       {
         name: `${VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH} 文字を超える場合`,
         bodyName: 'a'.repeat(VALIDATION_LIMITS.KEYWORD_NAME_MAX_LENGTH + 1),
+        expected: {
+          code: 'too_big',
+          message: VALIDATION_MESSAGES.KEYWORD_MAX_LENGTH,
+        },
       },
-    ])(`名前が$nameは 400 Bad Request を返すこと`, async ({ bodyName }) => {
-      const dbError = new MockSqliteError(
-        API_ERROR_CODES.BAD_REQUEST,
-        ERROR_CODES.BAD_REQUEST,
-      )
-      const dbMock = {
-        // 1. 重複チェック用
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              get: vi.fn().mockRejectedValue(dbError),
+    ])(
+      `名前が$nameは 400 Bad Request を返すこと`,
+      async ({ bodyName, expected }) => {
+        const dbError = new MockSqliteError(
+          API_ERROR_CODES.BAD_REQUEST,
+          ERROR_CODES.BAD_REQUEST,
+        )
+        const dbMock = {
+          // 1. 重複チェック用
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                get: vi.fn().mockRejectedValue(dbError),
+              }),
             }),
           }),
-        }),
-      } as unknown as ReturnType<typeof getDb>
-      vi.mocked(getDb).mockReturnValue(dbMock)
+        } as unknown as ReturnType<typeof getDb>
+        vi.mocked(getDb).mockReturnValue(dbMock)
 
-      const res = await app.request(
-        API_PATHS.KEYWORDS,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: bodyName }),
-        },
-        { DB: mockD1 },
-      )
-      const resBody = await validateBasicErrorResponse(
-        res,
-        HTTP_STATUS.BAD_REQUEST,
-      )
-      expect(resBody.error).toBeDefined()
-    })
+        const res = await app.request(
+          API_PATHS.KEYWORDS,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: bodyName }),
+          },
+          { DB: mockD1 },
+        )
+        const body = await validateBasicErrorResponse(
+          res,
+          HTTP_STATUS.BAD_REQUEST,
+          [{ path: ['name'], code: expected.code }],
+        )
+        expect(body.error?.issues?.length).toBe(1)
+        expect(body.error?.issues?.[0].message).toEqual(expected.message)
+      },
+    )
 
     it('既に存在する名前の場合は 409 Conflict を返し、エラーオブジェクトを含むこと', async () => {
       const bookmark = MOCK_BOOKMARK_ENTITY_1
