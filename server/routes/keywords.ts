@@ -196,24 +196,11 @@ const keywordsRoute = new Hono<{ Bindings: Bindings }>()
       try {
         // 削除実行と結果の取得を同時に行う
         const db = getDb(c.env.DB)
-        const result = await db
+        await db
           .delete(keywordsTable)
           .where(eq(keywordsTable.id, id))
           .returning()
           .get()
-
-        if (!result) {
-          return c.json(
-            {
-              success: false,
-              error: {
-                message: ERROR_MESSAGES.KEYWORD_NOT_FOUND,
-                code: API_ERROR_CODES.NOT_FOUND,
-              },
-            },
-            HTTP_STATUS.NOT_FOUND,
-          )
-        }
 
         return c.body(null, HTTP_STATUS.NO_CONTENT)
       } catch (error) {
