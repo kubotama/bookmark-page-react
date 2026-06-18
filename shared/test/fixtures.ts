@@ -131,6 +131,7 @@ export const INVALID_URLS = {
   JAVASCRIPT: 'javascript:alert(1)',
   NO_PROTOCOL: 'localhost:3030',
   MALFORMED: 'not-a-url',
+  UNTRUST_HTTP: 'http://malicious-site.com',
 } as const
 
 export const TEST_MESSAGES = {
