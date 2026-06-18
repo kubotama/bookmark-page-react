@@ -196,11 +196,7 @@ const keywordsRoute = new Hono<{ Bindings: Bindings }>()
       try {
         // 削除実行と結果の取得を同時に行う
         const db = getDb(c.env.DB)
-        await db
-          .delete(keywordsTable)
-          .where(eq(keywordsTable.id, id))
-          .returning()
-          .get()
+        await db.delete(keywordsTable).where(eq(keywordsTable.id, id))
 
         return c.body(null, HTTP_STATUS.NO_CONTENT)
       } catch (error) {

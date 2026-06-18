@@ -619,11 +619,7 @@ describe('Keyword API', () => {
 
       const dbMock = {
         delete: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockReturnValue({
-              get: vi.fn().mockRejectedValue(dbError),
-            }),
-          }),
+          where: vi.fn().mockRejectedValue(dbError),
         }),
       } as unknown as ReturnType<typeof getDb>
       vi.mocked(getDb).mockReturnValue(dbMock)
