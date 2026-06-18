@@ -50,7 +50,6 @@ describe('App Global Handlers', () => {
         name: '許可されたオリジン',
         origin: allowedOrigin,
         context: {
-          DB: mockD1,
           BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin, // 環境変数を注入
         },
         expectedOrigin: allowedOrigin,
@@ -59,7 +58,6 @@ describe('App Global Handlers', () => {
         name: '許可されていないオリジン',
         origin: untrustedOrigin,
         context: {
-          DB: mockD1,
           BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin, // 環境変数を注入
         },
         expectedOrigin: allowedOrigin,
@@ -68,7 +66,6 @@ describe('App Global Handlers', () => {
         name: 'chrome-extension',
         origin: extensionOrigin,
         context: {
-          DB: mockD1,
           BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin, // 環境変数を注入
         },
         expectedOrigin: extensionOrigin,
@@ -79,7 +76,7 @@ describe('App Global Handlers', () => {
         const res = await app.request(
           API_PATHS.BOOKMARKS,
           { headers: { Origin: origin } },
-          context,
+          { DB: mockD1, ...context },
         )
 
         expect(res.headers.get('Access-Control-Allow-Origin')).toBe(
