@@ -564,21 +564,15 @@ describe('Keyword API', () => {
       {
         name: 'キーワードを正常に削除できること',
         targetId,
-        found: { id: targetId, name: MOCK_KEYWORDS[0].name },
       },
       {
         name: '存在しない ID の場合は 204 No Contentを返すこと(冪等性)',
         targetId: MOCK_IDS.UNKNOWN_ID,
-        found: undefined,
       },
-    ])('$name', async ({ targetId, found }) => {
+    ])('$name', async ({ targetId }) => {
       const dbMock = {
         delete: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue(found),
-            }),
-          }),
+          where: vi.fn().mockResolvedValue({}),
         }),
       } as unknown as ReturnType<typeof getDb>
       vi.mocked(getDb).mockReturnValue(dbMock)
