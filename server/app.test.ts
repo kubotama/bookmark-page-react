@@ -1,34 +1,41 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, it, vi } from 'vitest'
 
-import {
-  API_PATHS,
-  ERROR_MESSAGES,
-  HTTP_STATUS,
-  LOG_MESSAGES,
-} from '@shared/constants'
+import { ERROR_MESSAGES, HTTP_STATUS } from '@shared/constants'
 
 import app from './app'
-import { db, initializeDatabase, resetDatabase } from './db'
+import { createD1Mock, validateErrorResponse } from './test/testUtils'
 import { API_ERROR_CODES } from './utils/error'
 
-describe.skip('App Global Handlers', () => {
+// getDb をモック化
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./db')>()
+  return {
+    ...actual,
+    getDb: vi.fn(),
+  }
+})
+
+describe('App Global Handlers', () => {
+  let mockD1: D1Database
+
   beforeEach(() => {
-    initializeDatabase()
-    resetDatabase()
+    mockD1 = createD1Mock()
+    vi.restoreAllMocks()
   })
 
   it('存在しないパスへのアクセス時に 404 エラーを共通形式で返すこと', async () => {
-    const res = await app.request('/api/non-existent-path')
-    expect(res.status).toBe(HTTP_STATUS.NOT_FOUND)
-
-    const body = await res.json()
-    expect(body.success).toBe(false)
-    expect(body.error.message).toBe(ERROR_MESSAGES.NOT_FOUND)
-    expect(body.error.code).toBe(API_ERROR_CODES.NOT_FOUND)
+    const res = await app.request('/api/non-existent-path', {}, { DB: mockD1 })
+    await validateErrorResponse(
+      res,
+      HTTP_STATUS.NOT_FOUND,
+      ERROR_MESSAGES.NOT_FOUND,
+      API_ERROR_CODES.NOT_FOUND,
+    )
   })
+})
 
+/*
+describe.skip('App Global Handlers', () => {
   it('未キャッチのエラーが発生した際に 500 エラーを共通形式で返すこと', async () => {
     const dbError = new Error('Test unhandled error')
     // 既存のエンドポイントでエラーを発生させる
@@ -83,3 +90,4 @@ describe.skip('App Global Handlers', () => {
     )
   })
 })
+*/
