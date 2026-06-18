@@ -21,13 +21,11 @@ import app from '../app'
 import { getDb } from '../db'
 import {
   createD1Mock,
-  MockSqliteError,
   validateBasicErrorResponse,
   validateErrorResponse,
   validateNoContentResponse,
   validateSuccessResponse,
 } from '../test/testUtils'
-import { API_ERROR_CODES } from '../utils/error'
 
 vi.mock('../db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../db')>()
@@ -201,22 +199,6 @@ describe('Keyword API', () => {
     ])(
       `名前が$nameは 400 Bad Request を返すこと`,
       async ({ bodyName, expected }) => {
-        const dbError = new MockSqliteError(
-          API_ERROR_CODES.BAD_REQUEST,
-          ERROR_CODES.BAD_REQUEST,
-        )
-        const dbMock = {
-          // 1. 重複チェック用
-          select: vi.fn().mockReturnValue({
-            from: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                get: vi.fn().mockRejectedValue(dbError),
-              }),
-            }),
-          }),
-        } as unknown as ReturnType<typeof getDb>
-        vi.mocked(getDb).mockReturnValue(dbMock)
-
         const res = await app.request(
           API_PATHS.KEYWORDS,
           {
