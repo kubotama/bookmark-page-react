@@ -93,6 +93,20 @@ export const attachKeyword = async (
 }
 
 /**
+ * テスト用の SQLite エラークラス
+ * code プロパティを持つことで server/utils/error.ts の isSqliteError をパスします
+ */
+export class MockSqliteError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'MockSqliteError'
+    this.code = code
+  }
+}
+
+/**
  * 成功レスポンスを検証し、中身のデータを返します
  */
 export const validateSuccessResponse = async <T extends z.ZodTypeAny>(
@@ -141,6 +155,15 @@ export const validateErrorResponse = async (
   return result.error
 }
 
+type ZodIssue = z.core.$ZodIssue
+type ZodBasicError = {
+  success: false
+  error?: {
+    name?: string
+    message?: string
+    issues?: ZodIssue[]
+  }
+}
 /**
  * 失敗レスポンス (success: false) であることを網羅的に検証します。
  * ステータスコードの検証も同時に行い、型付けされたボディを返します。
@@ -148,18 +171,54 @@ export const validateErrorResponse = async (
 export const validateBasicErrorResponse = async (
   res: Response,
   expectedStatus: HttpStatus,
-): Promise<{ success: false; [key: string]: unknown }> => {
-  // 1. ステータスコードの検証
+  expectedZodIssues?: { path: (string | number)[]; code: string }[],
+): Promise<ZodBasicError> => {
   expect(res.status).toBe(expectedStatus)
-
   const body = await res.json()
 
-  // success: false であることを Zod で検証
-  // .looseObject() を使うことで、error プロパティなどの詳細が
-  // どんな形式（Hono形式 or 自前形式）であっても許容します
-  const basicErrorSchema = z.looseObject({
-    success: z.literal(false),
-  })
+  const result = z
+    .object({
+      success: z.literal(false),
+      error: z
+        .object({
+          name: z.string().optional(),
+          message: z.string().optional(),
+        })
+        .optional(),
+    })
+    .parse(body)
 
-  return basicErrorSchema.parse(body)
+  let parsedIssues: ZodIssue[] | undefined = undefined
+  if (result.error?.message) {
+    try {
+      const parsed = JSON.parse(result.error.message)
+      if (Array.isArray(parsed)) {
+        parsedIssues = parsed
+      }
+    } catch {
+      // JSON でない場合は無視
+    }
+  }
+
+  if (expectedZodIssues) {
+    expect(result.error?.name).toBe('ZodError')
+    expect(parsedIssues).toBeDefined()
+
+    for (const expected of expectedZodIssues) {
+      expect(parsedIssues).toEqual(
+        expect.arrayContaining([expect.objectContaining(expected)]),
+      )
+    }
+  }
+
+  return {
+    success: false,
+    error: result.error
+      ? {
+          name: result.error.name,
+          message: result.error.message,
+          issues: parsedIssues, // パース済みの配列を issues として含める
+        }
+      : undefined,
+  }
 }

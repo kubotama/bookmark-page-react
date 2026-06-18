@@ -164,6 +164,7 @@ export const ERROR_MESSAGES = {
   UPDATE_API_URL_FAILED: 'API URL の更新に失敗しました:',
   UNEXPECTED_ID_TYPE: '予期しない ID 型が検出されました',
   ATTACH_KEYWORD_FAILED: 'キーワードの紐付けに失敗しました',
+  DATABASE_CONNECTION_FAILED: 'データベースの接続に失敗しました',
 } as const
 
 /**
