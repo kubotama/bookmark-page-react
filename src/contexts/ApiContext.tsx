@@ -10,11 +10,7 @@ import {
 import { DEFAULT_API_URL, ERROR_MESSAGES } from '@shared/constants'
 import { validateApiUrl } from '@shared/utils/url'
 
-import {
-  ExtensionApiClient,
-  HttpApiClient,
-  type ApiClient,
-} from '../lib/api-client'
+import { HttpApiClient, type ApiClient } from '../lib/api-client'
 
 interface ApiContextType {
   client: ApiClient
@@ -43,10 +39,7 @@ export const ApiProvider = ({ children }: ApiProviderProps) => {
   )
 
   const client = useMemo(() => {
-    if (import.meta.env.MODE === 'test' || apiUrl) {
-      return new HttpApiClient(apiUrl)
-    }
-    return new ExtensionApiClient()
+    return new HttpApiClient(apiUrl)
   }, [apiUrl])
 
   const updateApiUrl = useCallback((newUrl: string) => {
