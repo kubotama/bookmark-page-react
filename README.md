@@ -4,8 +4,10 @@
 
 ## 概要 (Overview)
 
-`kubotama/linkpage` (Next.js) の機能を Vite (React) + Hono に移植・刷新するプロジェクトです。
+`kubotama/linkpage` (Next.js) の機能を Vite (React) + Hono + Cloudflare 環境に移植・刷新するプロジェクトです。
 個人的なブックマーク（リンク集）を管理・表示するためのアプリケーションです。
+
+**v3.0.0 (Development)**: アーキテクチャをCloudflare環境に移行しました
 
 **v2.0.1 (Development)**: Local-first への移行を加速させるため、以下の整備を行いました。
 
@@ -63,9 +65,9 @@
 ## 技術スタック (Tech Stack)
 
 - **Frontend:** Vite, React, TypeScript, Tailwind CSS, TanStack Query, @dnd-kit
-- **Backend:** Hono (@hono/node-server), better-sqlite3, Drizzle ORM
+- **Backend:** Hono, Cloudflare Workers, Drizzle ORM
 - **Shared:** TypeScript (Zod schemas, domain types like BookmarkId, constants)
-- **Database:** SQLite
+- **Database:** Cloudflare D1
 
 ## ディレクトリ構成 (Project Structure)
 
@@ -100,11 +102,17 @@
 
 ### データベース (Database)
 
-アプリケーション起動時にプロジェクトルートに `bookmarks.sqlite`（デフォルト）が自動的に作成され、`server/db/migrations` にあるマイグレーションファイルに基づいてテーブル構造が初期化・更新されます。手動でデータベースファイルを作成したり、SQL を直接実行する必要はありません。
+本プロジェクトでは **Cloudflare D1** を使用しています。
 
-データベースファイル名は環境変数 `DB_FILENAME` で変更可能です。
+ローカル開発環境では、`wrangler` (Miniflare) によって D1 データベースがエミュレートされます。データベースの実体は `.wrangler` ディレクトリ内に保持されます。
 
-初期化とマイグレーションの実行は `server/db.ts` の `initializeDatabase()` 関数に定義されており、サーバー起動時に自動的に呼び出されます。
+開発を開始する前に、以下のコマンドを実行してローカルデータベースにマイグレーション（テーブル作成）を適用する必要があります：
+
+```bash
+npm run db:migrate:local
+```
+
+※ 手動でデータベースファイルを作成したり、SQL を直接実行する必要はありません。
 
 ### インストール (Installation)
 
@@ -112,14 +120,8 @@
 npm install
 ```
 
-> [!IMPORTANT]
-> 本プロジェクトではセキュリティ向上のため、`.npmrc` にて `ignore-scripts=true` を設定しています。これにより、`npm install` 時に依存パッケージのスクリプト（ネイティブモジュールのビルド等）が自動実行されません。
->
-> `better-sqlite3` などのバイナリを含むパッケージを使用する場合、インストール後（または Node.js バージョン変更時）に以下のコマンドで手動ビルドを行う必要があります：
->
-> ```bash
-> cd node_modules/better-sqlite3 && npm run install
-> ```
+> [!NOTE]
+> 本プロジェクトでは `.npmrc` にて `ignore-scripts=true` を設定しています。これはセキュリティ向上のための設定であり、通常の開発フローには影響ありません。
 
 ### エディタ設定 (Editor Setup)
 
@@ -135,10 +137,8 @@ cp .env.example .env
 
 | 変数名                       | 説明                                                 | デフォルト値            |
 | ---------------------------- | ---------------------------------------------------- | ----------------------- |
-| `BOOKMARK_PAGE_FRONTEND_URL` | CORS許可オリジン設定用 / Webアプリの起動ポート決定用 | `http://localhost:5173` |
-| `VITE_EXTENSION_ID`          | 連携する拡張機能의 ID                                | (なし)                  |
-| `DB_FILENAME`                | データベースファイル名                               | `bookmarks.sqlite`      |
-| `SERVER_PORT`                | サーバー起動ポート番号                               | `3030`                  |
+| `BOOKMARK_PAGE_FRONTEND_URL` | CORS許可オリジン設定用 / Webアプリの起動ポート決定用 | `http://localhost:5180` |
+| `VITE_EXTENSION_ID`          | 連携する拡張機能のID                                 | (なし)                  |
 
 補足: `BOOKMARK_PAGE_FRONTEND_URL` にポート番号を指定すると、Web アプリ (Vite) の起動ポートに自動的に反映されます。1024 未満の特権ポートが指定された場合などは、デフォルト値が使用されます。
 
@@ -154,18 +154,12 @@ npm run dev
 
 起動後、以下のURLでアクセスできます（デフォルト設定の場合）：
 
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:3030`
+- Frontend: `http://localhost:5180`
+- Backend API: `http://localhost:8787`
 
 > [!TIP]
 > **一括起動機能（Enterキー）が動作しない場合**
-> 複数のキーワードを選択した状態で Enter キーを押してもブックマークが開かない場合、ブラウザの「ポップアップブロック」機能によって制限されている可能性があります。その場合は、ブラウザの設定で本アプリのURL（例: `http://localhost:5173`）からの **「ポップアップとリダイレクト」を許可** してください。
-
-ポート番号を変更して起動することも可能です：
-
-```bash
-SERVER_PORT=4000 npm run dev
-```
+> 複数のキーワードを選択した状態で Enter キーを押してもブックマークが開かない場合、ブラウザの「ポップアップブロック」機能によって制限されている可能性があります。その場合は、ブラウザの設定で本アプリのURL（例: `http://localhost:5180`）からの **「ポップアップとリダイレクト」を許可** してください。
 
 #### ブラウザ拡張機能
 
@@ -197,8 +191,8 @@ npm run extension:build
 
 1. 拡張機能のアイコンを右クリックし「オプション」を選択、または拡張機能管理画面から詳細を開き「拡張機能のオプション」をクリックします。
 2. 設定項目を入力し「保存」をクリックします。
-   - **URL (API サーバー)**: ブックマークを保存するサーバーのベース URL (例: `http://localhost:3030`) を入力します。
-   - **Web アプリ URL**: 詳細画面を開く際に使用する Web アプリのベース URL (例: `http://localhost:5173`) を入力します。
+   - **URL (API サーバー)**: ブックマークを保存するサーバーのベース URL (例: `http://localhost:8787`) を入力します。
+   - **Web アプリ URL**: 詳細画面を開く際に使用する Web アプリのベース URL (例: `http://localhost:5180`) を入力します。
      ※ セキュリティのため、入力された URL はオリジン部分のみに正規化されます。
 3. 「接続確認」ボタンを押し、API サーバーとの通信が正常であることを確認してください。
 
@@ -240,7 +234,6 @@ import { render, renderHook } from './test/utils'
 - フロントエンドのテストには **React Testing Library** と **MSW (Mock Service Worker)** を使用しており、API リクエストをモックしてコンポーネントの挙動を検証しています。
 - テストデータは Fixture (例: `shared/test/fixtures.ts`) として集約管理されており、保守性と一貫性が確保されています。
 - **カバレッジの例外事項**:
-  - `server/db.ts`: テスト環境では実行されない環境チェックや、正常動作時には到達不可能な `pragma` 設定などは `/* v8 ignore next */` により計測から除外しています。
   - `extension/`: `window.close()` など、ブラウザの実環境に強く依存しテスト環境（JSDOM）での再現が困難な一部のコールバックについては、カバレッジが 100% に達していない場合がありますが、主要なビジネスロジックは網羅されています。
   - Vitest (v8) の仕様により、条件分岐の閉じカッコやショートサーキット評価の一部が未カバーとして報告されることがありますが、機能的な網羅性はテストケースによって担保されています。
 
@@ -263,11 +256,13 @@ import { render, renderHook } from './test/utils'
   "data": {
     "bookmarks": [
       {
-        "id": "1",
+        "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
         "title": "Example",
         "url": "https://example.com",
         "sortOrder": 0,
-        "keywords": [{ "id": "10", "name": "開発" }]
+        "keywords": [
+          { "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX", "name": "開発" }
+        ]
       }
     ]
   }
@@ -293,7 +288,7 @@ import { render, renderHook } from './test/utils'
 {
   "success": true,
   "data": {
-    "id": "2",
+    "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
     "title": "GitHub",
     "url": "https://github.com",
     "sortOrder": 1,
@@ -308,7 +303,7 @@ import { render, renderHook } from './test/utils'
 
 **パスパラメータ:**
 
-- `id`: ブックマーク ID (1 以上の整数文字列)
+- `id`: ブックマーク ID (UUID v7 形式の文字列)
 
 **レスポンス:**
 
@@ -323,7 +318,7 @@ import { render, renderHook } from './test/utils'
 
 **パスパラメータ:**
 
-- `id`: ブックマーク ID (1 以上の整数文字列)
+- `id`: ブックマーク ID (UUID v7 形式の文字列)
 
 **リクエストボディ:**
 
@@ -344,11 +339,13 @@ import { render, renderHook } from './test/utils'
 {
   "success": true,
   "data": {
-    "id": "1",
+    "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
     "title": "新しいタイトル",
     "url": "https://updated-example.com",
     "sortOrder": 0,
-    "keywords": [{ "id": "10", "name": "開発" }]
+    "keywords": [
+      { "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX", "name": "開発" }
+    ]
   }
 }
 ```
@@ -366,7 +363,10 @@ import { render, renderHook } from './test/utils'
 
 ```json
 {
-  "ids": ["1", "3", "2"]
+  "ids": [
+    "018ed000-0001-7000-8000-000000000001",
+    "018ed000-0003-7000-8000-000000000003"
+  ]
 }
 ```
 
@@ -387,8 +387,16 @@ import { render, renderHook } from './test/utils'
   "success": true,
   "data": {
     "keywords": [
-      { "id": "1", "name": "React", "bookmarkCount": 5 },
-      { "id": "2", "name": "TypeScript", "bookmarkCount": 3 }
+      {
+        "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
+        "name": "React",
+        "bookmarkCount": 5
+      },
+      {
+        "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
+        "name": "TypeScript",
+        "bookmarkCount": 3
+      }
     ]
   }
 }
@@ -413,7 +421,7 @@ import { render, renderHook } from './test/utils'
   "success": true,
   "data": {
     "keyword": {
-      "id": "3",
+      "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
       "name": "新規キーワード"
     }
   }
@@ -428,7 +436,7 @@ import { render, renderHook } from './test/utils'
 
 **パスパラメータ:**
 
-- `id`: キーワード ID (1 以上の整数文字列)
+- `id`: キーワード ID (UUID v7 形式の文字列)
 
 **リクエストボディ:**
 
@@ -445,7 +453,7 @@ import { render, renderHook } from './test/utils'
   "success": true,
   "data": {
     "keyword": {
-      "id": "3",
+      "id": "018ed000-0000-7000-8000-XXXXXXXXXXXX",
       "name": "更新後のキーワード名"
     }
   }
@@ -462,7 +470,7 @@ import { render, renderHook } from './test/utils'
 
 **パスパラメータ:**
 
-- `id`: キーワード ID (1 以上の整数文字列)
+- `id`: キーワード ID (UUID v7 形式の文字列)
 
 **レスポンス:**
 
@@ -475,13 +483,13 @@ import { render, renderHook } from './test/utils'
 
 **パスパラメータ:**
 
-- `id`: ブックマーク ID (1 以上の整数文字列)
+- `id`: ブックマーク ID (UUID v7 形式の文字列)
 
 **リクエストボディ:**
 
 ```json
 {
-  "keywordId": "3"
+  "keywordId": "018ed000-0000-7000-8000-XXXXXXXXXXXX"
 }
 ```
 
