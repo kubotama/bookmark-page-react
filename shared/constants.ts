@@ -188,9 +188,7 @@ export const UI_MESSAGES = {
   KEYWORD_NOT_FOUND: (id: string | number) =>
     `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
-  CHROME_EXTENSION_NOT_AVAILABLE: 'chromeの拡張機能が利用できません',
-  INVALID_RESPONSE_FROM_EXTENSION: '拡張機能からの返り値の形式が不正です',
-  UNKNOWN_EXTENSION_ERROR: '拡張機能での不明なエラーです',
+  INVALID_RESPONSE_FORMAT: 'レスポンスの形式が不正です',
   API_ERROR: 'APIのエラーです',
 } as const
 
@@ -347,17 +345,8 @@ export const ELEMENT_IDS = {
  * データベース関連の定数
  */
 export const DB_CONSTANTS = {
-  DB_NAME: 'BookmarkDatabase',
-  IDB_VERSION: 1,
-  IDB_SCHEMA: {
-    bookmarks: 'id, &url, sortOrder, *keywordIds',
-    keywords: 'id, name',
-  },
   FILENAME: 'bookmarks.sqlite',
   MIGRATIONS_DIR: 'server/db/migrations',
-  PRAGMA_FOREIGN_KEYS_ON: 'foreign_keys = ON',
-  PRAGMA_FOREIGN_KEYS_OFF: 'foreign_keys = OFF',
-  PRAGMA_JOURNAL_MODE_WAL: 'journal_mode = WAL',
 } as const
 
 /**
