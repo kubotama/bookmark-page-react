@@ -188,7 +188,7 @@ export const UI_MESSAGES = {
   KEYWORD_NOT_FOUND: (id: string | number) =>
     `キーワードが見つかりませんでした (ID: ${id})`,
   EMPTY_SECTION: (label: string) => `${label}は空です`,
-  INVALID_RESPONSE_FORMAT: '拡張機能からの返り値の形式が不正です',
+  INVALID_RESPONSE_FORMAT: 'レスポンスの形式が不正です',
   API_ERROR: 'APIのエラーです',
 } as const
 

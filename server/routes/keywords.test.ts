@@ -10,12 +10,7 @@ import {
   VALIDATION_MESSAGES,
 } from '@shared/constants'
 import { keywordResponseSchema, keywordsSchema } from '@shared/schemas/keyword'
-import {
-  MOCK_BOOKMARK_1,
-  MOCK_IDS,
-  MOCK_KEYWORDS,
-  TEST_STRINGS,
-} from '@shared/test/fixtures'
+import { MOCK_IDS, MOCK_KEYWORDS, TEST_STRINGS } from '@shared/test/fixtures'
 
 import app from '../app'
 import { getDb } from '../db'
@@ -219,13 +214,13 @@ describe('Keyword API', () => {
     )
 
     it('既に存在する名前の場合は 409 Conflict を返し、エラーオブジェクトを含むこと', async () => {
-      const bookmark = MOCK_BOOKMARK_1
+      const keyword = MOCK_KEYWORDS[0]
       const dbMock = {
         // 1. 重複チェック用
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockReturnValue({
             where: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue(bookmark),
+              get: vi.fn().mockResolvedValue(keyword),
             }),
           }),
         }),
