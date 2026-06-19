@@ -11,7 +11,7 @@ import {
 } from '@shared/constants'
 import { keywordResponseSchema, keywordsSchema } from '@shared/schemas/keyword'
 import {
-  MOCK_BOOKMARK_ENTITY_1,
+  MOCK_BOOKMARK_1,
   MOCK_IDS,
   MOCK_KEYWORDS,
   TEST_STRINGS,
@@ -219,7 +219,7 @@ describe('Keyword API', () => {
     )
 
     it('既に存在する名前の場合は 409 Conflict を返し、エラーオブジェクトを含むこと', async () => {
-      const bookmark = MOCK_BOOKMARK_ENTITY_1
+      const bookmark = MOCK_BOOKMARK_1
       const dbMock = {
         // 1. 重複チェック用
         select: vi.fn().mockReturnValue({
