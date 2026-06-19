@@ -133,7 +133,7 @@ describe('useBookmarks Hook', () => {
         testName: '不正なレスポンス形式',
         params: null,
         expected: {
-          message: UI_MESSAGES.INVALID_RESPONSE_FROM_EXTENSION,
+          message: UI_MESSAGES.INVALID_RESPONSE_FORMAT,
           code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         },
         skip: true,
