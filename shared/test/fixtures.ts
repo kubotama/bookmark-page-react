@@ -98,6 +98,7 @@ export const VALID_URLS = {
   FRONTEND: 'http://localhost:5173',
   TEST_API: 'http://localhost:4000',
   CHROME_SETTING: 'chrome://settings',
+  EXTENSION_ID: 'chrome-extension://dummy-extension-id-for-testing',
 } as const
 
 /**

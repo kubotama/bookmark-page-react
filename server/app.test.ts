@@ -6,7 +6,7 @@ import {
   ERROR_MESSAGES,
   HTTP_STATUS,
 } from '@shared/constants'
-import { INVALID_URLS } from '@shared/test/fixtures'
+import { INVALID_URLS, VALID_URLS } from '@shared/test/fixtures'
 
 import app from './app'
 import { createD1Mock, validateErrorResponse } from './test/testUtils'
@@ -42,8 +42,7 @@ describe('App Global Handlers', () => {
   describe('CORS', () => {
     const allowedOrigin = DEFAULT_FRONTEND_URL
     const untrustedOrigin = INVALID_URLS.UNTRUST_HTTP
-    const extensionOrigin =
-      'chrome-extension://fgjpgmalcecblhkciahpillnieljphgh'
+    const extensionOrigin = VALID_URLS.EXTENSION_ID
 
     it.each([
       {
