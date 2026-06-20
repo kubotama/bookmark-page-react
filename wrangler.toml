@@ -2,6 +2,11 @@ name = "bookmark-page-api"
 main = "server/index.ts"
 compatibility_date = "2024-05-30"
 
+# 本番環境設定 (Wrangler/Workers用環境変数)
+[vars]
+ENVIRONMENT = "production"
+# ALLOWED_EXTENSION_ID = "本番環境の拡張機能IDをここに設定"
+
 # D1 データベースのバインディング
 [[d1_databases]]
 binding = "DB" # コード内で参照する名前

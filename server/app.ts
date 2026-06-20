@@ -1,7 +1,13 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-import { ERROR_MESSAGES, HTTP_STATUS, LOG_MESSAGES } from '@shared/constants'
+import {
+  DEFAULT_FRONTEND_URL,
+  ENV_NAMES,
+  ERROR_MESSAGES,
+  HTTP_STATUS,
+  LOG_MESSAGES,
+} from '@shared/constants'
 
 import bookmarksRoute from './routes/bookmarks'
 import keywordsRoute from './routes/keywords'
@@ -12,6 +18,8 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 type Bindings = {
   BOOKMARK_PAGE_FRONTEND_URL?: string
   DB: D1Database // wrangler.toml で設定した D1 バインディング
+  ENVIRONMENT?: string
+  ALLOWED_EXTENSION_ID?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -20,15 +28,24 @@ app.use(
   '/*',
   cors({
     origin: (origin, c) => {
-      // c を引数に追加
       const allowedOrigin =
-        c.env.BOOKMARK_PAGE_FRONTEND_URL || 'http://localhost:5173' // c.env を参照
-      if (
-        origin === allowedOrigin ||
-        origin.startsWith('chrome-extension://')
-      ) {
+        c.env.BOOKMARK_PAGE_FRONTEND_URL || DEFAULT_FRONTEND_URL
+      if (origin === allowedOrigin) {
         return origin
       }
+
+      if (origin.startsWith('chrome-extension://')) {
+        // 開発環境 (development) の場合は、すべての拡張機能オリジンを許可
+        if (c.env.ENVIRONMENT === ENV_NAMES.DEVELOPMENT) {
+          return origin
+        }
+        const allowedId = c.env.ALLOWED_EXTENSION_ID
+        if (allowedId && origin === `chrome-extension://${allowedId}`) {
+          return origin
+        }
+        return allowedOrigin // 不一致の場合は許可しない (フロントエンドURLにフォールバック)
+      }
+
       return allowedOrigin
     },
   }),
