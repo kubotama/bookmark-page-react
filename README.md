@@ -138,7 +138,8 @@ cp .env.example .env
 | 変数名                       | 説明                                                 | デフォルト値            |
 | ---------------------------- | ---------------------------------------------------- | ----------------------- |
 | `BOOKMARK_PAGE_FRONTEND_URL` | CORS許可オリジン設定用 / Webアプリの起動ポート決定用 | `http://localhost:5180` |
-| `VITE_EXTENSION_ID`          | 連携する拡張機能のID                                 | (なし)                  |
+| `ENVIRONMENT`                | API動作環境(production, development 等)              | (なし)                  |
+| `ALLOWED_EXTENSION_ID`       | 連携する拡張機能のID                                 | (なし)                  |
 
 補足: `BOOKMARK_PAGE_FRONTEND_URL` にポート番号を指定すると、Web アプリ (Vite) の起動ポートに自動的に反映されます。1024 未満の特権ポートが指定された場合などは、デフォルト値が使用されます。
 

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   API_PATHS,
   DEFAULT_FRONTEND_URL,
+  ENV_NAMES,
   ERROR_MESSAGES,
   HTTP_STATUS,
 } from '@shared/constants'
@@ -41,33 +42,86 @@ describe('App Global Handlers', () => {
 
   describe('CORS', () => {
     const allowedOrigin = DEFAULT_FRONTEND_URL
-    const untrustedOrigin = INVALID_URLS.UNTRUST_HTTP
-    const extensionOrigin = VALID_URLS.EXTENSION_ID
+    const disallowOrigin = INVALID_URLS.UNTRUST_HTTP
+    const untrustedId = INVALID_URLS.UNTRUSTED_EXTENSION_ID
+    const untrustedExtension = `chrome-extension://${untrustedId}`
+    const trustedExtensionId = VALID_URLS.EXTENSION_ID
+    const trustedExtension = `chrome-extension://${trustedExtensionId}`
 
     it.each([
       {
         name: '許可されたオリジン',
         origin: allowedOrigin,
         context: {
-          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin, // 環境変数を注入
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
         },
         expectedOrigin: allowedOrigin,
       },
       {
         name: '許可されていないオリジン',
-        origin: untrustedOrigin,
+        origin: disallowOrigin,
         context: {
-          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin, // 環境変数を注入
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
         },
         expectedOrigin: allowedOrigin,
       },
       {
-        name: 'chrome-extension',
-        origin: extensionOrigin,
+        name: 'chrome-extension  (開発環境：全て許可)',
+        origin: trustedExtension,
         context: {
-          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin, // 環境変数を注入
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
+          ENVIRONMENT: ENV_NAMES.DEVELOPMENT,
         },
-        expectedOrigin: extensionOrigin,
+        expectedOrigin: trustedExtension,
+      },
+      {
+        name: 'chrome-extension  (開発環境：不一致でも許可)',
+        origin: untrustedExtension,
+        context: {
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
+          ENVIRONMENT: ENV_NAMES.DEVELOPMENT,
+        },
+        expectedOrigin: untrustedExtension,
+      },
+      {
+        name: 'chrome-extension (本番環境：許可されたIDと一致)',
+        origin: trustedExtension,
+        context: {
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
+          ENVIRONMENT: ENV_NAMES.PRODUCTION,
+          ALLOWED_EXTENSION_ID: trustedExtensionId,
+        },
+        expectedOrigin: trustedExtension,
+      },
+      {
+        name: 'chrome-extension (本番環境：許可されたIDと不一致)',
+        origin: untrustedExtension,
+        context: {
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
+          ENVIRONMENT: ENV_NAMES.PRODUCTION,
+          ALLOWED_EXTENSION_ID: trustedExtensionId,
+        },
+        expectedOrigin: allowedOrigin, // 許可されずフォールバックされること
+      },
+      {
+        name: 'chrome-extension (環境変数未設定：制限が有効かつID不一致につき拒否)',
+        origin: untrustedExtension,
+        context: {
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
+          // ENVIRONMENT 未指定
+          ALLOWED_EXTENSION_ID: trustedExtensionId,
+        },
+        expectedOrigin: allowedOrigin,
+      },
+      {
+        name: 'chrome-extension (環境変数未設定：制限が有効かつID一致につき許可)',
+        origin: trustedExtension,
+        context: {
+          BOOKMARK_PAGE_FRONTEND_URL: allowedOrigin,
+          // ENVIRONMENT 未指定
+          ALLOWED_EXTENSION_ID: trustedExtensionId,
+        },
+        expectedOrigin: trustedExtension,
       },
     ])(
       '$name からのリクエスト',

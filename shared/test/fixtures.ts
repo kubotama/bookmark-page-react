@@ -98,7 +98,7 @@ export const VALID_URLS = {
   FRONTEND: 'http://localhost:5173',
   TEST_API: 'http://localhost:4000',
   CHROME_SETTING: 'chrome://settings',
-  EXTENSION_ID: 'chrome-extension://dummy-extension-id-for-testing',
+  EXTENSION_ID: 'dummy-extension-id-for-testing',
 } as const
 
 /**
@@ -110,6 +110,7 @@ export const INVALID_URLS = {
   NO_PROTOCOL: 'localhost:3030',
   MALFORMED: 'not-a-url',
   UNTRUST_HTTP: 'http://malicious-site.com',
+  UNTRUSTED_EXTENSION_ID: 'different-extension-id',
 } as const
 
 export const TEST_MESSAGES = {
