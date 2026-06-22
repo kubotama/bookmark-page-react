@@ -13,6 +13,7 @@ import {
   UI_STATUS,
   EXTENSION_MESSAGE_TYPES,
   type StatusInfo,
+  BOOKMARK_STATUS,
 } from '@shared/constants'
 import { createBookmarkInputSchema } from '@shared/schemas/bookmark'
 import { getOrigin, validateApiUrl } from '@shared/utils/url'
@@ -57,7 +58,7 @@ export const usePopup = () => {
             },
             (response) => {
               if (isMounted && response?.success) {
-                setIsRegistered(response.status !== 'NONE')
+                setIsRegistered(response.status !== BOOKMARK_STATUS.NONE)
                 setRegisteredId(response.bookmarkId || null)
               }
             },
