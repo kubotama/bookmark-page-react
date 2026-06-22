@@ -12,6 +12,7 @@ import {
   BOOKMARK_STATUS,
   EXTENSION_MESSAGE_TYPES,
   DEFAULT_API_URL,
+  DEFAULT_FRONTEND_URL,
 } from '@shared/constants'
 import {
   INVALID_URLS,
@@ -39,7 +40,7 @@ vi.stubGlobal('chrome', mockChrome)
 vi.stubGlobal('window', { close: vi.fn() })
 
 describe('usePopup Hook', () => {
-  const mockFrontendUrl = DEFAULT_API_URL
+  const mockFrontendUrl = DEFAULT_FRONTEND_URL
 
   beforeEach(() => {
     vi.clearAllMocks()
