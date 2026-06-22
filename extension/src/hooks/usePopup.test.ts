@@ -12,11 +12,14 @@ import {
   BOOKMARK_STATUS,
   EXTENSION_MESSAGE_TYPES,
   DEFAULT_API_URL,
+  DEFAULT_FRONTEND_URL,
 } from '@shared/constants'
 import {
   INVALID_URLS,
   MOCK_BOOKMARK_1,
+  MOCK_BOOKMARK_2,
   MOCK_BOOKMARK_TITLE_PREFIX,
+  TEST_STRINGS,
   VALID_URLS,
 } from '@shared/test/fixtures'
 
@@ -37,7 +40,7 @@ vi.stubGlobal('chrome', mockChrome)
 vi.stubGlobal('window', { close: vi.fn() })
 
 describe('usePopup Hook', () => {
-  const mockFrontendUrl = 'http://localhost:5173'
+  const mockFrontendUrl = DEFAULT_FRONTEND_URL
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -58,10 +61,8 @@ describe('usePopup Hook', () => {
       if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
         callback({
           success: true,
-          data: {
-            status: BOOKMARK_STATUS.REGISTERED,
-            bookmarkId: MOCK_BOOKMARK_1.id,
-          },
+          status: BOOKMARK_STATUS.REGISTERED,
+          bookmarkId: MOCK_BOOKMARK_1.id,
         })
       }
     })
@@ -72,6 +73,29 @@ describe('usePopup Hook', () => {
       expect(result.current.title).toBe(MOCK_BOOKMARK_TITLE_PREFIX)
       expect(result.current.url).toBe(MOCK_BOOKMARK_1.url)
       expect(result.current.isRegistered).toBe(true)
+    })
+  })
+
+  it('未登録のタブを開いているとき、未登録の情報を取得できること', async () => {
+    mockChrome.tabs.query.mockResolvedValue([
+      { title: TEST_STRINGS.NEW_NAME, url: MOCK_BOOKMARK_2.url },
+    ])
+
+    mockChrome.runtime.sendMessage.mockImplementation((message, callback) => {
+      if (message.type === EXTENSION_MESSAGE_TYPES.CHECK_BOOKMARK_STATUS) {
+        callback({
+          success: true,
+          status: BOOKMARK_STATUS.NONE,
+        })
+      }
+    })
+
+    const { result } = renderHook(() => usePopup())
+
+    await vi.waitFor(() => {
+      expect(result.current.title).toBe(TEST_STRINGS.NEW_NAME)
+      expect(result.current.url).toBe(MOCK_BOOKMARK_2.url)
+      expect(result.current.isRegistered).toBe(false)
     })
   })
 
