@@ -1,4 +1,6 @@
-# Bookmark Page
+> **Note**  
+> このリポジトリは **[kubotama/bookmark-page](https://github.com/kubotama/bookmark-page)** に移行しました。  
+> 現在、このリポジトリはアーカイブされており、読み取り専用です。最新の開発やメンテナンスは移行先の新しいリポジトリで行われています。# Bookmark Page
 
 ![CI](https://github.com/kubotama/bookmark-page/actions/workflows/ci.yml/badge.svg)
 
